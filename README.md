@@ -9,7 +9,7 @@ A modern, offline-first shift scheduling app for shift workers. Track shifts, le
 - **Monthly Calendar** -- Color-coded shift & leave badges with swipe navigation
 - **Adjacent Month Days** -- See previous/next month shifts in the calendar grid
 - **Quick Assign** -- Tap to assign, long-press for instant last-used shift
-- **Shift Templates** -- 8 pre-built rotations (2-2-2, 4-on/4-off, Continental, Panama, DuPont, and more)
+- **Shift Templates** -- 9 pre-built rotations (2-2-2, 2-2-4, 4-on/4-off, Continental, Panama, DuPont, and more)
 - **Repeat Patterns** -- Select a date range and repeat any shift pattern forward
 - **Custom Shifts** -- Create shift types with custom names, colors, icons, and times
 - **Leave Management** -- Annual, Sick, Emergency, and Unpaid leave with yearly balance tracking

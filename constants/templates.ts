@@ -19,6 +19,12 @@ export const SHIFT_TEMPLATES: ShiftTemplate[] = [
     pattern: ['M', 'M', 'A', 'A', 'N', 'N', 'O', 'O'],
   },
   {
+    id: '2d-2n-4o',
+    name: '2-2-4',
+    description: '2 Day, 2 Night, 4 Off (12-hour shifts)',
+    pattern: ['M', 'M', 'N', 'N', 'O', 'O', 'O', 'O'],
+  },
+  {
     id: '4on-4off',
     name: '4-on 4-off',
     description: '4 Day shifts, 4 Off',
