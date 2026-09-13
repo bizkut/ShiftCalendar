@@ -466,7 +466,7 @@ export class CalendarService {
     const { team, member: owner } = await this.team(sub, teamId, true);
     const target = await this.membership(targetSub, teamId);
     if (target.role === 'owner') throw forbidden('Transfer ownership instead');
-    const result = { sub: targetSub, displayName: target.displayName, role, joinedAt: target.joinedAt };
+    const result = { sub: targetSub, displayName: target.displayName, role, joinedAt: target.joinedAt, version: Number(target.version) + 1 };
     await this.write({ checks: [this.membershipCheck(owner)], puts: [
       { item: { ...target, role }, condition: { kind: 'equals', key: key(target.PK, target.SK), field: 'role', value: target.role } },
       { item: { ...key(`USER#${targetSub}`, `TEAM#${teamId}`), entity: 'team-list', ...(clean(team) as object), role } },

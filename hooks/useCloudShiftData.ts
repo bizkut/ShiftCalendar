@@ -101,9 +101,7 @@ export function useCloudShiftData() {
     id: '', name: 'Cloud calendar', color: '#6366F1', timezone: 'Asia/Kuala_Lumpur', scope: 'private', version: 0, updatedAt: '',
   } as CloudCalendarInfo);
 
-  const canEdit = activeCalendar.scope === 'private' || activeCalendar.role === 'owner' || activeCalendar.role === 'manager' || (
-    activeCalendar.role === 'member' && activeCalendar.assignedMemberSub === user?.sub
-  );
+  const canEdit = activeCalendar.scope === 'private' || activeCalendar.role === 'owner' || activeCalendar.role === 'manager';
 
   const fail = useCallback((error: unknown) => {
     setSyncError(cloudErrorMessage(error));

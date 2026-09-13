@@ -1,59 +1,55 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { addDays, format } from 'date-fns';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../hooks/AuthContext';
 import { useAppSettings } from '../../hooks/ThemeContext';
 import { useShifts } from '../../hooks/ShiftContext';
-import type { CloudCalendar, CloudMember, CloudTeam, InvitationCreated, Page, TeamRole, TeamRosterDay } from '../../shared/cloudTypes';
+import type { CloudCalendar, CloudInvitation, CloudMember, CloudTeam, CloudUser, Page, TeamRole } from '../../shared/cloudTypes';
 import { cloudErrorMessage, cloudRequest, createMutationId } from '../../utils/cloudClient';
 
 const editableRoles: Exclude<TeamRole, 'owner'>[] = ['manager', 'member', 'viewer'];
 const pageItems = <T,>(value: Page<T> | T[]) => Array.isArray(value) ? value : value.items;
 
 function capabilityText(role: TeamRole) {
-  if (role === 'owner') return 'Owner: manage the team, members, invitations, and every team calendar.';
-  if (role === 'manager') return 'Manager: edit team schedules and calendars. Membership is owner-controlled.';
-  if (role === 'member') return 'Member: edit your assigned schedule and view the team roster.';
-  return 'Viewer: view team calendars and rosters without editing.';
+  if (role === 'owner') return 'Team leader: manage members and edit every team calendar.';
+  if (role === 'manager') return 'Manager: create and edit team calendars.';
+  if (role === 'member') return 'Member: view team calendars, including your assigned calendar.';
+  return 'Viewer: view team calendars without editing.';
 }
+
+const roleLabel = (role: TeamRole) => role === 'owner' ? 'team leader' : role;
 
 export default function TeamsScreen() {
   const { user } = useAuth();
   const { cloud } = useShifts();
   const { colors } = useAppSettings();
-  const params = useLocalSearchParams<{ invite?: string }>();
   const [teams, setTeams] = useState<CloudTeam[]>([]);
   const [loadedForSub, setLoadedForSub] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [members, setMembers] = useState<CloudMember[]>([]);
-  const [roster, setRoster] = useState<TeamRosterDay[]>([]);
+  const [invitations, setInvitations] = useState<CloudInvitation[]>([]);
+  const [users, setUsers] = useState<CloudUser[]>([]);
   const [teamName, setTeamName] = useState('');
-  const [inviteToken, setInviteToken] = useState(params.invite ?? '');
+  const [inviteeEmail, setInviteeEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<Exclude<TeamRole, 'owner'>>('member');
-  const [createdInviteLink, setCreatedInviteLink] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const userSubRef = useRef(user?.sub);
-  userSubRef.current = user?.sub;
-  const selectedIdRef = useRef(selectedId);
-  selectedIdRef.current = selectedId;
+  const userSubRef = useRef(user?.sub); userSubRef.current = user?.sub;
+  const selectedIdRef = useRef(selectedId); selectedIdRef.current = selectedId;
 
-  const selected = teams.find((team) => team.id === selectedId) ?? teams[0];
-  const isOwner = selected?.role === 'owner';
+  const selected = teams.find(team => team.id === selectedId) ?? teams[0];
+  const isLeader = selected?.role === 'owner';
   const canManageSchedules = selected?.role === 'owner' || selected?.role === 'manager';
 
   const loadTeams = useCallback(async () => {
     if (!user) return;
-    const requestedSub = user.sub;
-    setLoadedForSub(null);
+    const requestedSub = user.sub; setLoadedForSub(null);
     try {
       const result = await cloudRequest<Page<CloudTeam> | CloudTeam[]>('/teams?limit=100');
       if (userSubRef.current !== requestedSub) return;
-      const items = pageItems(result);
-      setTeams(items);
-      setSelectedId((current) => items.some((team) => team.id === current) ? current : items[0]?.id ?? '');
+      const items = pageItems(result); setTeams(items);
+      setSelectedId(current => items.some(team => team.id === current) ? current : items[0]?.id ?? '');
     } catch (error) { if (userSubRef.current === requestedSub) setMessage(cloudErrorMessage(error)); }
     finally { if (userSubRef.current === requestedSub) setLoadedForSub(requestedSub); }
   }, [user]);
@@ -67,21 +63,21 @@ export default function TeamsScreen() {
     } catch (error) { setMessage(cloudErrorMessage(error)); }
   }, [selectedId]);
 
-  const loadRoster = useCallback(async () => {
-    if (!selectedId) { setRoster([]); return; }
-    const requestedTeam = selectedId;
-    const from = format(new Date(), 'yyyy-MM-dd');
-    const to = format(addDays(new Date(), 30), 'yyyy-MM-dd');
+  const loadAdministration = useCallback(async () => {
+    if (!user) return;
     try {
-      const result = await cloudRequest<Page<TeamRosterDay> | TeamRosterDay[]>(`/teams/${encodeURIComponent(selectedId)}/roster?from=${from}&to=${to}&limit=100`);
-      if (selectedIdRef.current === requestedTeam) setRoster(pageItems(result));
+      const incoming = await cloudRequest<Page<CloudInvitation> | CloudInvitation[]>('/invitations?limit=100');
+      setInvitations(pageItems(incoming).filter(invitation => invitation.status === 'pending'));
+      if (user.applicationAdmin) {
+        const result = await cloudRequest<Page<CloudUser> | CloudUser[]>('/admin/users?limit=100');
+        setUsers(pageItems(result));
+      } else setUsers([]);
     } catch (error) { setMessage(cloudErrorMessage(error)); }
-  }, [selectedId]);
+  }, [user]);
 
-  useEffect(() => { void loadTeams(); }, [loadTeams]);
-  useEffect(() => { if (!user) { setLoadedForSub(null); setTeams([]); setMembers([]); setRoster([]); setSelectedId(''); } }, [user]);
+  useEffect(() => { void loadTeams(); void loadAdministration(); }, [loadTeams, loadAdministration]);
+  useEffect(() => { if (!user) { setLoadedForSub(null); setTeams([]); setMembers([]); setInvitations([]); setUsers([]); setSelectedId(''); } }, [user]);
   useEffect(() => { void loadMembers(); }, [loadMembers]);
-  useEffect(() => { void loadRoster(); }, [loadRoster]);
 
   const run = async (operation: () => Promise<void>) => {
     setBusy(true); setMessage(null);
@@ -90,105 +86,93 @@ export default function TeamsScreen() {
 
   const createTeam = () => run(async () => {
     const name = teamName.trim(); if (!name) throw new Error('Enter a team name.');
-    const created = await cloudRequest<CloudTeam>('/teams', { method: 'POST', body: JSON.stringify({ mutationId: createMutationId(), value: { name, timezone: 'Asia/Kuala_Lumpur' } }) });
-    setTeams((previous) => [...previous, created]); setSelectedId(created.id); setTeamName(''); setMessage('Team created.');
-  });
-
-  const redeemInvite = () => run(async () => {
-    const token = inviteToken.trim(); if (!token) throw new Error('Paste an invitation token or link.');
-    const parsedToken = token.includes('invite=') ? decodeURIComponent(token.split('invite=')[1].split('&')[0]) : token;
-    await cloudRequest<CloudTeam>('/invites/redeem', { method: 'POST', body: JSON.stringify({ mutationId: createMutationId(), value: { token: parsedToken, displayName: user?.username } }) });
-    setInviteToken(''); await loadTeams(); setMessage('Invitation accepted.');
+    const created = await cloudRequest<CloudTeam>('/teams', { method:'POST', body:JSON.stringify({ mutationId:createMutationId(), value:{ name, timezone:'Asia/Kuala_Lumpur' } }) });
+    setTeams(previous => [...previous,created]); setSelectedId(created.id); setTeamName(''); setMessage('Team created.');
   });
 
   const createInvite = () => run(async () => {
     if (!selected) return;
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const invite = await cloudRequest<InvitationCreated>(`/teams/${encodeURIComponent(selected.id)}/invites`, { method: 'POST', body: JSON.stringify({ mutationId: createMutationId(), value: { role: inviteRole, expiresAt } }) });
-    const base = process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, '');
-    const link = base ? `${base}/teams?invite=${encodeURIComponent(invite.token)}` : invite.token;
-    setCreatedInviteLink(link);
-    try { await Share.share({ title: `Join ${selected.name}`, message: `Join ${selected.name} as ${invite.role}: ${link}`, url: link }); } catch { /* The link remains visible for manual sharing. */ }
-    setMessage(`Invitation created. It expires ${new Date(invite.expiresAt).toLocaleString()}.`);
+    const email = inviteeEmail.trim().toLowerCase(); if (!email) throw new Error('Enter an admitted user email.');
+    await cloudRequest<CloudInvitation>(`/teams/${encodeURIComponent(selected.id)}/invitations`, {
+      method:'POST', body:JSON.stringify({ mutationId:createMutationId(), value:{ inviteeUsername:email, role:inviteRole, expiresAt:new Date(Date.now()+7*86_400_000).toISOString() } }),
+    });
+    setInviteeEmail(''); setMessage('Invitation created. The user can accept it on this page.');
   });
 
-  const changeRole = (member: CloudMember, role: Exclude<TeamRole, 'owner'>) => run(async () => {
-    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method: 'PATCH', body: JSON.stringify({ mutationId: createMutationId(), value: { role } }) });
-    await loadMembers(); setMessage(`${member.displayName} is now ${role}.`);
+  const respondInvite = (invite: CloudInvitation, status: 'accepted'|'declined') => run(async () => {
+    await cloudRequest<CloudInvitation>(`/invitations/${encodeURIComponent(invite.id)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), value:{ status } }) });
+    await loadAdministration(); if (status === 'accepted') await loadTeams();
+    setMessage(status === 'accepted' ? 'Invitation accepted.' : 'Invitation declined.');
+  });
+
+  const changeRole = (member: CloudMember, nextRole: Exclude<TeamRole,'owner'>) => run(async () => {
+    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), value:{ role:nextRole } }) });
+    await loadMembers(); await cloud?.refresh(); setMessage(`${member.displayName} is now ${nextRole}.`);
   });
 
   const removeMember = (member: CloudMember) => run(async () => {
-    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method: 'DELETE', body: JSON.stringify({ mutationId: createMutationId() }) });
+    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId() }) });
     if (member.sub === user?.sub) await loadTeams(); else await loadMembers();
-    setMessage(member.sub === user?.sub ? 'You left the team.' : `${member.displayName} was removed.`);
+    await cloud?.refresh(); setMessage(member.sub === user?.sub ? 'You left the team.' : `${member.displayName} was removed.`);
   });
 
-  const transferOwnership = (member: CloudMember) => run(async () => {
-    await cloudRequest<CloudTeam>(`/teams/${encodeURIComponent(selected!.id)}/transfer-ownership`, { method: 'POST', body: JSON.stringify({ mutationId: createMutationId(), expectedVersion: selected!.version, value: { newOwnerSub: member.sub } }) });
-    await loadTeams(); await loadMembers(); setMessage(`Ownership transferred to ${member.displayName}.`);
+  const transferLeadership = (member: CloudMember) => run(async () => {
+    await cloudRequest<CloudTeam>(`/teams/${encodeURIComponent(selected!.id)}/transfer-ownership`, { method:'POST', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:selected!.version, value:{ newOwnerSub:member.sub } }) });
+    await loadTeams(); await loadMembers(); await cloud?.refresh(); setMessage(`${member.displayName} is now the team leader.`);
   });
 
   const createMemberCalendar = (member: CloudMember) => run(async () => {
-    await cloudRequest<CloudCalendar>('/calendars', {
-      method: 'POST',
-      body: JSON.stringify({ mutationId: createMutationId(), value: { name: `${member.displayName || 'Member'} shifts`, color: '#3B82F6', timezone: selected!.timezone, teamId: selected!.id, assignedMemberSub: member.sub } }),
-    });
-    await cloud?.refresh();
-    setMessage(`Team calendar created for ${member.displayName || member.sub}.`);
+    await cloudRequest<CloudCalendar>('/calendars', { method:'POST', body:JSON.stringify({ mutationId:createMutationId(), value:{ name:`${member.displayName || 'Member'} shifts`, color:'#3B82F6', timezone:selected!.timezone, teamId:selected!.id, assignedMemberSub:member.sub } }) });
+    await cloud?.refresh(); setMessage(`Team calendar created for ${member.displayName || member.sub}.`);
   });
 
-  const palette = useMemo(() => ({ input: { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface } }), [colors]);
+  const updateUser = (target: CloudUser, value: Pick<CloudUser,'disabled'|'applicationAdmin'>) => run(async () => {
+    await cloudRequest<CloudUser>(`/admin/users/${encodeURIComponent(target.sub)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:target.version, value }) });
+    await loadAdministration(); setMessage('User status updated.');
+  });
 
+  const palette = useMemo(() => ({ input:{ color:colors.text,borderColor:colors.border,backgroundColor:colors.surface } }), [colors]);
   if (!cloud?.enabled) return <Redirect href="/" />;
-  if (!user || loadedForSub !== user.sub) return <View style={[styles.loading, { backgroundColor: colors.background }]}><ActivityIndicator color={colors.primary} /></View>;
+  if (!user || loadedForSub !== user.sub) return <View style={[styles.loading,{backgroundColor:colors.background}]}><ActivityIndicator color={colors.primary}/></View>;
 
-  return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={styles.container}>
-      <Text style={[styles.title, { color: colors.text }]}>Teams</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>You can join multiple teams. Each team keeps its members and calendars isolated.</Text>
-      {!!message && <Text accessibilityRole="alert" style={[styles.message, { color: message.includes('created') || message.includes('accepted') ? '#10B981' : colors.textSecondary }]}>{message}</Text>}
+  return <ScrollView style={{flex:1,backgroundColor:colors.background}} contentContainerStyle={styles.container}>
+    <Text style={[styles.title,{color:colors.text}]}>Teams</Text>
+    <Text style={[styles.subtitle,{color:colors.textSecondary}]}>Private calendars remain private when you join a team. Team leaders and managers edit team calendars; members and viewers have read-only access.</Text>
+    {!!message && <Text accessibilityRole="alert" style={[styles.message,{color:colors.textSecondary}]}>{message}</Text>}
 
-      <View style={styles.row}>
-        <TextInput value={teamName} onChangeText={setTeamName} placeholder="New team name" placeholderTextColor={colors.textSecondary} style={[styles.input, palette.input, styles.flex]} />
-        <TouchableOpacity disabled={busy} onPress={createTeam} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Create</Text></TouchableOpacity>
-      </View>
-      <View style={styles.row}>
-        <TextInput value={inviteToken} onChangeText={setInviteToken} autoCapitalize="none" placeholder="Invitation link or token" placeholderTextColor={colors.textSecondary} style={[styles.input, palette.input, styles.flex]} />
-        <TouchableOpacity disabled={busy} onPress={redeemInvite} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Join</Text></TouchableOpacity>
-      </View>
+    {invitations.length > 0 && <View style={[styles.card,{backgroundColor:colors.surface,borderColor:colors.border}]}>
+      <Text style={[styles.cardTitle,{color:colors.text}]}>Your invitations</Text>
+      {invitations.map(invite => <View key={invite.id} style={styles.row}><Text style={[styles.flex,{color:colors.text}]}>{invite.teamName} · {roleLabel(invite.role)}</Text><TouchableOpacity disabled={busy} onPress={()=>respondInvite(invite,'accepted')}><Text style={{color:colors.primary}}>Accept</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={()=>respondInvite(invite,'declined')}><Text style={{color:'#EF4444'}}>Decline</Text></TouchableOpacity></View>)}
+    </View>}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.teamList}>
-        {teams.map((team) => <TouchableOpacity key={team.id} onPress={() => setSelectedId(team.id)} style={[styles.teamChip, { borderColor: team.id === selected?.id ? colors.primary : colors.border, backgroundColor: colors.surface }]}><Text style={{ color: colors.text, fontWeight: '700' }}>{team.name}</Text><Text style={{ color: colors.textSecondary, fontSize: 11 }}>{team.role}</Text></TouchableOpacity>)}
-      </ScrollView>
+    {user.applicationAdmin && <View style={styles.row}><TextInput value={teamName} onChangeText={setTeamName} placeholder="New team name" placeholderTextColor={colors.textSecondary} style={[styles.input,palette.input,styles.flex]}/><TouchableOpacity disabled={busy} onPress={createTeam} style={[styles.button,{backgroundColor:colors.primary}]}><Text style={styles.buttonText}>Create team</Text></TouchableOpacity></View>}
 
-      {selected ? <>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{selected.name}</Text>
-          <Text style={{ color: colors.textSecondary, lineHeight: 20 }}>{capabilityText(selected.role)}</Text>
-          {isOwner && <>
-            <Text style={[styles.label, { color: colors.text }]}>New invitation role</Text>
-            <View style={styles.roleRow}>{editableRoles.map((role) => <TouchableOpacity key={role} onPress={() => setInviteRole(role)} style={[styles.role, { borderColor: inviteRole === role ? colors.primary : colors.border }]}><Text style={{ color: colors.text }}>{role}</Text></TouchableOpacity>)}</View>
-            <TouchableOpacity disabled={busy} onPress={createInvite} style={[styles.wideButton, { backgroundColor: colors.primary }]}><MaterialCommunityIcons name="link-variant" color="#FFF" size={18} /><Text style={styles.buttonText}>Create invitation link</Text></TouchableOpacity>
-            {!!createdInviteLink && <Text selectable style={[styles.inviteLink, { color: colors.primary, borderColor: colors.border }]}>{createdInviteLink}</Text>}
-          </>}
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Members</Text>
-        {members.map((member) => <View key={member.sub} style={[styles.member, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.flex}><Text style={{ color: colors.text, fontWeight: '700' }}>{member.displayName || member.sub}{member.sub === user?.sub ? ' (you)' : ''}</Text><Text style={{ color: colors.textSecondary, fontSize: 12 }}>{capabilityText(member.role)}</Text></View>
-          {isOwner && member.role !== 'owner' && <View style={styles.actions}>
-            {editableRoles.map((role) => <TouchableOpacity key={role} disabled={member.role === role || busy} onPress={() => changeRole(member, role)}><Text style={{ color: member.role === role ? colors.textSecondary : colors.primary, fontSize: 12 }}>{role}</Text></TouchableOpacity>)}
-            <TouchableOpacity disabled={busy} onPress={() => transferOwnership(member)}><Text style={{ color: colors.primary, fontSize: 12 }}>make owner</Text></TouchableOpacity>
-            <TouchableOpacity disabled={busy} onPress={() => Alert.alert('Remove member?', member.displayName, [{ text: 'Cancel' }, { text: 'Remove', style: 'destructive', onPress: () => void removeMember(member) }])}><Text style={{ color: '#EF4444', fontSize: 12 }}>remove</Text></TouchableOpacity>
-          </View>}
-          {!isOwner && member.sub === user?.sub && member.role !== 'owner' && <TouchableOpacity disabled={busy} onPress={() => removeMember(member)}><Text style={{ color: '#EF4444' }}>Leave</Text></TouchableOpacity>}
-          {canManageSchedules && <TouchableOpacity disabled={busy} onPress={() => createMemberCalendar(member)} accessibilityRole="button"><Text style={{ color: colors.primary, fontSize: 12 }}>Add calendar</Text></TouchableOpacity>}
-        </View>)}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Next 31 days (first 100 entries)</Text>
-        {roster.length ? roster.map((day) => <View key={`${day.calendarId}-${day.date}`} style={[styles.rosterDay, { borderBottomColor: colors.border }]}><Text style={[styles.rosterDate, { color: colors.text }]}>{day.date}</Text><Text style={[styles.flex, { color: colors.textSecondary }]}>{day.memberDisplayName}</Text><Text style={{ color: colors.text, fontWeight: '800' }}>{day.shiftCode ?? day.availability ?? '—'}</Text></View>) : <Text style={{ color: colors.textSecondary }}>No scheduled shifts in this range.</Text>}
-      </> : <Text style={{ color: colors.textSecondary }}>Create a team or accept an invitation to get started.</Text>}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.teamList}>
+      {teams.map(team => <TouchableOpacity key={team.id} onPress={()=>setSelectedId(team.id)} style={[styles.teamChip,{borderColor:team.id===selected?.id?colors.primary:colors.border,backgroundColor:colors.surface}]}><Text style={{color:colors.text,fontWeight:'700'}}>{team.name}</Text><Text style={{color:colors.textSecondary,fontSize:11}}>{roleLabel(team.role)}</Text></TouchableOpacity>)}
     </ScrollView>
-  );
+
+    {selected ? <>
+      <View style={[styles.card,{backgroundColor:colors.surface,borderColor:colors.border}]}>
+        <Text style={[styles.cardTitle,{color:colors.text}]}>{selected.name}</Text><Text style={{color:colors.textSecondary,lineHeight:20}}>{capabilityText(selected.role)}</Text>
+        {isLeader && <><Text style={[styles.label,{color:colors.text}]}>Invite an existing admitted user</Text><Text style={{color:colors.textSecondary,fontSize:12}}>This does not add anyone to Cloudflare Access or send email.</Text>
+          <TextInput value={inviteeEmail} onChangeText={setInviteeEmail} autoCapitalize="none" keyboardType="email-address" placeholder="user@example.com" placeholderTextColor={colors.textSecondary} style={[styles.input,palette.input]}/>
+          <View style={styles.roleRow}>{editableRoles.map(item=><TouchableOpacity key={item} onPress={()=>setInviteRole(item)} style={[styles.role,{borderColor:inviteRole===item?colors.primary:colors.border}]}><Text style={{color:colors.text}}>{item}</Text></TouchableOpacity>)}</View>
+          <TouchableOpacity disabled={busy} onPress={createInvite} style={[styles.wideButton,{backgroundColor:colors.primary}]}><MaterialCommunityIcons name="account-plus" color="#FFF" size={18}/><Text style={styles.buttonText}>Create invitation</Text></TouchableOpacity>
+        </>}
+      </View>
+      <Text style={[styles.sectionTitle,{color:colors.text}]}>Members</Text>
+      {members.map(member=><View key={member.sub} style={[styles.member,{backgroundColor:colors.surface,borderColor:colors.border}]}>
+        <View style={styles.flex}><Text style={{color:colors.text,fontWeight:'700'}}>{member.displayName}{member.sub===user.sub?' (you)':''}</Text><Text style={{color:colors.textSecondary,fontSize:12}}>{capabilityText(member.role)}</Text></View>
+        {isLeader && member.role!=='owner' && <View style={styles.actions}>{editableRoles.map(item=><TouchableOpacity key={item} disabled={member.role===item||busy} onPress={()=>changeRole(member,item)}><Text style={{color:member.role===item?colors.textSecondary:colors.primary,fontSize:12}}>{item}</Text></TouchableOpacity>)}<TouchableOpacity disabled={busy} onPress={()=>transferLeadership(member)}><Text style={{color:colors.primary,fontSize:12}}>make leader</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={()=>Alert.alert('Remove member?',member.displayName,[{text:'Cancel'},{text:'Remove',style:'destructive',onPress:()=>void removeMember(member)}])}><Text style={{color:'#EF4444',fontSize:12}}>remove</Text></TouchableOpacity></View>}
+        {!isLeader && member.sub===user.sub && member.role!=='owner' && <TouchableOpacity disabled={busy} onPress={()=>removeMember(member)}><Text style={{color:'#EF4444'}}>Leave</Text></TouchableOpacity>}
+        {canManageSchedules && <TouchableOpacity disabled={busy} onPress={()=>createMemberCalendar(member)}><Text style={{color:colors.primary,fontSize:12}}>Add calendar</Text></TouchableOpacity>}
+      </View>)}
+    </> : <Text style={{color:colors.textSecondary}}>No team membership yet.</Text>}
+
+    {user.applicationAdmin && <><Text style={[styles.sectionTitle,{color:colors.text}]}>Application users</Text><Text style={{color:colors.textSecondary,fontSize:12}}>Access admission is managed separately in Cloudflare. These controls change application access only.</Text>
+      {users.map(item=><View key={item.sub} style={[styles.member,{backgroundColor:colors.surface,borderColor:colors.border}]}><View style={styles.flex}><Text style={{color:colors.text,fontWeight:'700'}}>{item.displayName}{item.sub===user.sub?' (you)':''}</Text><Text style={{color:colors.textSecondary,fontSize:12}}>{item.disabled?'Deactivated':'Active'} · {item.applicationAdmin?'administrator':'standard user'} · Access: external</Text></View>{item.sub!==user.sub&&<View style={styles.actions}><TouchableOpacity disabled={busy} onPress={()=>updateUser(item,{disabled:!item.disabled,applicationAdmin:item.applicationAdmin})}><Text style={{color:item.disabled?colors.primary:'#EF4444',fontSize:12}}>{item.disabled?'activate':'deactivate'}</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={()=>updateUser(item,{disabled:item.disabled,applicationAdmin:!item.applicationAdmin})}><Text style={{color:colors.primary,fontSize:12}}>{item.applicationAdmin?'remove admin':'make admin'}</Text></TouchableOpacity></View>}</View>)}
+    </>}
+  </ScrollView>;
 }
 
 const styles = StyleSheet.create({

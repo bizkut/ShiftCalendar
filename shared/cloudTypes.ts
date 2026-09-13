@@ -24,6 +24,40 @@ export interface CloudMember {
   displayName: string;
   role: TeamRole;
   joinedAt: string;
+  version: number;
+}
+
+export interface CloudUser {
+  sub: string;
+  username: string;
+  displayName: string;
+  disabled: boolean;
+  applicationAdmin: boolean;
+  version: number;
+  updatedAt: string;
+  accessAdmission: 'external';
+}
+
+export interface CloudInvitation {
+  id: string;
+  teamId: string;
+  teamName: string;
+  inviteeSub: string;
+  inviteeUsername: string;
+  role: Exclude<TeamRole, 'owner'>;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  expiresAt: string;
+  createdAt: string;
+  version: number;
+}
+
+/** Legacy AWS invitation-link response. Cloudflare uses targeted CloudInvitation records. */
+export interface InvitationCreated {
+  id: string;
+  teamId: string;
+  role: Exclude<TeamRole, 'owner'>;
+  expiresAt: string;
+  token: string;
 }
 
 export interface CloudCalendar {
@@ -91,14 +125,6 @@ export interface TeamRosterDay extends CloudCalendarDay {
   calendarId: string;
   memberSub: string;
   memberDisplayName: string;
-}
-
-export interface InvitationCreated {
-  id: string;
-  teamId: string;
-  role: Exclude<TeamRole, 'owner'>;
-  expiresAt: string;
-  token: string;
 }
 
 export interface Page<T> {

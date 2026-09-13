@@ -4,6 +4,7 @@ import { ApiError } from './errors';
 type CalendarRow = {
   id: string; owner_sub: string; team_id: string | null; assigned_sub: string | null;
   name: string; color: string; timezone: string; version: number; updated_at: string;
+  role?: 'owner' | 'manager' | 'member' | 'viewer' | null;
 };
 type DayRow = {
   date: string; shift_code: string | null; version: number; deleted: number;
@@ -21,6 +22,7 @@ function calendar(row: CalendarRow): CloudCalendar {
   return { id: row.id, name: row.name, color: row.color, timezone: row.timezone,
     scope: row.team_id ? 'team' : 'private', ...(row.team_id ? { teamId: row.team_id } : {}),
     ...(row.assigned_sub ? { assignedMemberSub: row.assigned_sub } : {}),
+    ...(row.role ? { role: row.role } : {}),
     version: row.version, updatedAt: row.updated_at };
 }
 function day(row: DayRow): CloudCalendarDay | CloudCalendarDayTombstone {
@@ -84,9 +86,11 @@ export class CalendarRepository {
 
   async get(calendarId: string, writing = false) {
     id(calendarId);
-    const args = [calendarId, this.sub, this.sub, this.sub];
+    const args = [this.sub, calendarId, this.sub, this.sub, this.sub];
     if (writing) args.push(this.sub);
-    const row = await this.db.prepare(`SELECT c.* FROM calendars c WHERE c.id = ? AND ${writing ? edit : access}`)
+    const row = await this.db.prepare(`SELECT c.*,
+      (SELECT m.role FROM memberships m WHERE m.team_id=c.team_id AND m.user_sub=?) role
+      FROM calendars c WHERE c.id = ? AND ${writing ? edit : access}`)
       .bind(...args).first<CalendarRow>();
     if (!row) throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.');
     return calendar(row);
@@ -95,9 +99,9 @@ export class CalendarRepository {
   async list(cursor = '', limit = 100) {
     if (cursor) id(cursor);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new ApiError(400, 'invalid_request', 'Invalid page size.');
-    // The first slice lists private calendars; team navigation is delivered in M3.
-    const rows = await this.db.prepare(`SELECT c.* FROM calendars c WHERE c.owner_sub = ?
-      AND c.team_id IS NULL AND c.id > ? AND ${access} ORDER BY c.id LIMIT ?`)
+    const rows = await this.db.prepare(`SELECT c.*,
+      (SELECT m.role FROM memberships m WHERE m.team_id=c.team_id AND m.user_sub=?) role
+      FROM calendars c WHERE c.id > ? AND ${access} ORDER BY c.id LIMIT ?`)
       .bind(this.sub, cursor, this.sub, this.sub, this.sub, limit + 1).all<CalendarRow>();
     const items = rows.results.slice(0, limit).map(calendar);
     return { items, ...(rows.results.length > limit ? { nextCursor: items.at(-1)!.id } : {}) };
@@ -105,30 +109,47 @@ export class CalendarRepository {
 
   async create(input: unknown) {
     const body = object(input); const mutationId = id(body.mutationId); const value = object(body.value);
-    if (value.scope !== 'private' || value.teamId || value.assignedMemberSub) throw new ApiError(400, 'invalid_request', 'This slice supports personal calendars.');
+    const teamId = value.teamId === undefined ? undefined : id(value.teamId);
+    const assignedMemberSub = value.assignedMemberSub === undefined ? undefined : id(value.assignedMemberSub);
+    const scope: CloudCalendar['scope'] = teamId ? 'team' : 'private';
+    if ((scope === 'team' && !assignedMemberSub) || (scope === 'private' && (value.teamId || value.assignedMemberSub))
+        || (value.scope !== undefined && value.scope !== scope)) throw new ApiError(400, 'invalid_request', 'Invalid calendar scope.');
     if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 80
         || typeof value.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value.color)
         || typeof value.timezone !== 'string' || value.timezone.length > 64) throw new ApiError(400, 'invalid_request', 'Invalid calendar settings.');
     try { new Intl.DateTimeFormat('en', { timeZone: value.timezone }); } catch { throw new ApiError(400, 'invalid_request', 'Invalid timezone.'); }
-    const canonical = { name: value.name.trim(), color: value.color, timezone: value.timezone };
+    const canonical = { name: value.name.trim(), color: value.color, timezone: value.timezone, scope, ...(teamId ? { teamId, assignedMemberSub } : {}) };
     const hash = await fingerprint(canonical);
+    if (teamId) {
+      const permitted = await this.db.prepare(`SELECT 1 FROM teams t JOIN memberships actor ON actor.team_id=t.id
+        JOIN memberships target ON target.team_id=t.id JOIN users u ON u.sub=actor.user_sub
+        WHERE t.id=? AND t.deleted=0 AND actor.user_sub=? AND actor.role IN ('owner','manager')
+        AND target.user_sub=? AND u.disabled=0`).bind(teamId, this.sub, assignedMemberSub!).first();
+      if (!permitted) throw new ApiError(403, 'forbidden', 'Only a team leader or manager can create team calendars.');
+    }
     const prior = await this.previous<CloudCalendar>(mutationId, 'create-calendar', hash);
     if (prior) return this.get(prior.id);
-    const result: CloudCalendar = { ...canonical, id: crypto.randomUUID(), scope: 'private', version: 1, updatedAt: new Date().toISOString() };
+    const result: CloudCalendar = { ...canonical, id: crypto.randomUUID(), ...(teamId ? { role: 'manager' } : {}), version: 1, updatedAt: new Date().toISOString() };
     try {
+      const checks = [this.enabled()];
+      if (teamId) checks.push(
+        this.guard(`EXISTS(SELECT 1 FROM teams t JOIN memberships actor ON actor.team_id=t.id
+          JOIN memberships target ON target.team_id=t.id WHERE t.id=? AND t.deleted=0
+          AND actor.user_sub=? AND actor.role IN ('owner','manager') AND target.user_sub=?)`,
+          [teamId, this.sub, assignedMemberSub!]),
+      );
       await this.db.batch([
-        this.enabled(),
-        this.db.prepare(`INSERT INTO calendars(id,owner_sub,name,color,timezone,updated_at) VALUES(?,?,?,?,?,?)`)
-          .bind(result.id, this.sub, result.name, result.color, result.timezone, result.updatedAt),
+        ...checks,
+        this.db.prepare(`INSERT INTO calendars(id,owner_sub,team_id,assigned_sub,name,color,timezone,updated_at)
+          VALUES(?,?,?,?,?,?,?,?)`).bind(result.id, this.sub, teamId ?? null, assignedMemberSub ?? null, result.name, result.color, result.timezone, result.updatedAt),
         ...this.record(mutationId, 'create-calendar', hash, result),
       ]);
     } catch {
-      await this.ensureUser();
       const retried = await this.previous<CloudCalendar>(mutationId, 'create-calendar', hash);
       if (retried) return this.get(retried.id);
-      throw new ApiError(409, 'conflict', 'Calendar creation conflicted. Please retry.');
+      throw new ApiError(409, 'conflict', 'Calendar creation conflicted. Please refresh and retry.');
     }
-    return result;
+    return this.get(result.id);
   }
 
   async days(calendarId: string, from: string, to: string) {

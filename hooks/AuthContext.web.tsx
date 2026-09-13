@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { cloudRequest, isCloudConfigured, sessionExpiredEvent } from '../utils/cloudClient.web';
 
-interface AuthUser { sub: string; username: string }
+interface AuthUser { sub: string; username: string; applicationAdmin?: boolean }
 interface AuthContextValue {
   configured: boolean; loading: boolean; cloudMode: boolean; user: AuthUser | null; error: string | null;
   signIn: () => Promise<void>; signOutUser: () => Promise<void>;

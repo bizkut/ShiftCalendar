@@ -151,7 +151,7 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 ### Phase 2 — M3: teams and access
 
-**In progress:** the local D1 calendar write predicate now allows only internal `owner` (team leader) and `manager` roles for team calendars. Assigned members/viewers are read-only, including on retries after demotion. Eleven focused permission cases cover leader/manager edits, assigned-member denial, administrator/creator non-bypass, revocation, multi-team roles, private ownership and a demotion at the transaction boundary. Administration APIs/UI and hosted acceptance remain pending; this checkpoint is not deployed.
+**In progress:** the local M3 candidate now includes additive D1 team-administration schema, targeted invitations for existing Access-admitted users, application deactivation/admin controls, team creation, memberships, role changes, leadership transfer, team switching and team-calendar provisioning. Access admission remains external to the application. Internal `owner` is displayed as team leader. Team leaders/managers can edit team calendars; assigned members/viewers remain read-only. Atomic permission/version checks, idempotent mutation/audit records and the concurrent last-active-admin guard are covered by repository and real-handler tests. Local type checks, 67 tests, web export and Wrangler dry run pass. Remote migration, deployment, live CPU/D1 checks and two-user hosted acceptance remain pending.
 
 - [ ] Add administration screens/APIs for invitations, deactivation, team creation and membership roles; keep Access admission and application membership lifecycle consistent.
 - [ ] Add team switching and multi-team roles with backend authorization and permission audit records.
@@ -214,4 +214,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2b is verified for the two-user private browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for live identity/persistence/privacy/expiry evidence, resource/version records, commands and measurement limits. Independent-browser persistence is user-confirmed. Cold-write CPU headroom remains insufficient for confident team expansion; optimize and remeasure before M3 rollout. Full personal features, team workflows, recovery drills and native release checks remain later work.
+M2c is verified for the two-user private browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, CPU, D1, resource/version and measurement evidence. The M3 candidate is locally validated as described above and has not yet changed hosted data or code. Full roster views, scheduling tools, change requests, recovery drills and native release checks remain later milestones.

@@ -80,6 +80,7 @@ if (Platform.OS !== 'web') WebBrowser.maybeCompleteAuthSession();
 export interface AuthUser {
   sub: string;
   username: string;
+  applicationAdmin?: boolean;
 }
 
 interface AuthContextValue {
