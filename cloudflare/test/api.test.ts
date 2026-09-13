@@ -81,13 +81,13 @@ it('runs targeted invitation, team switching, and enforced roles through /v1', a
   expect(inviteResponse.status).toBe(201);
   const {data:invite}=await inviteResponse.json() as {data:{id:string}};
   expect(await (await call('bob','/invitations')).json()).toMatchObject({data:{items:[{id:invite.id,teamName:'Ward API'}]}});
-  expect((await call('bob',`/invitations/${invite.id}`,'PATCH',{mutationId:'api-accept',value:{status:'accepted'}})).status).toBe(200);
+  expect((await call('bob',`/invitations/${invite.id}`,'PATCH',{mutationId:'api-accept',expectedVersion:1,value:{status:'accepted'}})).status).toBe(200);
   const calendarResponse=await call('alice','/calendars','POST',{mutationId:'api-team-calendar',value:{name:'Bob shifts',color:'#3B82F6',timezone:'Asia/Kuala_Lumpur',teamId:created.id,assignedMemberSub:'bob'}});
   expect(calendarResponse.status).toBe(201);
   const {data:calendar}=await calendarResponse.json() as {data:{id:string}};
   const edit={mutationId:'api-member-edit',expectedVersion:0,value:{shiftCode:'M'}};
   expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-14`,'PATCH',edit)).status).toBe(403);
-  expect((await call('alice',`/teams/${created.id}/members/bob`,'PATCH',{mutationId:'api-manager',value:{role:'manager'}})).status).toBe(200);
+  expect((await call('alice',`/teams/${created.id}/members/bob`,'PATCH',{mutationId:'api-manager',expectedVersion:1,value:{role:'manager'}})).status).toBe(200);
   expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-14`,'PATCH',edit)).status).toBe(200);
   expect(await (await call('bob','/bootstrap')).json()).toMatchObject({data:{teams:[{id:created.id,role:'manager'}],calendars:[{id:calendar.id,role:'manager'}]}});
 });

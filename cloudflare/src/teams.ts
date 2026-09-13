@@ -154,51 +154,83 @@ export class TeamRepository {
   }
   async respondInvitation(invitationId: string, input: unknown) {
     identifier(invitationId);
-    const m=await this.mutation(input,'respond-invitation',value=>{if(!['accepted','declined'].includes(String(value.status)))throw new ApiError(400,'invalid_request','Invalid invitation response.');return {invitationId,status:value.status as 'accepted'|'declined'};});
+    const m=await this.mutation(input,'respond-invitation',(value,body)=>{
+      if(!['accepted','declined'].includes(String(value.status)))throw new ApiError(400,'invalid_request','Invalid invitation response.');
+      const expectedVersion=Number(body.expectedVersion);
+      if(!Number.isInteger(expectedVersion)||expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid invitation version.');
+      return {invitationId,status:value.status as 'accepted'|'declined',expectedVersion};
+    });
     if(m.prior)return m.prior as CloudInvitation;
-    const row=await this.db.prepare(`SELECT i.*,t.name team_name,u.username invitee_username FROM team_invitations i JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub WHERE i.id=? AND i.invitee_sub=?`).bind(invitationId,this.sub).first<InviteRow>();
+    const row=await this.db.prepare(`SELECT i.*,t.name team_name,u.username invitee_username FROM team_invitations i
+      JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub WHERE i.id=? AND i.invitee_sub=?`)
+      .bind(invitationId,this.sub).first<InviteRow>();
     if(!row)throw new ApiError(404,'not_found','Invitation was not found.');
     const result={...invitation(row),status:m.parsed.status,version:row.version+1};
-    const statements=[this.enabled(),this.guard(`EXISTS(SELECT 1 FROM team_invitations WHERE id=? AND invitee_sub=? AND status='pending' AND expires_at>? AND version=?)`,[invitationId,this.sub,m.now,row.version]),this.db.prepare(`UPDATE team_invitations SET status=?,responded_at=?,version=version+1 WHERE id=?`).bind(m.parsed.status,m.now,invitationId)];
+    const statements=[this.enabled(),this.guard(`EXISTS(SELECT 1 FROM team_invitations
+      WHERE id=? AND invitee_sub=? AND status='pending' AND expires_at>? AND version=?)`,
+      [invitationId,this.sub,m.now,m.parsed.expectedVersion]),
+      this.db.prepare(`UPDATE team_invitations SET status=?,responded_at=?,version=version+1 WHERE id=?`)
+        .bind(m.parsed.status,m.now,invitationId)];
     if(m.parsed.status==='accepted')statements.push(this.db.prepare(`INSERT INTO memberships(team_id,user_sub,role,joined_at) VALUES(?,?,?,?)`).bind(row.team_id,this.sub,row.role,m.now));
-    try{await this.db.batch([...statements,...this.record(m.mutationId,'respond-invitation',m.hash,result,m.now)]);}catch{const prior=await this.prior<CloudInvitation>(m.mutationId,'respond-invitation',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Invitation is no longer available.');}
+    try{await this.db.batch([...statements,...this.record(m.mutationId,'respond-invitation',m.hash,result,m.now)]);}
+    catch{const prior=await this.prior<CloudInvitation>(m.mutationId,'respond-invitation',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Invitation changed. Refresh and retry.');}
     return result;
   }
   async revokeInvitation(teamId: string, invitationId: string, input: unknown) {
     identifier(teamId); identifier(invitationId); await this.requireLeader(teamId);
-    const body = object(input); const mutationId = identifier(body.mutationId);
-    const canonical = { teamId, invitationId }; const hash = await fingerprint(canonical);
-    const prior = await this.prior<CloudInvitation>(mutationId, 'revoke-invitation', hash);
-    if (prior) return prior;
-    const row = await this.db.prepare(`SELECT i.*,t.name team_name,u.username invitee_username
-      FROM team_invitations i JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub
-      WHERE i.id=? AND i.team_id=?`).bind(invitationId, teamId).first<InviteRow>();
-    if (!row) throw new ApiError(404, 'not_found', 'Invitation was not found.');
-    if (invitation(row).status !== 'pending') throw new ApiError(409, 'conflict', 'Invitation is no longer pending.');
-    const now = new Date().toISOString(); const result = { ...invitation(row), status: 'revoked' as const, version: row.version + 1 };
-    try {
-      await this.db.batch([this.leader(teamId), this.guard(`EXISTS(SELECT 1 FROM team_invitations WHERE id=? AND team_id=? AND status='pending' AND version=?)`, [invitationId,teamId,row.version]),
-        this.db.prepare(`UPDATE team_invitations SET status='revoked',responded_at=?,version=version+1 WHERE id=?`).bind(now,invitationId),
-        ...this.record(mutationId,'revoke-invitation',hash,result,now)]);
-    } catch {
-      const retried=await this.prior<CloudInvitation>(mutationId,'revoke-invitation',hash); if(retried)return retried;
-      throw new ApiError(409,'conflict','Invitation changed. Refresh and retry.');
-    }
+    const body=object(input); const mutationId=identifier(body.mutationId); const expectedVersion=Number(body.expectedVersion);
+    if(!Number.isInteger(expectedVersion)||expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid invitation version.');
+    const canonical={teamId,invitationId,expectedVersion}; const hash=await fingerprint(canonical);
+    const prior=await this.prior<CloudInvitation>(mutationId,'revoke-invitation',hash); if(prior)return prior;
+    const row=await this.db.prepare(`SELECT i.*,t.name team_name,u.username invitee_username FROM team_invitations i
+      JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub WHERE i.id=? AND i.team_id=?`)
+      .bind(invitationId,teamId).first<InviteRow>();
+    if(!row)throw new ApiError(404,'not_found','Invitation was not found.');
+    if(invitation(row).status!=='pending')throw new ApiError(409,'conflict','Invitation is no longer pending.');
+    const now=new Date().toISOString(); const result={...invitation(row),status:'revoked' as const,version:row.version+1};
+    try{await this.db.batch([this.leader(teamId),this.guard(`EXISTS(SELECT 1 FROM team_invitations
+      WHERE id=? AND team_id=? AND status='pending' AND version=?)`,[invitationId,teamId,expectedVersion]),
+      this.db.prepare(`UPDATE team_invitations SET status='revoked',responded_at=?,version=version+1 WHERE id=?`).bind(now,invitationId),
+      ...this.record(mutationId,'revoke-invitation',hash,result,now)]);}
+    catch{const retried=await this.prior<CloudInvitation>(mutationId,'revoke-invitation',hash);if(retried)return retried;throw new ApiError(409,'conflict','Invitation changed. Refresh and retry.');}
     return result;
   }
   async changeMember(teamId:string,memberSub:string,input:unknown){
-    identifier(teamId);identifier(memberSub);
-    await this.requireLeader(teamId);
-    const m=await this.mutation(input,'change-member-role',value=>({teamId,memberSub,role:role(value.role)})); if(m.prior)return m.prior as CloudMember;
-    const current=await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND m.user_sub=?`).bind(teamId,memberSub).first<MemberRow>();
+    identifier(teamId);identifier(memberSub);await this.requireLeader(teamId);
+    const m=await this.mutation(input,'change-member-role',(value,body)=>{
+      const expectedVersion=Number(body.expectedVersion);
+      if(!Number.isInteger(expectedVersion)||expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid membership version.');
+      return {teamId,memberSub,role:role(value.role),expectedVersion};
+    });
+    if(m.prior)return m.prior as CloudMember;
+    const current=await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version
+      FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND m.user_sub=?`).bind(teamId,memberSub).first<MemberRow>();
     if(!current||current.role==='owner')throw new ApiError(409,'conflict','The team leader role must be transferred.');
     const result={...member(current),role:m.parsed.role,version:current.version+1};
-    try{await this.db.batch([this.leader(teamId),this.guard('EXISTS(SELECT 1 FROM memberships WHERE team_id=? AND user_sub=? AND role<>\'owner\' AND version=?)',[teamId,memberSub,current.version]),this.db.prepare('UPDATE memberships SET role=?,version=version+1 WHERE team_id=? AND user_sub=?').bind(m.parsed.role,teamId,memberSub),...this.record(m.mutationId,'change-member-role',m.hash,result,m.now)]);}catch{const prior=await this.prior<CloudMember>(m.mutationId,'change-member-role',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Membership changed. Refresh and retry.');} return result;
+    try{await this.db.batch([this.leader(teamId),this.guard(`EXISTS(SELECT 1 FROM memberships
+      WHERE team_id=? AND user_sub=? AND role<>'owner' AND version=?)`,[teamId,memberSub,m.parsed.expectedVersion]),
+      this.db.prepare('UPDATE memberships SET role=?,version=version+1 WHERE team_id=? AND user_sub=?').bind(m.parsed.role,teamId,memberSub),
+      ...this.record(m.mutationId,'change-member-role',m.hash,result,m.now)]);}
+    catch{const prior=await this.prior<CloudMember>(m.mutationId,'change-member-role',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Membership changed. Refresh and retry.');}
+    return result;
   }
   async removeMember(teamId:string,memberSub:string,input:unknown){
-    identifier(teamId);identifier(memberSub);if(memberSub===this.sub)await this.session();else await this.requireLeader(teamId);const body=object(input);const mutationId=identifier(body.mutationId);const canonical={teamId,memberSub};const hash=await fingerprint(canonical);const prior=await this.prior<CloudMember>(mutationId,'remove-member',hash);if(prior)return prior;
-    const current=await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND m.user_sub=?`).bind(teamId,memberSub).first<MemberRow>();if(!current||current.role==='owner')throw new ApiError(409,'conflict','The team leader cannot be removed.');const result=member(current);const now=new Date().toISOString();
-    const authority=memberSub===this.sub?this.enabled():this.leader(teamId);try{await this.db.batch([authority,this.guard('EXISTS(SELECT 1 FROM memberships WHERE team_id=? AND user_sub=? AND role<>\'owner\' AND version=?)',[teamId,memberSub,current.version]),this.db.prepare('DELETE FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId,memberSub),...this.record(mutationId,'remove-member',hash,result,now)]);}catch{const retried=await this.prior<CloudMember>(mutationId,'remove-member',hash);if(retried)return retried;throw new ApiError(409,'conflict','Membership changed. Refresh and retry.');}return result;
+    identifier(teamId);identifier(memberSub);
+    if(memberSub===this.sub)await this.session();else await this.requireLeader(teamId);
+    const body=object(input);const mutationId=identifier(body.mutationId);const expectedVersion=Number(body.expectedVersion);
+    if(!Number.isInteger(expectedVersion)||expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid membership version.');
+    const canonical={teamId,memberSub,expectedVersion};const hash=await fingerprint(canonical);
+    const prior=await this.prior<CloudMember>(mutationId,'remove-member',hash);if(prior)return prior;
+    const current=await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version
+      FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND m.user_sub=?`).bind(teamId,memberSub).first<MemberRow>();
+    if(!current||current.role==='owner')throw new ApiError(409,'conflict','The team leader cannot be removed.');
+    const result=member(current);const now=new Date().toISOString();const authority=memberSub===this.sub?this.enabled():this.leader(teamId);
+    try{await this.db.batch([authority,this.guard(`EXISTS(SELECT 1 FROM memberships
+      WHERE team_id=? AND user_sub=? AND role<>'owner' AND version=?)`,[teamId,memberSub,expectedVersion]),
+      this.db.prepare('DELETE FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId,memberSub),
+      ...this.record(mutationId,'remove-member',hash,result,now)]);}
+    catch{const retried=await this.prior<CloudMember>(mutationId,'remove-member',hash);if(retried)return retried;throw new ApiError(409,'conflict','Membership changed. Refresh and retry.');}
+    return result;
   }
   async transfer(teamId:string,input:unknown){identifier(teamId);await this.requireLeader(teamId);const m=await this.mutation(input,'transfer-team-leader',(value,body)=>({teamId,newOwnerSub:identifier(value.newOwnerSub),expectedVersion:Number(body.expectedVersion)}));if(!Number.isInteger(m.parsed.expectedVersion)||m.parsed.expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid team version.');if(m.prior)return m.prior as CloudTeam;const target=await this.db.prepare('SELECT role FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId,m.parsed.newOwnerSub).first<{role:TeamRole}>();if(!target)throw new ApiError(404,'not_found','Member was not found.');const current=await this.db.prepare('SELECT t.*,m.role FROM teams t JOIN memberships m ON m.team_id=t.id AND m.user_sub=? WHERE t.id=?').bind(this.sub,teamId).first<TeamRow>();if(!current)throw new ApiError(403,'forbidden','Team access is not allowed.');const result={...team(current),ownerSub:m.parsed.newOwnerSub,role:'manager' as TeamRole,version:current.version+1,updatedAt:m.now};try{await this.db.batch([this.leader(teamId),this.guard('EXISTS(SELECT 1 FROM teams WHERE id=? AND version=? AND deleted=0)',[teamId,m.parsed.expectedVersion]),this.db.prepare(`UPDATE memberships SET role='manager',version=version+1 WHERE team_id=? AND user_sub=?`).bind(teamId,this.sub),this.db.prepare(`UPDATE memberships SET role='owner',version=version+1 WHERE team_id=? AND user_sub=?`).bind(teamId,m.parsed.newOwnerSub),this.db.prepare('UPDATE teams SET owner_sub=?,version=version+1,updated_at=? WHERE id=?').bind(m.parsed.newOwnerSub,m.now,teamId),...this.record(m.mutationId,'transfer-team-leader',m.hash,result,m.now)]);}catch{const prior=await this.prior<CloudTeam>(m.mutationId,'transfer-team-leader',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Team changed. Refresh and retry.');}return result;}
   async updateUser(targetSub:string,input:unknown){identifier(targetSub);await this.requireAdmin();const m=await this.mutation(input,'update-user',(value,body)=>{if(typeof value.disabled!=='boolean'||typeof value.applicationAdmin!=='boolean')throw new ApiError(400,'invalid_request','Invalid user status.');return{targetSub,disabled:value.disabled,applicationAdmin:value.applicationAdmin,expectedVersion:Number(body.expectedVersion)};});if(!Number.isInteger(m.parsed.expectedVersion)||m.parsed.expectedVersion<1)throw new ApiError(400,'invalid_request','Invalid user version.');if(m.prior)return m.prior as CloudUser;const current=await this.db.prepare(`SELECT u.*,EXISTS(SELECT 1 FROM application_administrators a WHERE a.user_sub=u.sub) application_admin FROM users u WHERE u.sub=?`).bind(targetSub).first<UserRow>();if(!current)throw new ApiError(404,'not_found','User was not found.');if(targetSub===this.sub&&(m.parsed.disabled||!m.parsed.applicationAdmin))throw new ApiError(409,'conflict','Transfer administration before changing your own access.');const result:userReturn={...user(current),disabled:m.parsed.disabled,applicationAdmin:m.parsed.applicationAdmin,version:current.version+1,updatedAt:m.now};const statements=[this.admin(),this.guard('EXISTS(SELECT 1 FROM users WHERE sub=? AND version=?)',[targetSub,m.parsed.expectedVersion])];if(current.application_admin&&(m.parsed.disabled||!m.parsed.applicationAdmin))statements.push(this.guard(`(SELECT COUNT(*) FROM application_administrators a JOIN users u ON u.sub=a.user_sub WHERE u.disabled=0 AND a.user_sub<>?)>0`,[targetSub]));statements.push(this.db.prepare('UPDATE users SET disabled=?,version=version+1,updated_at=? WHERE sub=?').bind(m.parsed.disabled?1:0,m.now,targetSub));statements.push(m.parsed.applicationAdmin?this.db.prepare('INSERT INTO application_administrators(user_sub,created_at) VALUES(?,?) ON CONFLICT(user_sub) DO NOTHING').bind(targetSub,m.now):this.db.prepare('DELETE FROM application_administrators WHERE user_sub=?').bind(targetSub));try{await this.db.batch([...statements,...this.record(m.mutationId,'update-user',m.hash,result,m.now)]);}catch{const prior=await this.prior<CloudUser>(m.mutationId,'update-user',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','User status changed. Refresh and retry.');}return result;}

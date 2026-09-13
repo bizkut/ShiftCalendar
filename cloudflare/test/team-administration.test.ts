@@ -9,7 +9,7 @@ import { TeamRepository } from '../src/teams';
 
 const alice = new TeamRepository(env.DB, 'alice');
 const bob = new TeamRepository(env.DB, 'bob');
-const mutation = (value: Record<string, unknown> = {}) => ({ mutationId: crypto.randomUUID(), value });
+const mutation = (value: Record<string, unknown> = {}) => ({ mutationId: crypto.randomUUID(), expectedVersion: 1, value });
 
 beforeAll(async () => {
   for (const sql of (schema + administrators + teamAdministration + expiredInvitations).split(';').map(value => value.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
@@ -39,7 +39,7 @@ it('targets an existing admitted user and grants membership only after acceptanc
   const inviteRequest = mutation({ inviteeUsername:'bob@example.com', role:'member', expiresAt:new Date(Date.now()+86_400_000).toISOString() });
   const invite = await alice.createInvitation(created.id, inviteRequest);
   expect((await bob.listTeams()).items).toHaveLength(0);
-  const response = { mutationId:crypto.randomUUID(), value:{ status:'accepted' } };
+  const response = { mutationId:crypto.randomUUID(), expectedVersion:1, value:{ status:'accepted' } };
   await bob.respondInvitation(invite.id,response);
   await bob.respondInvitation(invite.id,response);
   expect((await bob.listTeams()).items[0]).toMatchObject({ id:created.id, role:'member' });
@@ -49,7 +49,7 @@ it('targets an existing admitted user and grants membership only after acceptanc
 it('records and idempotently revokes a pending targeted invitation', async () => {
   const created = await alice.createTeam(mutation({ name:'Ward A', timezone:'Asia/Kuala_Lumpur' }));
   const invite = await alice.createInvitation(created.id,mutation({ inviteeUsername:'bob@example.com',role:'viewer',expiresAt:new Date(Date.now()+86_400_000).toISOString() }));
-  const request={mutationId:crypto.randomUUID()};
+  const request={mutationId:crypto.randomUUID(),expectedVersion:1};
   expect(await alice.revokeInvitation(created.id,invite.id,request)).toMatchObject({status:'revoked',version:2});
   expect(await alice.revokeInvitation(created.id,invite.id,request)).toMatchObject({status:'revoked',version:2});
   expect((await bob.listInvitations()).items[0]).toMatchObject({status:'revoked'});
@@ -72,6 +72,8 @@ it('lets leaders and managers provision calendars while assigned members remain 
   expect(calendar.role).toBe('owner');
   await expect(new CalendarRepository(env.DB,'bob').writeDay(calendar.id,'2026-09-14',{mutationId:crypto.randomUUID(),expectedVersion:0,value:{shiftCode:'M'}})).rejects.toMatchObject({ status:403 });
   await alice.changeMember(created.id,'bob',mutation({role:'manager'}));
+  await expect(alice.changeMember(created.id,'bob',mutation({role:'viewer'}))).rejects.toMatchObject({status:409});
+  expect((await alice.listMembers(created.id)).items.find(value=>value.sub==='bob')?.role).toBe('manager');
   const saved = await new CalendarRepository(env.DB,'bob').writeDay(calendar.id,'2026-09-14',{mutationId:crypto.randomUUID(),expectedVersion:0,value:{shiftCode:'M'}});
   expect(saved).toMatchObject({shiftCode:'M',version:1});
 });

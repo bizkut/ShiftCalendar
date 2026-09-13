@@ -111,23 +111,23 @@ export default function TeamsScreen() {
   });
 
   const revokeInvite = (invite: CloudInvitation) => run(async () => {
-    await cloudRequest<CloudInvitation>(`/teams/${encodeURIComponent(selected!.id)}/invitations/${encodeURIComponent(invite.id)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId() }) });
+    await cloudRequest<CloudInvitation>(`/teams/${encodeURIComponent(selected!.id)}/invitations/${encodeURIComponent(invite.id)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:invite.version }) });
     await loadTeamInvitations(); setMessage('Invitation revoked.');
   });
 
   const respondInvite = (invite: CloudInvitation, status: 'accepted'|'declined') => run(async () => {
-    await cloudRequest<CloudInvitation>(`/invitations/${encodeURIComponent(invite.id)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), value:{ status } }) });
+    await cloudRequest<CloudInvitation>(`/invitations/${encodeURIComponent(invite.id)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:invite.version, value:{ status } }) });
     await loadAdministration(); if (status === 'accepted') await loadTeams();
     setMessage(status === 'accepted' ? 'Invitation accepted.' : 'Invitation declined.');
   });
 
   const changeRole = (member: CloudMember, nextRole: Exclude<TeamRole,'owner'>) => run(async () => {
-    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), value:{ role:nextRole } }) });
+    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'PATCH', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:member.version, value:{ role:nextRole } }) });
     await loadMembers(); await cloud?.refresh(); setMessage(`${member.displayName} is now ${nextRole}.`);
   });
 
   const removeMember = (member: CloudMember) => run(async () => {
-    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId() }) });
+    await cloudRequest<CloudMember>(`/teams/${encodeURIComponent(selected!.id)}/members/${encodeURIComponent(member.sub)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId(), expectedVersion:member.version }) });
     if (member.sub === user?.sub) await loadTeams(); else await loadMembers();
     await cloud?.refresh(); setMessage(member.sub === user?.sub ? 'You left the team.' : `${member.displayName} was removed.`);
   });
