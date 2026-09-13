@@ -144,6 +144,28 @@ export class TeamRepository {
     try{await this.db.batch([...statements,...this.record(m.mutationId,'respond-invitation',m.hash,result,m.now)]);}catch{const prior=await this.prior<CloudInvitation>(m.mutationId,'respond-invitation',m.hash);if(prior)return prior;throw new ApiError(409,'conflict','Invitation is no longer available.');}
     return result;
   }
+  async revokeInvitation(teamId: string, invitationId: string, input: unknown) {
+    identifier(teamId); identifier(invitationId); await this.requireLeader(teamId);
+    const body = object(input); const mutationId = identifier(body.mutationId);
+    const canonical = { teamId, invitationId }; const hash = await fingerprint(canonical);
+    const prior = await this.prior<CloudInvitation>(mutationId, 'revoke-invitation', hash);
+    if (prior) return prior;
+    const row = await this.db.prepare(`SELECT i.*,t.name team_name,u.username invitee_username
+      FROM team_invitations i JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub
+      WHERE i.id=? AND i.team_id=?`).bind(invitationId, teamId).first<InviteRow>();
+    if (!row) throw new ApiError(404, 'not_found', 'Invitation was not found.');
+    if (row.status !== 'pending') throw new ApiError(409, 'conflict', 'Invitation is no longer pending.');
+    const now = new Date().toISOString(); const result = { ...invitation(row), status: 'revoked' as const, version: row.version + 1 };
+    try {
+      await this.db.batch([this.leader(teamId), this.guard(`EXISTS(SELECT 1 FROM team_invitations WHERE id=? AND team_id=? AND status='pending' AND version=?)`, [invitationId,teamId,row.version]),
+        this.db.prepare(`UPDATE team_invitations SET status='revoked',responded_at=?,version=version+1 WHERE id=?`).bind(now,invitationId),
+        ...this.record(mutationId,'revoke-invitation',hash,result,now)]);
+    } catch {
+      const retried=await this.prior<CloudInvitation>(mutationId,'revoke-invitation',hash); if(retried)return retried;
+      throw new ApiError(409,'conflict','Invitation changed. Refresh and retry.');
+    }
+    return result;
+  }
   async changeMember(teamId:string,memberSub:string,input:unknown){
     identifier(teamId);identifier(memberSub);
     await this.requireLeader(teamId);

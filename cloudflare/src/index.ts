@@ -92,6 +92,8 @@ export default {
         data = await teams.listInvitations(parts[2]);
       } else if (parts[1] === 'teams' && parts[3] === 'invitations' && parts.length === 4 && request.method === 'POST') {
         data = await teams.createInvitation(parts[2], await readBody(request)); status = 201;
+      } else if (parts[1] === 'teams' && parts[3] === 'invitations' && parts.length === 5 && request.method === 'DELETE') {
+        data = await teams.revokeInvitation(parts[2], parts[4], await readBody(request));
       } else if (path === '/v1/invitations' && request.method === 'GET') {
         data = await teams.listInvitations();
       } else if (parts[1] === 'invitations' && parts.length === 3 && request.method === 'PATCH') {

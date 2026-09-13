@@ -29,6 +29,7 @@ export default function TeamsScreen() {
   const [selectedId, setSelectedId] = useState('');
   const [members, setMembers] = useState<CloudMember[]>([]);
   const [invitations, setInvitations] = useState<CloudInvitation[]>([]);
+  const [teamInvitations, setTeamInvitations] = useState<CloudInvitation[]>([]);
   const [users, setUsers] = useState<CloudUser[]>([]);
   const [teamName, setTeamName] = useState('');
   const [inviteeEmail, setInviteeEmail] = useState('');
@@ -63,6 +64,15 @@ export default function TeamsScreen() {
     } catch (error) { setMessage(cloudErrorMessage(error)); }
   }, [selectedId]);
 
+  const loadTeamInvitations = useCallback(async () => {
+    if (!selectedId || selected?.role !== 'owner') { setTeamInvitations([]); return; }
+    const requestedTeam = selectedId;
+    try {
+      const result = await cloudRequest<Page<CloudInvitation> | CloudInvitation[]>(`/teams/${encodeURIComponent(selectedId)}/invitations?limit=100`);
+      if (selectedIdRef.current === requestedTeam) setTeamInvitations(pageItems(result));
+    } catch (error) { setMessage(cloudErrorMessage(error)); }
+  }, [selectedId, selected?.role]);
+
   const loadAdministration = useCallback(async () => {
     if (!user) return;
     try {
@@ -78,6 +88,7 @@ export default function TeamsScreen() {
   useEffect(() => { void loadTeams(); void loadAdministration(); }, [loadTeams, loadAdministration]);
   useEffect(() => { if (!user) { setLoadedForSub(null); setTeams([]); setMembers([]); setInvitations([]); setUsers([]); setSelectedId(''); } }, [user]);
   useEffect(() => { void loadMembers(); }, [loadMembers]);
+  useEffect(() => { void loadTeamInvitations(); }, [loadTeamInvitations]);
 
   const run = async (operation: () => Promise<void>) => {
     setBusy(true); setMessage(null);
@@ -96,7 +107,12 @@ export default function TeamsScreen() {
     await cloudRequest<CloudInvitation>(`/teams/${encodeURIComponent(selected.id)}/invitations`, {
       method:'POST', body:JSON.stringify({ mutationId:createMutationId(), value:{ inviteeUsername:email, role:inviteRole, expiresAt:new Date(Date.now()+7*86_400_000).toISOString() } }),
     });
-    setInviteeEmail(''); setMessage('Invitation created. The user can accept it on this page.');
+    setInviteeEmail(''); await loadTeamInvitations(); setMessage('Invitation created. The user can accept it on this page.');
+  });
+
+  const revokeInvite = (invite: CloudInvitation) => run(async () => {
+    await cloudRequest<CloudInvitation>(`/teams/${encodeURIComponent(selected!.id)}/invitations/${encodeURIComponent(invite.id)}`, { method:'DELETE', body:JSON.stringify({ mutationId:createMutationId() }) });
+    await loadTeamInvitations(); setMessage('Invitation revoked.');
   });
 
   const respondInvite = (invite: CloudInvitation, status: 'accepted'|'declined') => run(async () => {
@@ -158,6 +174,7 @@ export default function TeamsScreen() {
           <TextInput value={inviteeEmail} onChangeText={setInviteeEmail} autoCapitalize="none" keyboardType="email-address" placeholder="user@example.com" placeholderTextColor={colors.textSecondary} style={[styles.input,palette.input]}/>
           <View style={styles.roleRow}>{editableRoles.map(item=><TouchableOpacity key={item} onPress={()=>setInviteRole(item)} style={[styles.role,{borderColor:inviteRole===item?colors.primary:colors.border}]}><Text style={{color:colors.text}}>{item}</Text></TouchableOpacity>)}</View>
           <TouchableOpacity disabled={busy} onPress={createInvite} style={[styles.wideButton,{backgroundColor:colors.primary}]}><MaterialCommunityIcons name="account-plus" color="#FFF" size={18}/><Text style={styles.buttonText}>Create invitation</Text></TouchableOpacity>
+          {teamInvitations.map(invite=><View key={invite.id} style={styles.row}><Text style={[styles.flex,{color:colors.textSecondary,fontSize:12}]}>{invite.inviteeUsername} · {invite.role} · {invite.status}</Text>{invite.status==='pending'&&<TouchableOpacity disabled={busy} onPress={()=>revokeInvite(invite)}><Text style={{color:'#EF4444',fontSize:12}}>revoke</Text></TouchableOpacity>}</View>)}
         </>}
       </View>
       <Text style={[styles.sectionTitle,{color:colors.text}]}>Members</Text>

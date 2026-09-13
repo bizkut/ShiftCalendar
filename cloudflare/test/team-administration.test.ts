@@ -41,6 +41,16 @@ it('targets an existing admitted user and grants membership only after acceptanc
   expect((await alice.listMembers(created.id)).items).toHaveLength(2);
 });
 
+it('records and idempotently revokes a pending targeted invitation', async () => {
+  const created = await alice.createTeam(mutation({ name:'Ward A', timezone:'Asia/Kuala_Lumpur' }));
+  const invite = await alice.createInvitation(created.id,mutation({ inviteeUsername:'bob@example.com',role:'viewer',expiresAt:new Date(Date.now()+86_400_000).toISOString() }));
+  const request={mutationId:crypto.randomUUID()};
+  expect(await alice.revokeInvitation(created.id,invite.id,request)).toMatchObject({status:'revoked',version:2});
+  expect(await alice.revokeInvitation(created.id,invite.id,request)).toMatchObject({status:'revoked',version:2});
+  expect((await bob.listInvitations()).items[0]).toMatchObject({status:'revoked'});
+  await expect(bob.respondInvitation(invite.id,mutation({status:'accepted'}))).rejects.toMatchObject({status:409});
+});
+
 it('lets leaders and managers provision calendars while assigned members remain read-only', async () => {
   const created = await alice.createTeam(mutation({ name:'Ward A', timezone:'Asia/Kuala_Lumpur' }));
   await env.DB.prepare(`INSERT INTO memberships(team_id,user_sub,role,joined_at) VALUES(?,?,'member',?)`).bind(created.id,'bob',new Date().toISOString()).run();
