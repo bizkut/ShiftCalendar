@@ -35,7 +35,7 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; both pilot logins, private persistence and cross-user denial passed.
-A tested write-path optimization is deployed. Live sampling still exceeds the cold CPU gate; team expansion remains paused.
+A tested write-path optimization is deployed. The latest complete sample measured cold writes at 7–22 ms and warm writes at 1–3 ms. The cold CPU gate still fails; team expansion remains paused.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
