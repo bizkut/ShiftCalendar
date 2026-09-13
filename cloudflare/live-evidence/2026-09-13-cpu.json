@@ -202,5 +202,161 @@
     "path": "/v1/calendars/REDACTED/days/2026-09-15",
     "method": "PATCH",
     "cold": true
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 7,
+    "wallTime": 1622,
+    "eventTimestamp": 1789313913554,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/session",
+    "method": "GET",
+    "cold": true
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 2,
+    "wallTime": 128,
+    "eventTimestamp": 1789313983818,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/session",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 1,
+    "wallTime": 24,
+    "eventTimestamp": 1789314059244,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 9,
+    "wallTime": 843,
+    "eventTimestamp": 1789314059838,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/session",
+    "method": "GET",
+    "cold": true
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 4,
+    "wallTime": 206,
+    "eventTimestamp": 1789314060763,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/bootstrap",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 4,
+    "wallTime": 217,
+    "eventTimestamp": 1789314061018,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/shift-types",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 5,
+    "wallTime": 313,
+    "eventTimestamp": 1789314061021,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/days",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 3,
+    "wallTime": 304,
+    "eventTimestamp": 1789314061031,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/private-details",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 2,
+    "wallTime": 112,
+    "eventTimestamp": 1789314074299,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/session",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 2,
+    "wallTime": 196,
+    "eventTimestamp": 1789314074448,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/bootstrap",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 3,
+    "wallTime": 306,
+    "eventTimestamp": 1789314074911,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/private-details",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 3,
+    "wallTime": 303,
+    "eventTimestamp": 1789314074912,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/shift-types",
+    "method": "GET",
+    "cold": false
+  },
+  {
+    "outcome": "ok",
+    "cpuTime": 2,
+    "wallTime": 304,
+    "eventTimestamp": 1789314074909,
+    "scriptVersion": {
+      "id": "e19c4acb-2cf0-452f-a6e9-e3475652f75b"
+    },
+    "path": "/v1/calendars/REDACTED/days",
+    "method": "GET",
+    "cold": false
   }
 ]

@@ -37,8 +37,8 @@ Start on a generated `workers.dev` address; `shifts.amazonian.my` comes later.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
-A local Cloudflare private-calendar slice is implemented; live deployment and full
-team features remain pending. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+The two-user Cloudflare private-calendar pilot is deployed and verified. Full
+team features remain pending, and cold-write CPU headroom needs improvement before expansion. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
@@ -167,5 +167,5 @@ MIT
 Made by **Troy**
 
 Cloudflare pilot: https://shiftcalendar.bizkut-limau.workers.dev (Access-protected,
-approved pilot emails only). Hosted acceptance is in progress; this is not a
+approved pilot emails only). Two-user login, private persistence and isolation are verified; this is not a
 team-ready release. See [live evidence and remaining checks](CLOUDFLARE.md).

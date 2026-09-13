@@ -80,7 +80,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 0 — M0: migration readiness | Confirm Free services, inventory and migration boundaries | Next planning/deployment prerequisite |
 | Phase 1 — M1: web foundation | Existing calendar works in browsers and keeps native local storage | Historically verified; recheck after porting |
 | Phase 1 — M2a: local Cloudflare slice | Authenticated private-calendar API and web integration pass locally | M0, M1; validate reused implementation |
-| Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | M2a; next live acceptance slice |
+| Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | Verified two-user pilot; CPU gate before expansion |
 | Phase 2 — M3: teams and access | Administrator manages teams and current permissions | M2b |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | M3 |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
@@ -120,15 +120,17 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 ### Phase 1 — M2b: two-user hosted pilot
 
-- [ ] Create or reuse the dedicated ShiftCalendar D1 database after inventory; apply reviewed migrations without touching unrelated databases.
-- [ ] Stage the Worker with public routes disabled. Configure Access for this Worker and the two approved identities; set the actual issuer, audience and app origin before enabling `workers.dev`.
-- [ ] Bootstrap the first application administrator through a controlled command. Do not grant administrator rights to every allowed email.
-- [ ] Complete real one-time PIN login for both users, denied-email testing, session expiry and logout. Check JWT forwarding in the deployed Static Assets configuration.
-- [ ] Save a private shift, reopen it from a second browser using the same identity, then prove the second identity cannot read or mutate it by guessing its IDs.
-- [ ] Verify protected deep links, missing assets, private cache headers and all alternate URLs.
-- [ ] Measure live CPU, requests, D1 rows and SQL statements for representative reads/writes, including authentication overhead. Record quota headroom and deployment/version identifiers.
+- [x] Create or reuse the dedicated ShiftCalendar D1 database after inventory; apply reviewed migrations without touching unrelated databases.
+- [x] Stage the Worker with public routes disabled. Configure Access for this Worker and the two approved identities; set the actual issuer, audience and app origin before enabling `workers.dev`.
+- [x] Bootstrap the first application administrator through a controlled command. Do not grant administrator rights to every allowed email.
+- [x] Complete real one-time PIN login for both users, denied-email testing, session expiry and logout. Check JWT forwarding in the deployed Static Assets configuration.
+- [x] Save a private shift, reopen it from a second browser using the same identity, then prove the second identity cannot read or mutate it by guessing its IDs.
+- [x] Verify protected deep links, missing assets, private cache headers and all alternate URLs.
+- [x] Measure live CPU, requests, D1 rows and SQL statements for representative reads/writes, including authentication overhead. Record quota headroom and deployment/version identifiers.
 
 **Exit evidence:** actual HTTPS address, two-user privacy evidence, persistence/logout results and live usage metrics. Local tests alone cannot complete this milestone. Pause team expansion if CPU, identity or privacy checks fail.
+
+**Verified 2026-09-13:** two real PIN identities, private persistence/isolation, logout/expiry/SSO renewal and live measurements are recorded in [CLOUDFLARE.md](CLOUDFLARE.md). Independent-browser persistence was user-confirmed. Cold writes reached 11 ms CPU despite succeeding; keep team expansion paused pending improved CPU headroom.
 
 ### Phase 2 — M3: teams and access
 
@@ -192,11 +194,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2b is in progress. Dedicated D1 migration, protected workers.dev publication,
-first-user real PIN login, single-shift save/reload, logout and unauthenticated
-edge-protection checks are verified. Cross-user privacy, independent-browser persistence (user-confirmed),
-administrator bootstrap and live usage measurements are now recorded. Expiry
-and disallowed-email acceptance remain open. Cold writes reached 11 ms CPU;
-keep team expansion paused until CPU headroom is improved.
-[CLOUDFLARE.md](CLOUDFLARE.md) records the authoritative resource IDs, versions
-and evidence; no milestone is complete solely because deployment succeeded.
+M2b is verified for the two-user private browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for live identity/persistence/privacy/expiry evidence, resource/version records, commands and measurement limits. Independent-browser persistence is user-confirmed. Cold-write CPU headroom remains insufficient for confident team expansion; optimize and remeasure before M3 rollout. Full personal features, team workflows, recovery drills and native release checks remain later work.
