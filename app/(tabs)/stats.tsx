@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,13 +11,18 @@ import { MonthHeader } from '../../components/MonthHeader';
 import { CalendarSwitcher } from '../../components/CalendarSwitcher';
 import { YearlyOverview } from '../../components/YearlyOverview';
 
+import { useAuth } from '../../hooks/AuthContext';
+
 export default function StatsScreen() {
+  const { cloudMode } = useAuth();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isLandscape = screenWidth > screenHeight;
   const { colors, baseRate, overtimeRate, currencyCode } = useAppSettings();
   const currSymbol = getCurrencySymbol(currencyCode);
-  const { shiftData, overtimeData, allShifts, leaveData, leaveBalances, leaveTypes, calendars, activeCalendar, switchCalendar } = useShifts();
+  const { shiftData, overtimeData, allShifts, leaveData, leaveBalances, leaveTypes, calendars, activeCalendar, switchCalendar, cloud } = useShifts();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const setVisibleMonth = cloud?.setVisibleMonth;
+  useEffect(() => { setVisibleMonth?.(currentMonth); }, [currentMonth, setVisibleMonth]);
 
   const monthKey = format(currentMonth, 'yyyy-MM');
 
@@ -125,7 +130,7 @@ export default function StatsScreen() {
             </View>
 
             {/* Pay Estimate */}
-            {(baseRate > 0 || overtimeRate > 0) && (
+            {!cloudMode && (baseRate > 0 || overtimeRate > 0) && (
               <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }, isLandscape && styles.landscapeHalf]}>
                 <View style={styles.payHeader}>
                   <Text style={[styles.summaryTitle, { color: colors.text }]}>Pay Estimate</Text>
@@ -286,7 +291,7 @@ export default function StatsScreen() {
         )}
 
         {/* Yearly Overview - always visible */}
-        <View style={{ marginTop: 14 }}>
+        {!cloudMode && <View style={{ marginTop: 14 }}>
           <YearlyOverview
             year={currentMonth.getFullYear()}
             selectedMonth={currentMonth.getMonth()}
@@ -295,7 +300,7 @@ export default function StatsScreen() {
             onMonthPress={handleYearMonthPress}
             colors={colors}
           />
-        </View>
+        </View>}
       </ScrollView>
     </SafeAreaView>
   );

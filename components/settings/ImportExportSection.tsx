@@ -140,7 +140,7 @@ export function ImportExportSection({
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>BACKUP & RESTORE</Text>
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.hint, { color: colors.textSecondary, marginBottom: 12 }]}>
-          Full backup includes all calendars, shifts, notes, and settings. You can also open backup files directly from your file manager to restore.
+          This device backup includes local calendars, shifts, notes, and settings. Login sessions and cloud calendars are excluded.
         </Text>
         <View style={styles.exportRow}>
           <TouchableOpacity

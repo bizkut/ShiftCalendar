@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Private Malaysia deployment artifacts for ShiftCalendar
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@2
+Rules:
+  MalaysiaOnly:
+    Assertions:
+      - Assert: !Equals [!Ref 'AWS::Region', ap-southeast-5]
+        AssertDescription: Deploy this project only in Malaysia.
+Resources:
+  Artifacts:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Versioned Lambda bundles and packaged CloudFormation templates for deployment and rollback.
+        must: [Keep private, Use Malaysia, Retain deployed artifacts]
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules: [{ObjectOwnership: BucketOwnerEnforced}]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      VersioningConfiguration: {Status: Enabled}
+      LifecycleConfiguration:
+        Rules:
+          - Id: RemoveOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration: {NoncurrentDays: 30}
+            AbortIncompleteMultipartUpload: {DaysAfterInitiation: 1}
+  ArtifactsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Artifacts
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: RequireTLS
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource: [!GetAtt Artifacts.Arn, !Sub '${Artifacts.Arn}/*']
+            Condition:
+              Bool: {aws:SecureTransport: 'false'}
+Outputs:
+  ArtifactBucket:
+    Value: !Ref Artifacts

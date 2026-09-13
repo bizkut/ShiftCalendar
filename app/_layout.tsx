@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Platform, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -10,14 +10,18 @@ import { ShiftProvider, useShifts } from '../hooks/ShiftContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Onboarding } from '../components/Onboarding';
 import { useDeepLinkHandler } from '../hooks/useDeepLinkHandler';
+import { AuthProvider, useAuth } from '../hooks/AuthContext';
+import { CloudStatus } from '../components/CloudStatus';
 
 SplashScreen.preventAutoHideAsync();
 
 function InnerLayout() {
+  const auth = useAuth();
+  const segments = useSegments();
   const { isDark, colors, onboardingComplete, completeOnboarding } = useAppSettings();
   const { loading, allShifts, setShiftsBulk, setNote, setOvertime } = useShifts();
 
-  useDeepLinkHandler({ loading, allShifts, setShiftsBulk, setNote, setOvertime });
+  useDeepLinkHandler({ loading: loading || auth.cloudMode, allShifts, setShiftsBulk, setNote, setOvertime });
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -38,7 +42,9 @@ function InnerLayout() {
     }
   }, [loading]);
 
-  if (loading) {
+  const inAuthRoute = segments[0] === '(auth)';
+
+  if ((loading || auth.loading) && !inAuthRoute) {
     return (
       <View style={[splashStyles.container, { backgroundColor: colors.background }]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -51,7 +57,11 @@ function InnerLayout() {
     );
   }
 
-  if (!onboardingComplete) {
+  if (auth.configured && auth.cloudMode && !auth.user && !inAuthRoute) {
+    return <Redirect href="/login" />;
+  }
+
+  if (!onboardingComplete && !inAuthRoute) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -63,8 +73,10 @@ function InnerLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {!inAuthRoute && <CloudStatus />}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
       </Stack>
     </GestureHandlerRootView>
   );
@@ -101,11 +113,13 @@ const splashStyles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <ShiftProvider>
-          <InnerLayout />
-        </ShiftProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ShiftProvider>
+            <InnerLayout />
+          </ShiftProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

@@ -2,20 +2,23 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Linking, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Linking } from 'react-native';
+import { Alert } from '../../utils/platformAlert';
+import { resetLocalData } from '../../utils/exportImport';
 import * as Haptics from 'expo-haptics';
 
 type Props = {
+  cloudMode?: boolean;
   colors: any;
   showPrivacy: boolean;
   setShowPrivacy: (v: boolean) => void;
 };
 
-export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
+export function AboutSection({ colors, showPrivacy, setShowPrivacy, cloudMode = false }: Props) {
   return (
     <>
       {/* Data Management */}
+      {!cloudMode && <>
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DATA</Text>
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
@@ -31,7 +34,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
                   style: 'destructive',
                   onPress: async () => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                    await AsyncStorage.clear();
+                    await resetLocalData();
                     Alert.alert('Done', 'All data has been reset. Please restart the app.');
                   },
                 },
@@ -45,6 +48,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
           <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
+      </>}
 
       {/* Support */}
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SUPPORT</Text>
@@ -109,7 +113,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
           </View>
           <ScrollView contentContainerStyle={styles.privacyContent} showsVerticalScrollIndicator={false}>
             <Text style={[styles.privacyUpdated, { color: colors.textSecondary }]}>
-              Last updated: March 2026
+              Last updated: September 2026
             </Text>
 
             <Text style={[styles.privacyBody, { color: colors.text }]}>
@@ -118,17 +122,17 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Data Storage</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              All your data — including shifts, notes, overtime records, calendars, and settings — is stored locally on your device using secure on-device storage. No data is transmitted to external servers.
+              Local-only calendars and preferences stay in application storage on your device. In cloud mode, login information is handled by Amazon Cognito and calendars, private details, and team memberships are stored in AWS in Malaysia. Cognito verification email may be processed through other AWS Regions.
             </Text>
 
-            <Text style={[styles.privacySectionTitle, { color: colors.text }]}>No Account Required</Text>
+            <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Login and Sharing</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              ShiftCalendar does not require you to create an account, sign in, or provide any personal information to use the app.
+              Local mode does not need a login. Cloud calendars require sign-in. Personal calendars stay private; a team schedule is visible to its current team members. Personal notes, overtime details, and leave balances are excluded from team rosters.
             </Text>
 
-            <Text style={[styles.privacySectionTitle, { color: colors.text }]}>No Data Collection</Text>
+            <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Operational Data</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              We do not collect, store, or share any personal data, analytics, usage statistics, or telemetry. The app operates entirely offline.
+              Cloud operations record identifiers and update times needed to save changes and enforce permissions. Short-lived operational logs help diagnose errors. The app does not include advertising or analytics tracking.
             </Text>
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Notifications</Text>
@@ -143,7 +147,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy }: Props) {
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Third-Party Services</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              ShiftCalendar does not integrate with any third-party analytics, advertising, or tracking services.
+              Cloud mode uses AWS for authentication, hosting, and storage. Files you export or invitation links you share are under your control. Removing a team member prevents future server access but cannot erase copies they previously downloaded.
             </Text>
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Children's Privacy</Text>

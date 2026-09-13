@@ -62,6 +62,7 @@ export default function CalendarScreen() {
     calendars,
     activeCalendar,
     switchCalendar,
+    cloud,
   } = useShifts();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -83,6 +84,10 @@ export default function CalendarScreen() {
   const monthKey = format(currentMonth, 'yyyy-MM');
   const [todayStr, setTodayStr] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const isCurrentMonth = isSameMonth(currentMonth, new Date());
+
+  useEffect(() => {
+    cloud?.setVisibleMonth(currentMonth);
+  }, [cloud?.setVisibleMonth, monthKey]);
 
   // Refresh todayStr across midnight
   useEffect(() => {

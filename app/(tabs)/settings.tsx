@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,8 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppSettings } from '../../hooks/ThemeContext';
 import { useShifts } from '../../hooks/ShiftContext';
+import { useAuth } from '../../hooks/AuthContext';
+import { Alert } from '../../utils/platformAlert';
 import { ShiftType, AVAILABLE_COLORS } from '../../constants/shifts';
 import { ThemeMode } from '../../hooks/useTheme';
 import { ShiftEditor } from '../../components/ShiftEditor';
@@ -29,6 +31,7 @@ import { ShiftsSection } from '../../components/settings/ShiftsSection';
 import { AboutSection } from '../../components/settings/AboutSection';
 
 export default function SettingsScreen() {
+  const { cloudMode } = useAuth();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isLandscape = screenWidth > screenHeight;
   const {
@@ -94,13 +97,14 @@ export default function SettingsScreen() {
   }, [overtimeRate]);
 
   useEffect(() => {
+    if (cloudMode || Platform.OS === 'web') return;
     if (notificationsEnabled) {
       scheduleShiftReminder(shiftData, allShifts, notificationHour).catch(console.error);
     }
     if (preShiftAlarm) {
       schedulePreShiftAlarms(shiftData, allShifts).catch(console.error);
     }
-  }, [notificationsEnabled, shiftData, allShifts, notificationHour, preShiftAlarm]);
+  }, [cloudMode, notificationsEnabled, shiftData, allShifts, notificationHour, preShiftAlarm]);
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value) {
@@ -332,7 +336,7 @@ export default function SettingsScreen() {
           setLeaveBalance={setLeaveBalance}
         />
 
-        <PayEarningsSection
+        {!cloudMode && <PayEarningsSection
           colors={colors}
           currencyCode={currencyCode}
           setCurrencyCode={setCurrencyCode}
@@ -344,9 +348,9 @@ export default function SettingsScreen() {
           otRateText={otRateText}
           setOtRateText={setOtRateText}
           setOvertimeRate={setOvertimeRate}
-        />
+        />}
 
-        <NotificationsSection
+        {!cloudMode && Platform.OS !== 'web' && <NotificationsSection
           colors={colors}
           notificationsEnabled={notificationsEnabled}
           onToggleNotifications={handleToggleNotifications}
@@ -357,7 +361,7 @@ export default function SettingsScreen() {
           shiftData={shiftData}
           allShifts={allShifts}
           notifHours={notifHours}
-        />
+        />}
 
         <AppearanceSection
           colors={colors}
@@ -368,7 +372,7 @@ export default function SettingsScreen() {
           themeModes={themeModes}
         />
 
-        <ImportExportSection
+        {!cloudMode && <ImportExportSection
           colors={colors}
           activeCalendarName={activeCalendar.name}
           exportBusy={exportBusy}
@@ -383,9 +387,14 @@ export default function SettingsScreen() {
           onImportCSV={handleImportCSV}
           onBackup={handleBackup}
           onRestore={handleRestore}
-        />
+        />}
+
+        {cloudMode && <Text style={{ color: colors.textSecondary, marginVertical: 16 }}>
+          Cloud calendars save online. Pay estimates, file import/export, backups, and reminders are available only in local mode during this pilot.
+        </Text>}
 
         <AboutSection
+          cloudMode={cloudMode}
           colors={colors}
           showPrivacy={showPrivacy}
           setShowPrivacy={setShowPrivacy}

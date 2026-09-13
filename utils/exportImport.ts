@@ -1,13 +1,5 @@
-import { File, Paths } from 'expo-file-system';
-import {
-  readAsStringAsync,
-  writeAsStringAsync,
-  EncodingType,
-  StorageAccessFramework,
-} from 'expo-file-system/legacy';
-import { Platform } from 'react-native';
-import * as Sharing from 'expo-sharing';
-import * as Print from 'expo-print';
+import { readTextFile, savePdfFile, saveTextFile } from './platformFiles';
+import { isAllowedLocalKey as isAllowedKey } from './localDataKeys';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format, getDaysInMonth } from 'date-fns';
@@ -16,36 +8,7 @@ import { ShiftType, getShiftHours } from '../constants/shifts';
 
 // ---------- SAVE TO DEVICE HELPER ----------
 
-async function saveToDevice(
-  cacheUri: string,
-  fileName: string,
-  mimeType: string,
-  uti?: string,
-): Promise<void> {
-  if (Platform.OS === 'android') {
-    const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
-    if (!permissions.granted) {
-      // User cancelled the folder picker — fall back to share sheet
-      await Sharing.shareAsync(cacheUri, { mimeType, UTI: uti });
-      return;
-    }
-    const isBinary = mimeType === 'application/pdf';
-    const destUri = await StorageAccessFramework.createFileAsync(
-      permissions.directoryUri,
-      fileName,
-      mimeType,
-    );
-    const content = await readAsStringAsync(cacheUri, {
-      encoding: isBinary ? EncodingType.Base64 : EncodingType.UTF8,
-    });
-    await writeAsStringAsync(destUri, content, {
-      encoding: isBinary ? EncodingType.Base64 : EncodingType.UTF8,
-    });
-  } else {
-    // iOS — share sheet includes "Save to Files"
-    await Sharing.shareAsync(cacheUri, { mimeType, UTI: uti });
-  }
-}
+
 
 // ---------- CSV EXPORT ----------
 
@@ -97,11 +60,7 @@ export async function exportCSV(
   const csv = buildCSVRows(year, month, shiftData, notesData, overtimeData, allShifts);
   const monthLabel = month !== null ? format(new Date(year, month), 'MMM') : 'Year';
   const fileName = `${calendarName.replace(/\s+/g, '_')}_${monthLabel}_${year}.csv`;
-
-  const file = new File(Paths.cache, fileName);
-  file.write(csv);
-
-  await saveToDevice(file.uri, fileName, 'text/csv', 'public.comma-separated-values-text');
+  await saveTextFile(csv, fileName, 'text/csv', 'public.comma-separated-values-text');
 }
 
 // ---------- CSV IMPORT ----------
@@ -118,11 +77,8 @@ export async function importCSV(allShifts: ShiftType[]): Promise<ImportResult | 
     type: ['text/csv', 'text/comma-separated-values', 'text/plain', 'application/octet-stream'],
     copyToCacheDirectory: true,
   });
-
   if (result.canceled || !result.assets?.length) return null;
-
-  const pickedFile = new File(result.assets[0].uri);
-  const content = await pickedFile.text();
+  const content = await readTextFile(result.assets[0]);
   return parseCSVContent(content, allShifts);
 }
 
@@ -399,29 +355,26 @@ export async function exportPDF(
   calendarName: string,
 ) {
   const html = buildPDFHtml(year, month, shiftData, notesData, overtimeData, allShifts, calendarName);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
   const monthLabel = month !== null ? format(new Date(year, month), 'MMM') : 'Year';
   const fileName = `${calendarName.replace(/\s+/g, '_')}_${monthLabel}_${year}.pdf`;
-  const srcFile = new File(uri);
-  const destFile = new File(Paths.cache, fileName);
-  srcFile.move(destFile);
-  await saveToDevice(destFile.uri, fileName, 'application/pdf', 'com.adobe.pdf');
+  await savePdfFile(html, fileName);
 }
 
 // ---------- FULL BACKUP ----------
 
 export async function backupAll() {
-  const keys = await AsyncStorage.getAllKeys();
+  const keys = (await AsyncStorage.getAllKeys()).filter(isAllowedKey);
   const pairs = await AsyncStorage.multiGet(keys);
   const data: Record<string, string | null> = {};
-  pairs.forEach(([key, value]) => {
-    data[key] = value;
-  });
+  pairs.forEach(([key, value]) => { data[key] = value; });
   const json = JSON.stringify({ version: 2, timestamp: new Date().toISOString(), data }, null, 2);
   const fileName = `ShiftCalendar_Backup_${format(new Date(), 'yyyy-MM-dd')}.json`;
-  const file = new File(Paths.cache, fileName);
-  file.write(json);
-  await saveToDevice(file.uri, fileName, 'application/json', 'public.json');
+  await saveTextFile(json, fileName, 'application/json', 'public.json');
+}
+
+export async function resetLocalData(): Promise<void> {
+  const keys = (await AsyncStorage.getAllKeys()).filter(isAllowedKey);
+  await AsyncStorage.multiRemove(keys);
 }
 
 export interface RestoreResult {
@@ -433,24 +386,9 @@ export async function restoreBackup(): Promise<RestoreResult | null> {
     type: ['application/json', 'text/plain', 'application/octet-stream'],
     copyToCacheDirectory: true,
   });
-
   if (result.canceled || !result.assets?.length) return null;
-
-  const pickedFile = new File(result.assets[0].uri);
-  const content = await pickedFile.text();
+  const content = await readTextFile(result.assets[0]);
   return restoreBackupFromContent(content);
-}
-
-const ALLOWED_KEY_PREFIXES = [
-  'shift_data_', 'shift_notes_', 'shift_overtime_', 'shift_swaps_',
-  'leave_data_', 'leave_balances_', 'calendars_list', 'active_calendar',
-  'all_shifts_v2', 'custom_shifts', 'theme_mode', 'week_start',
-  'base_rate', 'overtime_rate', 'notif_enabled', 'notif_hour',
-  'currency_code', 'onboarding_complete',
-];
-
-function isAllowedKey(key: string): boolean {
-  return ALLOWED_KEY_PREFIXES.some((p) => key === p || key.startsWith(p));
 }
 
 /** Restore from a JSON backup string. Usable from both file-picker and deep-link flows. */

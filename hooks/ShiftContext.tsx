@@ -2,6 +2,19 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useShiftData, ShiftData, NotesData, OvertimeData, SwapsData, SwapRequest, LeaveData, LeaveBalances, CalendarInfo } from './useShiftData';
 import { LeaveType } from '../constants/leaveTypes';
 import { ShiftType } from '../constants/shifts';
+import { CloudTeam } from '../shared/cloudTypes';
+import { useAuth } from './AuthContext';
+import { CloudSyncStatus, useCloudShiftData } from './useCloudShiftData';
+
+export interface CloudDataState {
+  enabled: boolean;
+  status: CloudSyncStatus;
+  error: string | null;
+  canEdit: boolean;
+  teams: CloudTeam[];
+  refresh: () => Promise<void>;
+  setVisibleMonth: (month: Date | string) => void;
+}
 
 interface ShiftContextType {
   shiftData: ShiftData;
@@ -39,6 +52,7 @@ interface ShiftContextType {
   addCalendar: (cal: CalendarInfo) => void;
   deleteCalendar: (calId: string) => void;
   renameCalendar: (calId: string, name: string, color: string) => void;
+  cloud?: CloudDataState;
 }
 
 const ShiftContext = createContext<ShiftContextType>({
@@ -77,10 +91,14 @@ const ShiftContext = createContext<ShiftContextType>({
   addCalendar: () => {},
   deleteCalendar: () => {},
   renameCalendar: () => {},
+  cloud: undefined,
 });
 
 export function ShiftProvider({ children }: { children: React.ReactNode }) {
-  const data = useShiftData();
+  const { cloudMode, user } = useAuth();
+  const localData = useShiftData();
+  const cloudData = useCloudShiftData();
+  const data: ShiftContextType = cloudMode && user ? cloudData : { ...localData, cloud: undefined };
   const value = useMemo(() => data, [
     data.shiftData, data.notesData, data.overtimeData, data.swapsData,
     data.leaveData, data.leaveBalances, data.leaveTypes,
@@ -92,6 +110,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     data.getShiftByCode, data.setLeave, data.clearLeave, data.setLeaveBalance,
     data.offerSwap, data.cancelSwap, data.acceptSwap,
     data.switchCalendar, data.addCalendar, data.deleteCalendar, data.renameCalendar,
+    data.cloud,
   ]);
   return <ShiftContext.Provider value={value}>{children}</ShiftContext.Provider>;
 }

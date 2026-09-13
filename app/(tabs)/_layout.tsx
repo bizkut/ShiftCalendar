@@ -2,9 +2,11 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppSettings } from '../../hooks/ThemeContext';
+import { useShifts } from '../../hooks/ShiftContext';
 
 export default function TabLayout() {
   const { colors, isDark } = useAppSettings();
+  const { cloud } = useShifts();
 
   return (
     <Tabs
@@ -44,6 +46,17 @@ export default function TabLayout() {
             <MaterialCommunityIcons name="chart-bar" size={size} color={color} />
           ),
           tabBarAccessibilityLabel: 'Statistics tab',
+        }}
+      />
+      <Tabs.Screen
+        name="teams"
+        options={{
+          title: 'Teams',
+          href: cloud?.enabled ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account-group-outline" size={size} color={color} />
+          ),
+          tabBarAccessibilityLabel: 'Teams tab',
         }}
       />
       <Tabs.Screen

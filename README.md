@@ -1,6 +1,6 @@
 # ShiftCalendar
 
-A modern, offline-first shift scheduling app for shift workers. Track shifts, leave, overtime, and pay on a clean monthly calendar. Built with React Native + Expo.
+A shift scheduling app for shift workers, built with React Native + Expo. Use local-only calendars on a device, or configure the AWS pilot for login, private cloud calendars, and shared team schedules. Cloud saves require connectivity.
 
 [![Download APK](https://img.shields.io/github/v/release/iTroy0/ShiftCalendar?label=Download%20APK&style=for-the-badge)](https://github.com/iTroy0/ShiftCalendar/releases/latest)
 
@@ -26,8 +26,20 @@ A modern, offline-first shift scheduling app for shift workers. Track shifts, le
 - **Export & Import** -- CSV export/import, PDF export, full backup/restore
 - **Notifications** -- Evening reminders for the next day's shift
 - **Configurable** -- Week start day, currency (33 supported), haptic feedback
-- **Offline & Private** -- All data stored locally. No account, no server, no tracking.
+- **Local-only mode** -- Keep calendars on the device without a login. Cloud mode uses Cognito authentication and stores calendars and team memberships in AWS.
 - **Accessible** -- Screen reader labels on all interactive elements
+
+## AWS hosting and teams
+
+The Malaysia pilot uses S3 + CloudFront for the website, Cognito for login,
+API Gateway + Lambda for operations, and DynamoDB for calendars and team roles.
+See [the phased plan](PLAN.md) for component ownership and milestone checks, and
+[deployment instructions](DEPLOYMENT.md) for setup, current costs, validation,
+rollback and remaining release work. No AWS deployment has been performed yet.
+
+The browser supports CSV and JSON file flows and PDF through the browser print
+dialog. Android widgets and native reminders remain device features. Local JSON
+backups exclude sessions and cloud caches; they are not database backups.
 
 ## Screenshots
 
@@ -41,7 +53,7 @@ A modern, offline-first shift scheduling app for shift workers. Track shifts, le
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18+)
+- [Node.js](https://nodejs.org/) (Node 24 LTS recommended)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 
 ### Installation

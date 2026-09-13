@@ -1,0 +1,65 @@
+let buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+rule private_encrypted_buckets when %buckets !empty {
+  %buckets {
+    DeletionPolicy == 'Retain'
+    UpdateReplacePolicy == 'Retain'
+    Properties {
+      PublicAccessBlockConfiguration {
+        BlockPublicAcls == true
+        IgnorePublicAcls == true
+        BlockPublicPolicy == true
+        RestrictPublicBuckets == true
+      }
+      BucketEncryption.ServerSideEncryptionConfiguration[*].ServerSideEncryptionByDefault.SSEAlgorithm == 'AES256'
+      VersioningConfiguration.Status == 'Enabled'
+    }
+  }
+}
+let tables = Resources.*[ Type == 'AWS::DynamoDB::Table' ]
+rule provisioned_retained_data when %tables !empty {
+  %tables {
+    DeletionPolicy == 'Retain'
+    UpdateReplacePolicy == 'Retain'
+    Properties {
+      BillingMode == 'PROVISIONED'
+      TableClass == 'STANDARD'
+      ProvisionedThroughput.ReadCapacityUnits <= 25
+      ProvisionedThroughput.WriteCapacityUnits <= 25
+      GlobalSecondaryIndexes !exists
+      Replicas !exists
+    }
+  }
+}
+let api = Resources.*[ Type == 'AWS::Serverless::HttpApi' ]
+rule authenticated_throttled_api when %api !empty {
+  %api.Properties {
+    Auth.DefaultAuthorizer == 'CognitoJwt'
+    Auth.Authorizers.CognitoJwt.AuthorizationScopes[*] == 'shiftcalendar/access'
+    DefaultRouteSettings.ThrottlingRateLimit <= 5
+    DefaultRouteSettings.ThrottlingBurstLimit <= 10
+    CorsConfiguration.AllowOrigins[*]."Fn::Sub" == 'https://${WebDistribution.DomainName}'
+  }
+}
+let functions = Resources.*[ Type == 'AWS::Serverless::Function' ]
+rule bounded_serverless_compute when %functions !empty {
+  %functions.Properties {
+    VpcConfig !exists
+    ProvisionedConcurrencyConfig !exists
+    ReservedConcurrentExecutions <= 5
+    Timeout <= 15
+    MemorySize <= 256
+  }
+}
+let logs = Resources.*[ Type == 'AWS::Logs::LogGroup' ]
+rule short_log_retention when %logs !empty {
+  %logs.Properties.RetentionInDays <= 7
+}
+let clients = Resources.*[ Type == 'AWS::Cognito::UserPoolClient' ]
+rule public_pkce_clients when %clients !empty {
+  %clients.Properties {
+    GenerateSecret == false
+    AllowedOAuthFlows[*] == 'code'
+    EnableTokenRevocation == true
+    RefreshTokenRotation.Feature == 'ENABLED'
+  }
+}

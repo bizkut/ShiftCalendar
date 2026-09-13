@@ -1,0 +1,378 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ShiftCalendar serverless pilot in Malaysia
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@2
+  com.aws.cloudformation.Context:
+    why: Host private calendars and isolated teams with usage-based services and local builds.
+    must:
+      - All Regional resources stay in ap-southeast-5.
+      - No EC2, VPC, NAT, provisioned concurrency, or cross-Region replication.
+      - Retain user data and require JWT authorization.
+Rules:
+  MalaysiaOnly:
+    Assertions:
+      - Assert: !Equals [!Ref 'AWS::Region', ap-southeast-5]
+        AssertDescription: Deploy this project only in Malaysia.
+Resources:
+  WebBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Private storage for the Expo web build; CloudFront is the only public entry.
+        must: [Block public access, Encrypt objects, Retain for recovery]
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules: [{ObjectOwnership: BucketOwnerEnforced}]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      VersioningConfiguration: {Status: Enabled}
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldBuildVersions
+            Status: Enabled
+            NoncurrentVersionExpiration: {NoncurrentDays: 30}
+            AbortIncompleteMultipartUpload: {DaysAfterInitiation: 1}
+  OriginAccess:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-web'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  WebHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub '${AWS::StackName}-web'
+        SecurityHeadersConfig:
+          ContentTypeOptions: {Override: true}
+          FrameOptions: {FrameOption: DENY, Override: true}
+          ReferrerPolicy: {ReferrerPolicy: no-referrer, Override: true}
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: false
+            Override: true
+        CustomHeadersConfig:
+          Items:
+            - Header: Permissions-Policy
+              Value: camera=(), microphone=(), geolocation=()
+              Override: true
+  WebCache:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub '${AWS::StackName}-web'
+        DefaultTTL: 60
+        MinTTL: 0
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig: {CookieBehavior: none}
+          HeadersConfig: {HeaderBehavior: none}
+          QueryStringsConfig: {QueryStringBehavior: none}
+  AppRoutes:
+    Type: AWS::CloudFront::Function
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Rewrite application routes to the SPA while missing asset paths keep their error status.
+        must: [Use CloudFront Functions only; Lambda@Edge is excluded]
+    Properties:
+      Name: !Sub '${AWS::StackName}-routes'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: SPA routes only; do not mask missing assets
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          if (request.method !== 'GET' && request.method !== 'HEAD') return request;
+          var uri = request.uri;
+          var last = uri.substring(uri.lastIndexOf('/') + 1);
+          if (uri.indexOf('/_expo/') !== 0 && uri.indexOf('/assets/') !== 0 && last.indexOf('.') === -1) {
+            request.uri = '/index.html';
+          }
+          return request;
+        }
+  WebDistribution:
+    Type: AWS::CloudFront::Distribution
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Global HTTPS delivery from the Malaysia bucket using a default AWS domain.
+        must: [Use standard pay-as-you-go distribution, No Lambda@Edge, No public S3 website]
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_All
+        ViewerCertificate: {CloudFrontDefaultCertificate: true}
+        Origins:
+          - Id: web
+            DomainName: !GetAtt WebBucket.RegionalDomainName
+            OriginAccessControlId: !Ref OriginAccess
+            S3OriginConfig: {OriginAccessIdentity: ''}
+        DefaultCacheBehavior:
+          TargetOriginId: web
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref WebCache
+          ResponseHeadersPolicyId: !Ref WebHeaders
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt AppRoutes.FunctionARN
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CloudFrontRead
+            Effect: Allow
+            Principal: {Service: cloudfront.amazonaws.com}
+            Action: s3:GetObject
+            Resource: !Sub '${WebBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${WebDistribution}'
+          - Sid: RequireTLS
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource: [!GetAtt WebBucket.Arn, !Sub '${WebBucket.Arn}/*']
+            Condition:
+              Bool: {aws:SecureTransport: 'false'}
+  Users:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: One shared application identity pool; teams are memberships in DynamoDB.
+        must: [Essentials managed login, Verified email, No AWS credentials for calendar users]
+    Properties:
+      UserPoolTier: ESSENTIALS
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      UsernameConfiguration: {CaseSensitive: false}
+      MfaConfiguration: 'OFF'
+      AccountRecoverySetting:
+        RecoveryMechanisms: [{Name: verified_email, Priority: 1}]
+      EmailConfiguration: {EmailSendingAccount: COGNITO_DEFAULT}
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          TemporaryPasswordValidityDays: 1
+  LoginDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub '${AWS::StackName}-${AWS::AccountId}'
+      UserPoolId: !Ref Users
+      ManagedLoginVersion: 2
+  ApiScope:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      UserPoolId: !Ref Users
+      Identifier: shiftcalendar
+      Name: ShiftCalendar
+      Scopes:
+        - ScopeName: access
+          ScopeDescription: Access calendars subject to current ownership and membership
+  WebClient:
+    Type: AWS::Cognito::UserPoolClient
+    DependsOn: ApiScope
+    Properties:
+      UserPoolId: !Ref Users
+      GenerateSecret: false
+      SupportedIdentityProviders: [COGNITO]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile, shiftcalendar/access]
+      CallbackURLs: [!Sub 'https://${WebDistribution.DomainName}/callback']
+      LogoutURLs: [!Sub 'https://${WebDistribution.DomainName}/login']
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 30
+      TokenValidityUnits: {AccessToken: minutes, IdToken: minutes, RefreshToken: days}
+      RefreshTokenRotation: {Feature: ENABLED, RetryGracePeriodSeconds: 10}
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH]
+  NativeClient:
+    Type: AWS::Cognito::UserPoolClient
+    DependsOn: ApiScope
+    Properties:
+      UserPoolId: !Ref Users
+      GenerateSecret: false
+      SupportedIdentityProviders: [COGNITO]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile, shiftcalendar/access]
+      CallbackURLs: ['shiftcalendar://callback']
+      LogoutURLs: ['shiftcalendar://login']
+      AccessTokenValidity: 15
+      IdTokenValidity: 15
+      RefreshTokenValidity: 30
+      TokenValidityUnits: {AccessToken: minutes, IdToken: minutes, RefreshToken: days}
+      RefreshTokenRotation: {Feature: ENABLED, RetryGracePeriodSeconds: 10}
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH]
+  WebLoginStyle:
+    Type: AWS::Cognito::ManagedLoginBranding
+    DependsOn: LoginDomain
+    Properties:
+      UserPoolId: !Ref Users
+      ClientId: !Ref WebClient
+      UseCognitoProvidedValues: true
+  NativeLoginStyle:
+    Type: AWS::Cognito::ManagedLoginBranding
+    DependsOn: LoginDomain
+    Properties:
+      UserPoolId: !Ref Users
+      ClientId: !Ref NativeClient
+      UseCognitoProvidedValues: true
+  CalendarTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Bounded calendar-day records and transactional team memberships in one provisioned table.
+        must: [Stay within shared free capacity, No cross-Region replicas, Retain user data]
+    Properties:
+      BillingMode: PROVISIONED
+      ProvisionedThroughput: {ReadCapacityUnits: 25, WriteCapacityUnits: 25}
+      TableClass: STANDARD
+      AttributeDefinitions:
+        - {AttributeName: PK, AttributeType: S}
+        - {AttributeName: SK, AttributeType: S}
+      KeySchema:
+        - {AttributeName: PK, KeyType: HASH}
+        - {AttributeName: SK, KeyType: RANGE}
+      # DynamoDB encrypts all data; false selects the free AWS-owned key.
+      SSESpecification: {SSEEnabled: false}
+      TimeToLiveSpecification: {AttributeName: expiresAt, Enabled: true}
+  ApiLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: {RetentionInDays: 7}
+  FunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: {RetentionInDays: 7}
+  CalendarApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: '$default'
+      CorsConfiguration:
+        AllowOrigins: [!Sub 'https://${WebDistribution.DomainName}']
+        AllowHeaders: [Authorization, Content-Type]
+        AllowMethods: [GET, POST, PATCH, PUT, DELETE, OPTIONS]
+        MaxAge: 600
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: '$request.header.Authorization'
+            AuthorizationScopes: [shiftcalendar/access]
+            JwtConfiguration:
+              issuer: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${Users}'
+              audience: [!Ref WebClient, !Ref NativeClient]
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 5
+        DetailedMetricsEnabled: false
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiLogs.Arn
+        Format: '{"requestId":"$context.requestId","routeKey":"$context.routeKey","status":"$context.status","latency":"$context.responseLatency"}'
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CalendarData
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:Query, dynamodb:PutItem, dynamodb:DeleteItem, dynamodb:ConditionCheckItem]
+                Resource: !GetAtt CalendarTable.Arn
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt FunctionLogs.Arn
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: On-demand application operations with server-side ownership and team role enforcement.
+        must: [No VPC, No provisioned concurrency, No sensitive payload logging]
+    Properties:
+      CodeUri: ../backend/dist/
+      Handler: handler.handler
+      Runtime: nodejs24.x
+      Architectures: [arm64]
+      MemorySize: 256
+      Timeout: 15
+      ReservedConcurrentExecutions: 5
+      Role: !GetAtt ApiRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CalendarTable
+      LoggingConfig:
+        LogGroup: !Ref FunctionLogs
+        LogFormat: JSON
+        ApplicationLogLevel: WARN
+        SystemLogLevel: WARN
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref CalendarApi
+            Path: /v1/{proxy+}
+            Method: ANY
+            PayloadFormatVersion: '2.0'
+Outputs:
+  WebUrl:
+    Value: !Sub 'https://${WebDistribution.DomainName}'
+  WebBucketName:
+    Value: !Ref WebBucket
+  DistributionId:
+    Value: !Ref WebDistribution
+  ApiUrl:
+    Value: !Sub 'https://${CalendarApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
+  UserPoolId:
+    Value: !Ref Users
+  WebClientId:
+    Value: !Ref WebClient
+  NativeClientId:
+    Value: !Ref NativeClient
+  CognitoDomain:
+    Value: !Sub '${LoginDomain}.auth.${AWS::Region}.amazoncognito.com'
+  TableName:
+    Value: !Ref CalendarTable
