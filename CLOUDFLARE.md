@@ -6,7 +6,7 @@ Phase 1 M2b verified on 2026-09-13 in this repository. The earlier plan called t
 
 Custom domain deployed on 2026-09-13. Public DNS resolves it and verified HTTPS reaches Access. The initial NextDNS block cleared on 2026-09-14. Normal DNS/HTTPS smoke, first-user login, persistence, CSRF, foreign-resource denial, deep links and logout now pass. Second-user real-PIN login and reverse privacy checks also passed; the earlier M2b browser evidence below was collected on the former workers.dev address.
 
-This is an Access-protected, two-user private-calendar pilot. Real login, persistence, isolation, logout and expiry checks passed. Full personal features, team administration and broader release readiness remain later milestones. **Keep team expansion paused:** a cold write used 11 ms CPU, above the nominal Free allowance, although it succeeded. No paid plan was enabled.
+This is an Access-protected, two-user private-calendar pilot. Real login, persistence, isolation, logout and expiry checks passed. Full personal features, team administration and broader release readiness remain later milestones. **Keep team expansion paused:** the latest candidate passed the CPU sample, but its first-user login/persistence and reverse-privacy recheck remain pending. Earlier candidates exceeded the CPU gate. No paid plan was enabled.
 
 ## Deployed resources
 
@@ -15,7 +15,7 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a` — response-marked cold sample complete; CPU gate failed |
+| Current version | `fac6525b-82ae-45be-ae9b-9e9eb3e5438e` — RS256 resolver; CPU sample passed, first-user recheck pending |
 | Previous protected version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — same custom-domain origin, safe candidate rollback |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
@@ -202,4 +202,9 @@ A focused resolver now selects and imports only the Cloudflare Access RS256 publ
 
 All 44 Worker/D1 tests and six browser-client tests pass, as do typechecks and the production dry run (28.14 KiB raw / 10.14 KiB gzip). Tests cover rotation/cooldown/expiry, failed fetches, oversized responses, redirects, duplicate IDs, bad key metadata, weak RSA keys, forged signatures and concurrent first requests, alongside existing authorization, revision and CSRF tests. The standalone profiler caught unsupported `redirect: error`; manual redirect handling fixed this before deployment. [Local samples](cloudflare/live-evidence/2026-09-14-rs256-local-profile.json) are inconclusive and do not establish live CPU improvement.
 
-Preflight: scoped OAuth credentials still target the existing project; dashboard showed 2,811/100,000 daily Worker requests and US$0.00 billable usage; D1 still has four databases with ShiftCalendar at 192,512 bytes. No new resources, schema changes or paid services are required. The current deployed response-marker version `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a` is the rollback target with identical origin, audience, Access policy and D1. Live deployment and the full cold/warm acceptance sample remain pending; M2c is incomplete.
+Preflight: scoped OAuth credentials still target the existing project; dashboard showed 2,811/100,000 daily Worker requests and US$0.00 billable usage; D1 still has four databases with ShiftCalendar at 192,512 bytes. No new resources, schema changes or paid services are required. The previous response-marker version `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a` is the rollback target with identical origin, audience, Access policy and D1. Source commit `28bc7ca` was deployed as `af6e915c-bd1b-4f52-9b1e-7de9eeb094e5`; public Access smoke passed. The full cold/warm CPU sample now passes; M2c awaits its final first-user recheck.
+
+
+**RS256 live result:** three identical deployments produced cold writes at **8, 6, 8, 7, 7 and 6 ms** and twenty warm writes at **1–2 ms**, all HTTP 200. The final version is `fac6525b-82ae-45be-ae9b-9e9eb3e5438e`. Every response matched its CF-Ray trace, with response markers identifying new resolvers; no measured write was excluded. [Full CPU evidence](cloudflare/live-evidence/2026-09-14-m2c-rs256-cpu.json), [D1 aggregate](cloudflare/live-evidence/2026-09-14-m2c-rs256-d1.json). The D1 aggregate was collected during the sample, is delayed, and includes earlier candidates; it is not an exact count for this window. Observed cold headroom improves on the 11-ms M2b sample and failed intermediate candidates, but this small sample cannot guarantee future CPU usage.
+
+Second-user session and bounded month reads each used 2 ms CPU. Reload retained Morning, version 113 (previously 87). Foreign calendar/day reads and a valid foreign write returned 403; omitting CSRF also returned 403. Remote D1 confirmed the first user's Morning/version 29 remained unchanged, with matching day audit counts, 144 mutation records including two calendar creations, zero transaction-check residue and a 208,896-byte database. Logout succeeded. Tail capture is stopped. A new first-user PIN was requested for the final reverse-privacy and persistence check; M2c and team expansion remain pending that evidence.

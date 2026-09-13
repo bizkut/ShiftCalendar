@@ -1,0 +1,946 @@
+{
+  "date": "2026-09-14",
+  "sourceCommit": "28bc7ca",
+  "candidate": "RS256-specific Access public-key resolver with unchanged jose JWT verification",
+  "currentVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+  "performanceGatePassed": true,
+  "milestoneComplete": false,
+  "pending": "First-user real login/persistence and reverse privacy on final candidate",
+  "method": "All 26 measured writes retained across three identical deployments. CF-Ray response prefix matched trace. Server-Timing jwks cold marker classified resolver initialization. Third cycle extended to reach twenty warm samples. No discarded samples.",
+  "summary": {
+    "coldCpuMs": [
+      8,
+      6,
+      8,
+      7,
+      7,
+      6
+    ],
+    "warmCpuRangeMs": [
+      1,
+      2
+    ],
+    "writeCount": 26,
+    "http200": 26,
+    "initialVersion": 87,
+    "finalVersion": 113,
+    "reloadPassed": true,
+    "dbVerifiedFirstVersion": 29,
+    "dbVerifiedSecondVersion": 113,
+    "dbAuditCounts": {
+      "createCalendar": 2,
+      "firstDay": 29,
+      "secondDay": 113
+    },
+    "dbMutationCount": 144,
+    "dbTransactionChecks": 0,
+    "dbSizeBytes": 208896,
+    "logoutPassed": true
+  },
+  "writes": [
+    {
+      "startedAt": 1789318220970,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a681a93ee06a-NRT",
+      "version": 88,
+      "cpuTimeMs": 8,
+      "wallTimeMs": 3048,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318224169,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a6957f61fd04-SIN",
+      "version": 89,
+      "cpuTimeMs": 6,
+      "wallTimeMs": 826,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318225065,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a69b1a05fd04-SIN",
+      "version": 90,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 195,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318225331,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a69ccad4fd04-SIN",
+      "version": 91,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 187,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318225574,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a69e4b8efd04-SIN",
+      "version": 92,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 192,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318225841,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a69fec18fd04-SIN",
+      "version": 93,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 199,
+      "workerVersion": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318275085,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a7d3db3ee06a-NRT",
+      "version": 94,
+      "cpuTimeMs": 8,
+      "wallTimeMs": 203,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318275441,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a7d5eace88ff-SIN",
+      "version": 95,
+      "cpuTimeMs": 7,
+      "wallTimeMs": 254,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318275797,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a7d82beb88ff-SIN",
+      "version": 96,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 189,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318276027,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a7d99caf88ff-SIN",
+      "version": 97,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 184,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318276283,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a7db3d9b88ff-SIN",
+      "version": 98,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 187,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318276540,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a7dcdec188ff-SIN",
+      "version": 99,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 190,
+      "workerVersion": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318312120,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a8bb9cdce06a-NRT",
+      "version": 100,
+      "cpuTimeMs": 7,
+      "wallTimeMs": 198,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318312492,
+      "status": 200,
+      "cold": true,
+      "ray": "a3a8a8bd7881fdb0-SIN",
+      "version": 101,
+      "cpuTimeMs": 6,
+      "wallTimeMs": 236,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318312826,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8bf99a3fdb0-SIN",
+      "version": 102,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 191,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318313066,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c11abdfdb0-SIN",
+      "version": 103,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 182,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318313324,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c2abeffdb0-SIN",
+      "version": 104,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 187,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318313553,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c41d4bfdb0-SIN",
+      "version": 105,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 192,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318313812,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c5be51fdb0-SIN",
+      "version": 106,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 189,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318314050,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c73f07fdb0-SIN",
+      "version": 107,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 184,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318314303,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8c8dff7fdb0-SIN",
+      "version": 108,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 193,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318314547,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8ca58c9fdb0-SIN",
+      "version": 109,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 193,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318314815,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8cc0a32fdb0-SIN",
+      "version": 110,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 199,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318315073,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8cd9b09fdb0-SIN",
+      "version": 111,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 186,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318315316,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8cf2bf1fdb0-SIN",
+      "version": 112,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 186,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    },
+    {
+      "startedAt": 1789318315565,
+      "status": 200,
+      "cold": false,
+      "ray": "a3a8a8d0bd34fdb0-SIN",
+      "version": 113,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 195,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+      "outcome": "ok"
+    }
+  ],
+  "checks": [
+    {
+      "cache": "no-store",
+      "path": "/v1/session",
+      "ray": "a3a8a9d7f884e06a-NRT",
+      "status": 200,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 68
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED/days?from=2026-09-01&to=2026-09-30",
+      "ray": "a3a8a9d8cf0cfdcf-SIN",
+      "status": 200,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 275
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED",
+      "ray": "a3a8a9daf837fdcf-SIN",
+      "status": 403,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 188
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED/days?from=2026-09-01&to=2026-09-30",
+      "ray": "a3a8a9dc48f9fdcf-SIN",
+      "status": 403,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 291
+    },
+    {
+      "check": "foreign-write",
+      "ray": "a3a8a9de4a16fdcf-SIN",
+      "status": 403,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 187
+    },
+    {
+      "check": "missing-CSRF",
+      "ray": "a3a8a9dfaadffdcf-SIN",
+      "status": 403,
+      "cpuTimeMs": 0,
+      "wallTimeMs": 0
+    }
+  ],
+  "allCapturedTraces": [
+    {
+      "outcome": "ok",
+      "cpuTime": 8,
+      "wallTime": 3048,
+      "eventTimestamp": 1789318221078,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a681a93ee06a",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 6,
+      "wallTime": 826,
+      "eventTimestamp": 1789318224248,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a6957f61fd04",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 195,
+      "eventTimestamp": 1789318225139,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a69b1a05fd04",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 187,
+      "eventTimestamp": 1789318225412,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a69ccad4fd04",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 192,
+      "eventTimestamp": 1789318225652,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a69e4b8efd04",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 199,
+      "eventTimestamp": 1789318225917,
+      "scriptVersion": {
+        "id": "af6e915c-bd1b-4f52-9b1e-7de9eeb094e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a69fec18fd04",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 8,
+      "wallTime": 203,
+      "eventTimestamp": 1789318275187,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7d3db3ee06a",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 189,
+      "eventTimestamp": 1789318275871,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7d82beb88ff",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 7,
+      "wallTime": 254,
+      "eventTimestamp": 1789318275532,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7d5eace88ff",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 184,
+      "eventTimestamp": 1789318276100,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7d99caf88ff",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 187,
+      "eventTimestamp": 1789318276360,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7db3d9b88ff",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 190,
+      "eventTimestamp": 1789318276620,
+      "scriptVersion": {
+        "id": "c9f2d1e7-01ef-42c3-bf3d-0c5018c005e5"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a7dcdec188ff",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 7,
+      "wallTime": 198,
+      "eventTimestamp": 1789318312259,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8bb9cdce06a",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 6,
+      "wallTime": 236,
+      "eventTimestamp": 1789318312575,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8bd7881fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 191,
+      "eventTimestamp": 1789318312897,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8bf99a3fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 182,
+      "eventTimestamp": 1789318313145,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c11abdfdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 187,
+      "eventTimestamp": 1789318313394,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c2abeffdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 192,
+      "eventTimestamp": 1789318313627,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c41d4bfdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 189,
+      "eventTimestamp": 1789318313888,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c5be51fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 184,
+      "eventTimestamp": 1789318314122,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c73f07fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 193,
+      "eventTimestamp": 1789318314379,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8c8dff7fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 193,
+      "eventTimestamp": 1789318314628,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8ca58c9fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 199,
+      "eventTimestamp": 1789318314892,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8cc0a32fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 186,
+      "eventTimestamp": 1789318315149,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8cd9b09fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 186,
+      "eventTimestamp": 1789318315393,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8cf2bf1fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 195,
+      "eventTimestamp": 1789318315638,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a8d0bd34fdb0",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 68,
+      "eventTimestamp": 1789318357760,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "ray": "a3a8a9d7f884e06a",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 275,
+      "eventTimestamp": 1789318357906,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8a9d8cf0cfdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 188,
+      "eventTimestamp": 1789318358238,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED",
+      "method": "GET",
+      "ray": "a3a8a9daf837fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 291,
+      "eventTimestamp": 1789318358455,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8a9dc48f9fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 187,
+      "eventTimestamp": 1789318358775,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "ray": "a3a8a9de4a16fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 0,
+      "eventTimestamp": 1789318358990,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8a9dfaadffdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 14,
+      "eventTimestamp": 1789318359039,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/",
+      "method": "GET",
+      "ray": "a3a8a9dfeb21fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 89,
+      "eventTimestamp": 1789318359586,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "ray": "a3a8a9e36d48fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 186,
+      "eventTimestamp": 1789318359753,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "ray": "a3a8a9e45de0fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 280,
+      "eventTimestamp": 1789318359968,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8a9e5cebbfdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 285,
+      "eventTimestamp": 1789318359968,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/private-details",
+      "method": "GET",
+      "ray": "a3a8a9e5cebcfdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 285,
+      "eventTimestamp": 1789318359967,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/shift-types",
+      "method": "GET",
+      "ray": "a3a8a9e5cebdfdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 97,
+      "eventTimestamp": 1789318368090,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "ray": "a3a8aa18291ffdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 191,
+      "eventTimestamp": 1789318368231,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "ray": "a3a8aa1969d1fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 198,
+      "eventTimestamp": 1789318368739,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/shift-types",
+      "method": "GET",
+      "ray": "a3a8aa1c9baafdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 278,
+      "eventTimestamp": 1789318368738,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8aa1c9ba9fdcf",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 317,
+      "eventTimestamp": 1789318368742,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/private-details",
+      "method": "GET",
+      "ray": "a3a8aa1c9bb0fdcf",
+      "coldLogMarker": false
+    }
+  ],
+  "preflight": {
+    "workersPlan": "Free",
+    "dailyRequests": 2811,
+    "dailyLimit": 100000,
+    "billableUSD": 0,
+    "d1Databases": 4,
+    "scopedOAuthVerified": true
+  },
+  "caveat": "This sample establishes observed headroom, not guaranteed future CPU. Earlier failed candidate samples remain separate and retained."
+}

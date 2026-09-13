@@ -82,7 +82,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 1 — M1: web foundation | Existing calendar works in browsers and keeps native local storage | Historically verified; recheck after porting |
 | Phase 1 — M2a: local Cloudflare slice | Authenticated private-calendar API and web integration pass locally | M0, M1; validate reused implementation |
 | Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | Verified two-user pilot; CPU gate before expansion |
-| Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | M2b; active |
+| Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | CPU sample passed; final first-user recheck pending |
 | Phase 2 — M3: teams and access | Administrator manages teams and current permissions | M2c |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | M3 |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
@@ -140,11 +140,11 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 **Candidate deployed 2026-09-14:** removed two preliminary D1 reads from normal writes while retaining atomic authorization/revision/mutation guards. All 32 tests and typechecks pass. The full candidate sample contains eight cold writes at 6–13 ms and twenty warm writes at 1–6 ms, all HTTP 200. The CPU gate failed; further profiling/optimization is required. Further minification and transaction-only authorization were tested: the latest sample has six cold writes at 7–12 ms and twenty warm writes at 1–2 ms. Current experimental version: `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a`, replacing console cold markers with response markers. Renewed login enabled the full sample: six cold writes at 7–22 ms and twenty warm writes at 1–3 ms; all 26 saves succeeded. CF-Ray correlation, reload, private-access denial and CSRF checks passed. Removing console instrumentation did not establish cold headroom. All samples are retained; the cold gate still fails. A repeatable local workerd profiler and regression coverage are in the runbook. See the runbook for rollback and measurement protocol.
 
-**Next candidate:** an RS256-specific public-key resolver retains `jose` signature/claim verification and all existing API/D1 controls. Fifty tests, typechecks and the production dry run pass; local profiles remain inconclusive. Live acceptance is still required; see the runbook.
+**Latest result:** the RS256-specific public-key resolver retains `jose` signature/claim verification and all existing API/D1 controls. Fifty tests, typechecks and the production dry run pass. Version `fac6525b-82ae-45be-ae9b-9e9eb3e5438e` passed the complete live CPU sample: six cold writes at 6–8 ms and twenty warm writes at 1–2 ms, all successful, with every sample retained. Second-user reload, session/month reads, foreign-resource denial, CSRF and logout pass. First-user login/persistence and reverse privacy on this exact candidate await its new PIN. M2c remains incomplete until that check passes; earlier failed samples remain historical evidence.
 
-- [ ] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
-- [ ] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.
-- [ ] Record at least five confirmed cold-resolver writes and twenty warm writes, plus session/date-range reads. Retain all samples and measure CPU separately from wall time and D1 usage.
+- [x] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
+- [x] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.
+- [x] Record at least five confirmed cold-resolver writes and twenty warm writes, plus session/date-range reads. Retain all samples and measure CPU separately from wall time and D1 usage.
 - [ ] Recheck real-user persistence and cross-user denial; preserve existing calendars and native local-only behavior.
 
 **Exit evidence:** aim for cold writes at or below 8 ms; every write in the defined live acceptance sample must stay below 10 ms, with no lost/duplicate updates or privacy regression. Record variance without claiming guaranteed future performance. Keep US$0 Free services and pause team expansion until the gate passes.
