@@ -15,12 +15,12 @@ This is an Access-protected two-user pilot. **M2c is complete.** The M3 team-adm
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `256d1577-b915-4930-9fed-5a9b469df760` — M3 candidate with bounded administration pages and read-only steady-state identity admission |
-| Previous protected version | `e1242228-97df-48fa-ab32-425c8d8c6ebf` — M3 invitation-status candidate using the same schema and origin |
+| Current version | `bd159c46-6822-4d72-8cd1-cabdcfce55c2` — M3 candidate with truthful expired status, bounded administration pages and read-only steady-state identity admission |
+| Previous protected version | `256d1577-b915-4930-9fed-5a9b469df760` — M3 candidate before expired-invitation handling |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
 | D1 database | `shiftcalendar`, `79c5678c-e084-49da-bfca-fbfbb5c41fdf` |
-| Applied migrations | `0001_calendar.sql`, `0002_application_administrators.sql`, `0003_team_administration.sql` |
+| Applied migrations | `0001_calendar.sql`, `0002_application_administrators.sql`, `0003_team_administration.sql`, `0004_expired_invitations.sql` |
 | Access application | `7286318b-f239-43e3-a57a-01b5e81034eb`, “ShiftCalendar pilot” |
 | Reusable allow policy | `0d65d035-cd9e-4de1-b297-1623fd35d070`, “ShiftCalendar pilot emails” |
 | Access issuer | `https://bitter-cell-8976.cloudflareaccess.com` |
@@ -219,7 +219,7 @@ All four M2c plan checks are complete: profiling and focused optimization; secur
 
 ## M3 candidate — team administration and permissions
 
-Migration `0003_team_administration.sql` adds user identity/status revisions, team metadata, membership revisions, targeted invitation status and an active team-calendar-per-assignee index. It is additive: rolling back Worker code leaves the new columns/table unused and preserves calendars. Do not reverse it by dropping columns in production. Use D1 Time Travel for data recovery; use Worker version rollback for code recovery.
+Migration `0003_team_administration.sql` adds user identity/status revisions, team metadata, membership revisions, targeted invitation status and an active team-calendar-per-assignee index. Migration `0004_expired_invitations.sql` replaces only the pending-invitation uniqueness index so expired history stays truthful and does not block a replacement; an atomic mutation guard retains current-pending uniqueness. Rolling back Worker code leaves the new columns/table unused and preserves calendars. Do not reverse it by dropping columns in production. Use D1 Time Travel for data recovery; use Worker version rollback for code recovery.
 
 Access admission, application activation and team membership are separate. A verified Access JWT provisions only its own subject/email. Invitations target an existing verified subject through its normalized email and do not send email or modify the Access allow policy. Application administrators create teams and activate/deactivate users. A team's internal `owner` is displayed as team leader; the leader manages invitations/memberships and can transfer leadership. Team leaders and managers create/edit team calendars. Members and viewers remain read-only even for a calendar assigned to them, while private calendars stay owner-only. Every administration mutation has an atomic current-permission/version guard, stable mutation ID and audit record. Concurrent application-admin changes must preserve at least one active administrator.
 

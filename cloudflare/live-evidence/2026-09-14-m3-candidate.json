@@ -2,10 +2,10 @@
   "capturedAt": "2026-09-14T01:35:00+08:00",
   "milestone": "M3",
   "status": "hosted acceptance in progress",
-  "sourceCommits": ["e0edf10", "338462f", "eca7925"],
+  "sourceCommits": ["e0edf10", "338462f", "eca7925", "222eab1"],
   "worker": {
     "name": "shiftcalendar",
-    "version": "256d1577-b915-4930-9fed-5a9b469df760",
+    "version": "bd159c46-6822-4d72-8cd1-cabdcfce55c2",
     "hostname": "shifts.amazonian.my",
     "workersDev": false,
     "previewUrls": false,
@@ -14,9 +14,9 @@
   "database": {
     "name": "shiftcalendar",
     "id": "79c5678c-e084-49da-bfca-fbfbb5c41fdf",
-    "migration": "0003_team_administration.sql",
-    "migrationCommands": 17,
-    "migrationExecutionMs": 5.13,
+    "migrations": ["0003_team_administration.sql", "0004_expired_invitations.sql"],
+    "migrationCommands": 20,
+    "migrationExecutionMs": 5.75,
     "sizeBytesAfterMigration": 245760,
     "servedRegion": "APAC",
     "servedColo": "HKG"
@@ -31,7 +31,7 @@
     "aggregateWarning": "The dashboard range includes earlier M2c and M3 versions; it is not the operation-specific M3 gate."
   },
   "localValidation": {
-    "workerAndD1Tests": 62,
+    "workerAndD1Tests": 63,
     "browserClientTests": 6,
     "typechecks": "passed",
     "webExport": "passed",
