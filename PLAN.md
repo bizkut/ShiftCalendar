@@ -43,7 +43,7 @@ Check off a milestone only when its implementation and exit checks pass.
 
 ## Current goal slice — M1b: Deploy and verify the CloudFront pilot
 
-**Status: active; local preparation complete, pilot-cost decision pending.**
+**Status: blocked on the user's pilot-cost decision; local preparation complete.**
 
 **Outcome:** a live `https://<distribution>.cloudfront.net` address serving the
 calendar, with working Cognito login and a protected Malaysia API. Use the
@@ -77,6 +77,9 @@ and still returned “Missing data”; Free/Paid status remains unverified. The
 read-only smoke checker is prepared and its nine script tests (three existing
 pilot tests plus six checker tests) pass. No live smoke checks or provisioning
 have run; the nonzero-cost decision remains pending.
+The final read-only deployment check found no `shiftcalendar` stack in Malaysia
+and no local stack outputs. Resume provisioning after the cost decision; then
+verify project billing eligibility and run the prepared deployment/live checks.
 
 ## Completed slice — M1a: Pilot readiness on the AWS address
 
