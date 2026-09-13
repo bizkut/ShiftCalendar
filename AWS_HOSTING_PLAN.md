@@ -81,7 +81,8 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 1 — M1: web foundation | Existing calendar works in browsers and keeps native local storage | Historically verified; recheck after porting |
 | Phase 1 — M2a: local Cloudflare slice | Authenticated private-calendar API and web integration pass locally | M0, M1; validate reused implementation |
 | Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | Verified two-user pilot; CPU gate before expansion |
-| Phase 2 — M3: teams and access | Administrator manages teams and current permissions | M2b |
+| Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | M2b; active |
+| Phase 2 — M3: teams and access | Administrator manages teams and current permissions | M2c |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | M3 |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | M4, M5 |
@@ -131,6 +132,15 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 **Exit evidence:** actual HTTPS address, two-user privacy evidence, persistence/logout results and live usage metrics. Local tests alone cannot complete this milestone. Pause team expansion if CPU, identity or privacy checks fail.
 
 **Verified 2026-09-13:** two real PIN identities, private persistence/isolation, logout/expiry/SSO renewal and live measurements are recorded in [CLOUDFLARE.md](CLOUDFLARE.md). Independent-browser persistence was user-confirmed. Cold writes reached 11 ms CPU despite succeeding; keep team expansion paused pending improved CPU headroom.
+
+### Phase 1 — M2c: CPU headroom
+
+- [ ] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
+- [ ] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.
+- [ ] Record at least five confirmed cold-resolver writes and twenty warm writes, plus session/date-range reads. Retain all samples and measure CPU separately from wall time and D1 usage.
+- [ ] Recheck real-user persistence and cross-user denial; preserve existing calendars and native local-only behavior.
+
+**Exit evidence:** aim for cold writes at or below 8 ms; every write in the defined live acceptance sample must stay below 10 ms, with no lost/duplicate updates or privacy regression. Record variance without claiming guaranteed future performance. Keep US$0 Free services and pause team expansion until the gate passes.
 
 ### Phase 2 — M3: teams and access
 
