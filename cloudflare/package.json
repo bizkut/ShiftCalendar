@@ -1,0 +1,23 @@
+{
+  "name": "shiftcalendar-cloudflare",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "types": "wrangler types --strict-vars false",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test/tsconfig.json && tsc --noEmit -p browser-test/tsconfig.json",
+    "test": "vitest run && vitest run --config vitest.browser-client.config.ts",
+    "migrate:local": "wrangler d1 migrations apply shiftcalendar-local --local",
+    "dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "jose": "6.2.12"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.1.8",
+    "typescript": "5.9.2",
+    "vitest": "4.1.11",
+    "wrangler": "4.131.1"
+  }
+}

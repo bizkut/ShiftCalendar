@@ -10,6 +10,11 @@
     "typecheck": "tsc --noEmit",
     "test:pilot": "node --test scripts/pilot.test.mjs scripts/smoke-aws.test.mjs scripts/cloudfront-plan.test.mjs",
     "build:web": "expo export --platform web",
+    "cf:build": "node scripts/build-cloudflare.mjs",
+    "cf:test": "npm --prefix cloudflare test",
+    "cf:typecheck": "npm --prefix cloudflare run typecheck",
+    "cf:dev": "npm --prefix cloudflare run dev",
+    "cf:prepare": "npm run cf:build && npm --prefix cloudflare run dry-run",
     "aws:prepare": "node scripts/deploy-aws.mjs prepare",
     "aws:deploy": "node scripts/deploy-aws.mjs deploy",
     "aws:smoke": "node scripts/smoke-aws.mjs"

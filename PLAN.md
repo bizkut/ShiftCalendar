@@ -1,7 +1,8 @@
 # ShiftCalendar: Cloudflare Hosting, Users, and Teams
 
 Updated 2026-09-13. This plan supersedes the AWS hosting plan. The Cloudflare
-architecture below is planned, not deployed or validated yet.
+private-calendar slice is implemented and locally tested; live deployment and
+full application milestones remain pending. See [the runbook](CLOUDFLARE.md).
 
 ## Goal and confirmed constraints
 
@@ -79,8 +80,8 @@ The prior AWS cost estimate does not apply to this architecture.
 
 | Phase | Milestone | Exit evidence | Status |
 |---|---|---|---|
-| 0 | M0: Cloudflare feasibility and tools | Account/Free/Access eligibility recorded; runtime/auth spike fits limits | In progress: agent tools connected; Free plan/resource checks pending |
-| 1a | M1a: Local Cloudflare vertical slice | Worker + D1 + Access identity adapter pass runtime tests and web export | Planned |
+| 0 | M0: Cloudflare feasibility and tools | Account/Free/Access eligibility recorded; runtime/auth spike fits limits | Account/Free/Access inventory verified; live fit remains M1b |
+| 1a | M1a: Local Cloudflare vertical slice | Worker + D1 + Access identity adapter pass runtime tests and web export | Local implementation and validation complete |
 | 1b | M1b: Hosted browser pilot | Protected `workers.dev` login and private save/reload round trip | Planned |
 | 2 | M2: Personal cloud calendars | CRUD, privacy, conflict handling and resumable personal import | Planned; reusable AWS-era application code exists |
 | 3 | M3: Teams and rosters | Two teams, all roles, safe invitations and paginated rosters | Planned; reusable UI/domain code exists |
@@ -89,7 +90,9 @@ The prior AWS cost estimate does not apply to this architecture.
 | 6 | M6: Approved swaps | Atomic approval and in-app notification workflow | Deferred until M4 |
 | Later | MD: Custom domain | New address passes the same authentication checks | Waiting for domain |
 
-**Next best implementation slice: M0 + M1a.** Establish actual Cloudflare Free
+**Current slice: M0 + M1a, locally implemented.** Evidence and outstanding live
+checks are in [CLOUDFLARE.md](CLOUDFLARE.md). The next slice is M1b, hosted
+Access and persistence verification. Original acceptance scope: establish Cloudflare Free
 eligibility, then port one authenticated private-calendar read/write path to a
 local Worker and D1. Test two identities, forbidden IDs, stale writes, retries,
 JWT validation and bounded SQL before publishing. Deliver a pinned Wrangler
@@ -194,13 +197,16 @@ client timestamps alone are insufficient.
 - [x] Select the Cloudflare component map and phased migration strategy.
 - [x] Install official Cloudflare agent skills and register the five documented MCP servers.
 - [x] Complete OAuth for the four authenticated MCP connections; the docs server is public.
-- [ ] Inspect the intended account, existing resources, Free plan status, Zero Trust
+- [x] Inspect the intended account, existing resources, Free plan status, Zero Trust
   setup/payment requirements and available user seats.
-- [ ] Confirm location assumptions and record the pilot's expected users/traffic.
-- [ ] Pin project Wrangler on Node 24 LTS; use project-local tooling, not unnecessary
+- [x] Record the global/APAC location constraint and the account's available 50 seats.
+  Capacity assumption: invite-only browser pilot below that shared limit; live
+  traffic and CPU fit must be measured in M1b.
+- [x] Pin project Wrangler on Node 24 LTS; use project-local tooling, not unnecessary
   global/Homebrew installations. Keep authentication/config secrets out of Git.
-- [ ] Prototype Access identity forwarding, JWT CPU cost, D1 queries and Worker
-  bundle size against Free limits. Verify native-only modules do not break web.
+- [x] Test local JWT verification, bounded D1 queries and Worker packaging;
+  verify web/native exports. Live Access forwarding and production JWT CPU
+  measurement remain explicit M1b gates; local tests cannot prove those limits.
 
 **Exit:** the account and selected services can support the bounded browser pilot,
 and the current limitations are recorded without claiming guaranteed free operation.
@@ -209,13 +215,13 @@ and the current limitations are recorded without claiming guaranteed free operat
 
 **M1a — local readiness**
 
-- [ ] Add Worker configuration, D1 binding and versioned SQL migrations.
-- [ ] Implement one private-calendar read/write path with JWT verification,
+- [x] Add Worker configuration, D1 binding and versioned SQL migrations.
+- [x] Implement one private-calendar read/write path with JWT verification,
   current ownership checks, version conflicts and retry-safe mutations.
-- [ ] Adapt login/client state and maintain the local-only native path.
-- [ ] Test actual Workers/D1 runtime behavior, invalid/expired/wrong-audience tokens,
+- [x] Adapt login/client state and maintain the local-only native path.
+- [x] Test actual Workers/D1 runtime behavior, invalid/expired/wrong-audience tokens,
   identity spoofing, CSRF, revoked membership and conditional-write races.
-- [ ] Export Expo with `web.output: "single"` and `--clear` to prevent stale build
+- [x] Export Expo with `web.output: "single"` and `--clear` to prevent stale build
   environment values; check SPA reloads and missing asset behavior.
 
 **M1b — hosted verification**
@@ -357,4 +363,5 @@ and [the verification draft](infrastructure/cloudfront-verification.md) are lega
 AWS references. Existing tests and AWS validation are useful migration inputs,
 not evidence that Cloudflare is implemented. Personal import, team administration,
 full roster pagination, recovery and live acceptance still require their phase
-checks. No Cloudflare application resources have been deployed by this plan edit.
+checks. No Cloudflare application resources have been deployed. The local M1a
+implementation and account findings are recorded in [CLOUDFLARE.md](CLOUDFLARE.md).

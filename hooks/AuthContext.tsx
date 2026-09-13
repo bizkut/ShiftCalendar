@@ -52,7 +52,7 @@ const cognitoDomain = process.env.EXPO_PUBLIC_COGNITO_DOMAIN?.replace(/^https?:\
 const webBase = process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, '') || (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : '');
 const redirectSignIn = Platform.OS === 'web' ? `${webBase}/callback` : 'shiftcalendar://callback';
 const redirectSignOut = Platform.OS === 'web' ? `${webBase}/login` : 'shiftcalendar://login';
-export const authConfigured = Boolean(process.env.EXPO_PUBLIC_API_URL && userPoolId && clientId && cognitoDomain && redirectSignIn && redirectSignOut);
+export const authConfigured = process.env.EXPO_PUBLIC_CLOUD_PROVIDER !== 'cloudflare' && Boolean(process.env.EXPO_PUBLIC_API_URL && userPoolId && clientId && cognitoDomain && redirectSignIn && redirectSignOut);
 
 if (authConfigured) {
   cognitoUserPoolsTokenProvider.setKeyValueStorage(Platform.OS === 'web' ? new MemoryStorage() : new NativeSecureStorage());
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       if (Platform.OS !== 'web') {
         const savedMode = await AsyncStorage.getItem(CLOUD_MODE_KEY);
-        if (active) setCloudMode(savedMode === 'cloud');
+        if (active) setCloudMode(authConfigured && savedMode === 'cloud');
       }
       if (active) await retrySession();
     })();

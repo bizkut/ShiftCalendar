@@ -19,7 +19,7 @@ export class CloudApiError extends Error {
 
 export function isCloudConfigured(): boolean {
   return Boolean(
-    API_URL &&
+    process.env.EXPO_PUBLIC_CLOUD_PROVIDER !== 'cloudflare' && API_URL &&
       process.env.EXPO_PUBLIC_COGNITO_DOMAIN &&
       process.env.EXPO_PUBLIC_USER_POOL_ID &&
       (process.env.EXPO_PUBLIC_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_NATIVE_CLIENT_ID)

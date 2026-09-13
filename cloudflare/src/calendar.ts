@@ -1,0 +1,194 @@
+import type { CloudCalendar, CloudCalendarDay, CloudCalendarDayTombstone } from '../../shared/cloudTypes';
+import { ApiError } from './errors';
+
+type CalendarRow = {
+  id: string; owner_sub: string; team_id: string | null; assigned_sub: string | null;
+  name: string; color: string; timezone: string; version: number; updated_at: string;
+};
+type DayRow = {
+  date: string; shift_code: string | null; version: number; deleted: number;
+  updated_at: string; updated_by: string;
+};
+
+const access = `c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? AND u.disabled = 0)
+  AND ((c.team_id IS NULL AND c.owner_sub = ?) OR
+    (c.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM teams t JOIN memberships m ON m.team_id = t.id
+      WHERE t.id = c.team_id AND t.deleted = 0 AND m.user_sub = ?)))`;
+const edit = `${access} AND (c.team_id IS NULL OR EXISTS (SELECT 1 FROM memberships m
+  WHERE m.team_id = c.team_id AND m.user_sub = ? AND
+    (m.role IN ('owner', 'manager') OR (m.role = 'member' AND c.assigned_sub = ?))))`;
+
+function calendar(row: CalendarRow): CloudCalendar {
+  return { id: row.id, name: row.name, color: row.color, timezone: row.timezone,
+    scope: row.team_id ? 'team' : 'private', ...(row.team_id ? { teamId: row.team_id } : {}),
+    ...(row.assigned_sub ? { assignedMemberSub: row.assigned_sub } : {}),
+    version: row.version, updatedAt: row.updated_at };
+}
+function day(row: DayRow): CloudCalendarDay | CloudCalendarDayTombstone {
+  const base = { date: row.date, version: row.version, updatedAt: row.updated_at, updatedBy: row.updated_by };
+  return row.deleted ? { ...base, deleted: true } : { ...base, ...(row.shift_code ? { shiftCode: row.shift_code } : {}) };
+}
+export function object(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ApiError(400, 'invalid_request', 'An object is required.');
+  return value as Record<string, unknown>;
+}
+function id(value: unknown): string {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) throw new ApiError(400, 'invalid_request', 'Invalid identifier.');
+  return value;
+}
+function date(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value))
+    || new Date(value).toISOString().slice(0, 10) !== value) throw new ApiError(400, 'invalid_request', 'Invalid calendar date.');
+}
+async function fingerprint(value: unknown) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value)));
+  return Array.from(new Uint8Array(hash), n => n.toString(16).padStart(2, '0')).join('');
+}
+
+export class CalendarRepository {
+  constructor(private readonly db: D1Database, private readonly sub: string) {}
+
+  private guard(sql: string, args: (string | number)[]) {
+    return this.db.prepare(`INSERT INTO transaction_checks(valid) SELECT CASE WHEN (${sql}) THEN 1 ELSE 0 END`).bind(...args);
+  }
+  private enabled() {
+    return this.guard('EXISTS (SELECT 1 FROM users WHERE sub = ? AND disabled = 0)', [this.sub]);
+  }
+  private permission(calendarId: string, writing: boolean) {
+    const args = [calendarId, this.sub, this.sub, this.sub];
+    if (writing) args.push(this.sub, this.sub);
+    return this.guard(`EXISTS (SELECT 1 FROM calendars c WHERE c.id = ? AND ${writing ? edit : access})`, args);
+  }
+  private record(mutationId: string, operation: string, hash: string, result: unknown) {
+    return [
+      this.db.prepare('INSERT INTO mutations(user_sub,id,operation,fingerprint,result) VALUES(?,?,?,?,?)')
+        .bind(this.sub, mutationId, operation, hash, JSON.stringify(result)),
+      this.db.prepare('INSERT INTO audit(actor_sub,mutation_id,operation,created_at) VALUES(?,?,?,?)')
+        .bind(this.sub, mutationId, operation, new Date().toISOString()),
+      this.db.prepare('DELETE FROM transaction_checks'),
+    ];
+  }
+  private async previous<T>(mutationId: string, operation: string, hash: string): Promise<T | undefined> {
+    const row = await this.db.prepare(`SELECT m.operation, m.fingerprint, m.result FROM mutations m
+      JOIN users u ON u.sub = m.user_sub WHERE m.user_sub = ? AND m.id = ? AND u.disabled = 0`)
+      .bind(this.sub, mutationId).first<{ operation: string; fingerprint: string; result: string }>();
+    if (!row) return;
+    if (row.operation !== operation || row.fingerprint !== hash) throw new ApiError(409, 'conflict', 'This mutation ID was used for a different edit.');
+    return JSON.parse(row.result) as T;
+  }
+
+  async ensureUser() {
+    await this.db.prepare('INSERT INTO users(sub) VALUES(?) ON CONFLICT(sub) DO NOTHING').bind(this.sub).run();
+    const row = await this.db.prepare('SELECT disabled FROM users WHERE sub = ?').bind(this.sub).first<{ disabled: number }>();
+    if (!row || row.disabled) throw new ApiError(403, 'forbidden', 'This user is disabled.');
+  }
+
+  async get(calendarId: string, writing = false) {
+    id(calendarId);
+    const args = [calendarId, this.sub, this.sub, this.sub];
+    if (writing) args.push(this.sub, this.sub);
+    const row = await this.db.prepare(`SELECT c.* FROM calendars c WHERE c.id = ? AND ${writing ? edit : access}`)
+      .bind(...args).first<CalendarRow>();
+    if (!row) throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.');
+    return calendar(row);
+  }
+
+  async list(cursor = '', limit = 100) {
+    if (cursor) id(cursor);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new ApiError(400, 'invalid_request', 'Invalid page size.');
+    // The first slice lists private calendars; team navigation is delivered in M3.
+    const rows = await this.db.prepare(`SELECT c.* FROM calendars c WHERE c.owner_sub = ?
+      AND c.team_id IS NULL AND c.id > ? AND ${access} ORDER BY c.id LIMIT ?`)
+      .bind(this.sub, cursor, this.sub, this.sub, this.sub, limit + 1).all<CalendarRow>();
+    const items = rows.results.slice(0, limit).map(calendar);
+    return { items, ...(rows.results.length > limit ? { nextCursor: items.at(-1)!.id } : {}) };
+  }
+
+  async create(input: unknown) {
+    const body = object(input); const mutationId = id(body.mutationId); const value = object(body.value);
+    if (value.scope !== 'private' || value.teamId || value.assignedMemberSub) throw new ApiError(400, 'invalid_request', 'This slice supports personal calendars.');
+    if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 80
+        || typeof value.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value.color)
+        || typeof value.timezone !== 'string' || value.timezone.length > 64) throw new ApiError(400, 'invalid_request', 'Invalid calendar settings.');
+    try { new Intl.DateTimeFormat('en', { timeZone: value.timezone }); } catch { throw new ApiError(400, 'invalid_request', 'Invalid timezone.'); }
+    const canonical = { name: value.name.trim(), color: value.color, timezone: value.timezone };
+    const hash = await fingerprint(canonical);
+    const prior = await this.previous<CloudCalendar>(mutationId, 'create-calendar', hash);
+    if (prior) return this.get(prior.id);
+    const result: CloudCalendar = { ...canonical, id: crypto.randomUUID(), scope: 'private', version: 1, updatedAt: new Date().toISOString() };
+    try {
+      await this.db.batch([
+        this.enabled(),
+        this.db.prepare(`INSERT INTO calendars(id,owner_sub,name,color,timezone,updated_at) VALUES(?,?,?,?,?,?)`)
+          .bind(result.id, this.sub, result.name, result.color, result.timezone, result.updatedAt),
+        ...this.record(mutationId, 'create-calendar', hash, result),
+      ]);
+    } catch {
+      await this.ensureUser();
+      const retried = await this.previous<CloudCalendar>(mutationId, 'create-calendar', hash);
+      if (retried) return this.get(retried.id);
+      throw new ApiError(409, 'conflict', 'Calendar creation conflicted. Please retry.');
+    }
+    return result;
+  }
+
+  async days(calendarId: string, from: string, to: string) {
+    id(calendarId); date(from); date(to);
+    if (to < from || Date.parse(to) - Date.parse(from) > 92 * 86400000) throw new ApiError(400, 'invalid_request', 'Request at most 93 days.');
+    // Permission and data are evaluated in one SQL snapshot on the primary.
+    const result = await this.db.batch([
+      this.permission(calendarId, false),
+      this.db.prepare('SELECT * FROM calendar_days WHERE calendar_id = ? AND date BETWEEN ? AND ? ORDER BY date LIMIT 93')
+        .bind(calendarId, from, to),
+      this.db.prepare('DELETE FROM transaction_checks'),
+    ]).catch(async () => { await this.get(calendarId); throw new ApiError(503, 'unavailable', 'Could not load calendar.'); });
+    return { items: (result[1].results as DayRow[]).map(day) };
+  }
+
+  async writeDay(calendarId: string, dayDate: string, input: unknown) {
+    id(calendarId); date(dayDate);
+    const body = object(input); const mutationId = id(body.mutationId);
+    const version = body.expectedVersion;
+    if (!Number.isSafeInteger(version) || (version as number) < 0 || (version as number) >= Number.MAX_SAFE_INTEGER) throw new ApiError(400, 'invalid_request', 'Invalid version.');
+    const value = body.value === null ? null : object(body.value);
+    if (value && (Object.keys(value).some(k => k !== 'shiftCode') || typeof value.shiftCode !== 'string'
+      || !/^[A-Za-z0-9_-]{1,32}$/.test(value.shiftCode))) throw new ApiError(400, 'invalid_request', 'Invalid shift.');
+    const operation = `day:${calendarId}:${dayDate}`;
+    const hash = await fingerprint({ version, shiftCode: value?.shiftCode ?? null });
+    await this.get(calendarId, true);
+    const prior = await this.previous<CloudCalendarDay | CloudCalendarDayTombstone>(mutationId, operation, hash);
+    if (prior) return this.currentDay(calendarId, dayDate, true);
+    const now = new Date().toISOString();
+    const nextVersion = (version as number) + 1;
+    const result = day({ date: dayDate, shift_code: value?.shiftCode as string ?? null,
+      version: nextVersion, deleted: value ? 0 : 1, updated_at: now, updated_by: this.sub });
+    try {
+      await this.db.batch([
+        this.permission(calendarId, true),
+        this.guard('COALESCE((SELECT version FROM calendar_days WHERE calendar_id = ? AND date = ?), 0) = ?', [calendarId, dayDate, version as number]),
+        this.db.prepare(`INSERT INTO calendar_days(calendar_id,date,shift_code,version,deleted,updated_at,updated_by)
+          VALUES(?,?,?,?,?,?,?) ON CONFLICT(calendar_id,date) DO UPDATE SET shift_code=excluded.shift_code,
+          version=excluded.version,deleted=excluded.deleted,updated_at=excluded.updated_at,updated_by=excluded.updated_by`)
+          .bind(calendarId, dayDate, value?.shiftCode ?? null, nextVersion, value ? 0 : 1, now, this.sub),
+        ...this.record(mutationId, operation, hash, result),
+      ]);
+    } catch {
+      await this.get(calendarId, true);
+      const retried = await this.previous<CloudCalendarDay | CloudCalendarDayTombstone>(mutationId, operation, hash);
+      if (retried) return this.currentDay(calendarId, dayDate, true);
+      throw new ApiError(409, 'conflict', 'This day changed. Refresh before retrying.');
+    }
+    return result;
+  }
+
+  private async currentDay(calendarId: string, dayDate: string, writing: boolean) {
+    const results = await this.db.batch([
+      this.permission(calendarId, writing),
+      this.db.prepare('SELECT * FROM calendar_days WHERE calendar_id = ? AND date = ?').bind(calendarId, dayDate),
+      this.db.prepare('DELETE FROM transaction_checks'),
+    ]).catch(() => { throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.'); });
+    const row = results[1].results[0] as DayRow | undefined;
+    if (!row) throw new ApiError(409, 'conflict', 'The day is no longer available.');
+    return day(row);
+  }
+}

@@ -6,6 +6,9 @@ backend/node_modules/
 backend/dist/
 .aws-sam/
 .deployment/
+.wrangler/
+.dev.vars
+.dev.vars.*
 
 # Expo
 .expo/

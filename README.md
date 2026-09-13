@@ -37,7 +37,9 @@ Start on a generated `workers.dev` address; `shifts.amazonian.my` comes later.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](PLAN.md) for service mapping, limits and migration milestones.
-Cloudflare deployment is not implemented yet. The attempted AWS deployment was
+A local Cloudflare private-calendar slice is implemented; live deployment and full
+team features remain pending. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
 The browser supports CSV and JSON file flows and PDF through the browser print

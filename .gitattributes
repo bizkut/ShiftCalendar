@@ -1,0 +1,2 @@
+# Preserve Wrangler's generated declarations verbatim, including upstream whitespace.
+cloudflare/worker-configuration.d.ts linguist-generated=true -whitespace

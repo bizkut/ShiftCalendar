@@ -23,10 +23,10 @@ export default function LoginScreen() {
           <MaterialCommunityIcons name="calendar-account" size={42} color={colors.primary} />
         </View>
         <Text style={[styles.title, { color: colors.text }]}>ShiftCalendar Cloud</Text>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>Sign in to use private cloud calendars and team rosters across your devices.</Text>
+        <Text style={[styles.body, { color: colors.textSecondary }]}>{Platform.OS === 'web' ? 'Sign in with your approved email address and a one-time PIN to use your private calendar.' : 'Sign in to use private cloud calendars and team rosters across your devices.'}</Text>
         {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         <TouchableOpacity disabled={!configured || starting} onPress={() => void begin()} style={[styles.primary, { backgroundColor: colors.primary, opacity: configured && !starting ? 1 : 0.5 }]} accessibilityRole="button">
-          {starting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryText}>{configured ? 'Sign in or create account' : 'Cloud login unavailable'}</Text>}
+          {starting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryText}>{configured ? (Platform.OS === 'web' ? 'Sign in with email' : 'Sign in or create account') : 'Cloud login unavailable'}</Text>}
         </TouchableOpacity>
         {Platform.OS !== 'web' && (
           <TouchableOpacity onPress={() => void useLocalOnly()} style={[styles.secondary, { borderColor: colors.border }]} accessibilityRole="button">
