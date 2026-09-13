@@ -2,8 +2,9 @@
 
 M0 + M1a, checked 2026-09-13. The private-calendar vertical slice runs locally.
 M2b deployment is in progress (the earlier plan called it M1b). The dedicated
-D1 database and staged Worker now exist; public targets remain disabled. Hosted
-OTP/session delivery is not yet verified. See the progress record below.
+D1 database and protected Worker are deployed. The first real OTP login and
+private edit/reload are verified; second-identity and independent-browser checks
+remain in progress. See the progress record below.
 
 ## Verified account state
 
@@ -146,7 +147,7 @@ measured in M1b before declaring this workload fits. Do not silently upgrade pla
 [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/),
 [D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
 
-## M1b deployment procedure — not executed
+## Deployment procedure — see progress record for executed steps
 
 1. Recheck the exact account ID, Workers Free plan, D1 quota and Zero Trust seats.
    Use scoped Wrangler OAuth or a scoped token; MCP OAuth does not automatically
@@ -202,3 +203,34 @@ recreated by applying migrations to a fresh local persistence directory.
 - Clean Expo export, root typecheck and production dry run passed. Worker bundle: 51.51 KiB raw / 13.87 KiB gzip; upload reports 5 ms startup. Startup is not representative request/JWT CPU evidence.
 - Donation section remains removed; privacy text now describes Cloudflare and avoids a Malaysia-only residency claim.
 - Still required: scoped Access attachment, actual audience, protected publication, administrator bootstrap, live two-identity login/persistence/privacy/expiry tests, metrics and final release/rollback records.
+
+### Protected publication
+
+Version `c1da4442-6cad-4906-b52f-0a21d3cf4070` is published at
+https://shiftcalendar.bizkut-limau.workers.dev with previews disabled and no
+custom routes/domains. Access application `7286318b-f239-43e3-a57a-01b5e81034eb`
+protects all production and preview traffic for this Worker, using the reusable
+pilot policy above. Login is restricted to the existing one-time PIN provider.
+The exact application audience is recorded in the production config.
+
+Run `rtk proxy node scripts/smoke-cloudflare-production.mjs` for unauthenticated
+edge-protection checks. These do not prove authenticated API behavior. The first real-user PIN login passed; the goal remains incomplete pending all
+acceptance checks below.
+
+To reproduce a release: run `rtk npm run cf:build`, then from `cloudflare/` run
+`rtk proxy npm exec -- wrangler deploy --dry-run --config wrangler.production.jsonc`
+and `rtk proxy npm exec -- wrangler deploy --config wrangler.production.jsonc`.
+Recheck the existing Access policy and bindings before publication. Do not
+remove Access to troubleshoot JWT failures. Record the previous version before
+every deployment; code rollback and D1 recovery are separate operations.
+
+### Live acceptance evidence so far
+
+- First identity completed a real PIN login and `/v1/session` returned HTTP 200 with `Cache-Control: no-store` and the verified subject/email.
+- Browser saved Morning on 2026-09-14 in calendar `e4d4edc1-29c4-49ae-a773-25880a6cc59a`; full reload retained the shift. Direct D1 read confirmed `shift_code=M`, version 1.
+- D1 diagnostic read reported APAC/HKG, 2 rows read and 0 written; this diagnostic query does not establish API request totals.
+- A browser PATCH without the CSRF request header returned 403 with no-store.
+- App sign-out reached Access's “You successfully logged out” page and the email login form. Second identity PIN challenge is pending.
+- Production unsigned/forged-header smoke checks passed for root, login, teams, missing asset and session paths. All redirected to Access; authenticated missing-asset status still requires its own check.
+- All 31 Worker/D1 and browser-client tests passed again.
+- Outstanding: second identity forged-ID reads/writes; separate-browser same-user persistence; disallowed-email flow; actual expiry/reauthentication; authenticated deep links and missing assets; first-admin bootstrap; live CPU and API D1 metrics. No PINs/session tokens are retained in these records.

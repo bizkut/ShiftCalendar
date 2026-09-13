@@ -165,3 +165,7 @@ MIT
 ## Author
 
 Made by **Troy**
+
+Cloudflare pilot: https://shiftcalendar.bizkut-limau.workers.dev (Access-protected,
+approved pilot emails only). Hosted acceptance is in progress; this is not a
+team-ready release. See [live evidence and remaining checks](CLOUDFLARE.md).

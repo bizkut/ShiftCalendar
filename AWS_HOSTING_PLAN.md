@@ -189,3 +189,12 @@ For every milestone record commit IDs, commands/results, environment, deployment
 The previous AWS M2 work is historical: infrastructure and client code were implemented, but CloudFront verification prevented a live release and the stack reached `ROLLBACK_COMPLETE`. See [historical M2 verification](../ShiftCalendar-aws/docs/M2_VERIFICATION.md) and [historical AWS Support draft](../ShiftCalendar-aws/docs/AWS_CLOUDFRONT_VERIFICATION.md). Existing AWS budget or resource state must be inventoried independently; this document neither deletes resources nor declares AWS costs eliminated.
 
 This revision changes the deployment plan only. Cloudflare provisioning, code migration and live acceptance require the milestone evidence above; completed AWS checks are not carried over as completed Cloudflare checks.
+
+## Current repository progress
+
+M2b is in progress. Dedicated D1 migration, protected workers.dev publication,
+first-user real PIN login, single-shift save/reload, logout and unauthenticated
+edge-protection checks are verified. Cross-user/independent-browser acceptance,
+expiry, administrator bootstrap and live usage measurements remain open.
+[CLOUDFLARE.md](CLOUDFLARE.md) records the authoritative resource IDs, versions
+and evidence; no milestone is complete solely because deployment succeeded.
