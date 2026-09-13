@@ -151,6 +151,8 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 ### Phase 2 — M3: teams and access
 
+**In progress:** the local D1 calendar write predicate now allows only internal `owner` (team leader) and `manager` roles for team calendars. Assigned members/viewers are read-only, including on retries after demotion. Eleven focused permission cases cover leader/manager edits, assigned-member denial, administrator/creator non-bypass, revocation, multi-team roles, private ownership and a demotion at the transaction boundary. Administration APIs/UI and hosted acceptance remain pending; this checkpoint is not deployed.
+
 - [ ] Add administration screens/APIs for invitations, deactivation, team creation and membership roles; keep Access admission and application membership lifecycle consistent.
 - [ ] Add team switching and multi-team roles with backend authorization and permission audit records.
 - [ ] Enforce manager/team-leader-only team calendar editing. Remove the existing repository helper's allowance for a member to edit their assigned team calendar before enabling team APIs. Joining a team does not make a private calendar shared; keep the separate owner-only private-calendar policy above.

@@ -15,8 +15,7 @@ const access = `c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? 
     (c.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM teams t JOIN memberships m ON m.team_id = t.id
       WHERE t.id = c.team_id AND t.deleted = 0 AND m.user_sub = ?)))`;
 const edit = `${access} AND (c.team_id IS NULL OR EXISTS (SELECT 1 FROM memberships m
-  WHERE m.team_id = c.team_id AND m.user_sub = ? AND
-    (m.role IN ('owner', 'manager') OR (m.role = 'member' AND c.assigned_sub = ?))))`;
+  WHERE m.team_id = c.team_id AND m.user_sub = ? AND m.role IN ('owner', 'manager')))`;
 
 function calendar(row: CalendarRow): CloudCalendar {
   return { id: row.id, name: row.name, color: row.color, timezone: row.timezone,
@@ -56,7 +55,7 @@ export class CalendarRepository {
   }
   private permission(calendarId: string, writing: boolean) {
     const args = [calendarId, this.sub, this.sub, this.sub];
-    if (writing) args.push(this.sub, this.sub);
+    if (writing) args.push(this.sub);
     return this.guard(`EXISTS (SELECT 1 FROM calendars c WHERE c.id = ? AND ${writing ? edit : access})`, args);
   }
   private record(mutationId: string, operation: string, hash: string, result: unknown) {
@@ -86,7 +85,7 @@ export class CalendarRepository {
   async get(calendarId: string, writing = false) {
     id(calendarId);
     const args = [calendarId, this.sub, this.sub, this.sub];
-    if (writing) args.push(this.sub, this.sub);
+    if (writing) args.push(this.sub);
     const row = await this.db.prepare(`SELECT c.* FROM calendars c WHERE c.id = ? AND ${writing ? edit : access}`)
       .bind(...args).first<CalendarRow>();
     if (!row) throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.');
