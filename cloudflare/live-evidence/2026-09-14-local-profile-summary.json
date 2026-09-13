@@ -1,0 +1,98 @@
+{
+  "diagnosticOnly": true,
+  "limitations": "Local sampled profiles use generated RSA fixture JWT/JWKS and ephemeral D1. Not live CPU or acceptance evidence; idle/program/native samples and sampling error affect totals.",
+  "runs": [
+    {
+      "bundle": "unminified",
+      "phase": "cold",
+      "sampledMicrosecondsByFunction": {
+        "(program)": 4303,
+        "(idle)": 3852,
+        "createLocalJWKSet": 2867,
+        "validateClaimsSet": 2076,
+        "(anonymous)": 1936,
+        "date": 1056,
+        "importKey": 1035,
+        "fetch": 503,
+        "verify": 402,
+        "verifySignature": 375,
+        "read": 260,
+        "decode": 259,
+        "setAttributes": 150,
+        "timeout": 132,
+        "formatWithOptions": 130,
+        "verifyCompact": 130,
+        "_send": 130,
+        "permission": 129,
+        "readBody": 128,
+        "createRemoteJWKSet": 127,
+        "prepare": 126,
+        "writeDay": 125,
+        "epoch": 117
+      }
+    },
+    {
+      "bundle": "unminified",
+      "phase": "warm",
+      "sampledMicrosecondsByFunction": {
+        "verifySignature": 1096,
+        "(idle)": 1032,
+        "setAttributes": 513,
+        "_wrappedFetch": 129
+      }
+    },
+    {
+      "bundle": "unminified",
+      "phase": "warm",
+      "sampledMicrosecondsByFunction": {
+        "(idle)": 960,
+        "_send": 829,
+        "(anonymous)": 385
+      }
+    },
+    {
+      "bundle": "minified",
+      "phase": "cold",
+      "sampledMicrosecondsByFunction": {
+        "(program)": 3836,
+        "(anonymous)": 3792,
+        "(idle)": 3031,
+        "xe": 266,
+        "de": 256,
+        "fetch": 135,
+        "formatWithOptions": 134,
+        "writeDay": 132,
+        "Ve": 131,
+        "Ee": 130,
+        "first": 130,
+        "_wrappedFetch": 130,
+        "toArrayOfObjects": 130,
+        "_send": 129,
+        "me": 128,
+        "C": 127,
+        "at": 125,
+        "$e": 121
+      }
+    },
+    {
+      "bundle": "minified",
+      "phase": "warm",
+      "sampledMicrosecondsByFunction": {
+        "at": 954,
+        "(idle)": 876,
+        "fetch": 535,
+        "toArrayOfObjects": 388,
+        "_send": 127
+      }
+    },
+    {
+      "bundle": "minified",
+      "phase": "warm",
+      "sampledMicrosecondsByFunction": {
+        "(idle)": 978,
+        "get usages": 814,
+        "Ge": 509
+      }
+    }
+  ]
+}

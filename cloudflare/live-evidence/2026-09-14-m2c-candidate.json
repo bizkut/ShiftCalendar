@@ -32,7 +32,8 @@
   "blocker": null,
   "cpuImprovementClaimed": false,
   "liveCpuEvidence": "2026-09-14-m2c-cpu.json",
-  "currentVersion": "4f843406-c818-4f8a-932e-54be59b56f9c",
-  "nextStep": "Local authenticated-write CPU profiling; further optimization and a new full live acceptance sample",
-  "pendingUserInput": "Second pilot PIN for reverse privacy check"
+  "currentVersion": "3090433c-8a80-44f3-856b-3c4041c30f63",
+  "nextStep": "Investigate remaining cold initialization; gate still fails after profiling, minification and transaction-only day authorization",
+  "pendingUserInput": null,
+  "latestCpuEvidence": "2026-09-14-m2c-atomic-cpu.json"
 }

@@ -34,7 +34,7 @@ A shift scheduling app for shift workers, built with React Native + Expo. Use lo
 The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
-The domain is reachable; first-user login, save/reload, CSRF and logout checks passed.
+The domain is reachable; both pilot logins, private persistence and cross-user denial passed.
 A tested write-path optimization is deployed. Live sampling still exceeds the cold CPU gate; team expansion remains paused.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 

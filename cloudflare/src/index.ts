@@ -43,14 +43,20 @@ export default {
     try {
       requireSameOrigin(request, env);
       const identity = await verifyIdentity(request, env);
-      // Account disablement is enforced even while an Access session remains valid.
+      const repository = new CalendarRepository(env.DB, identity.sub);
+      const parts = path.split('/').filter(Boolean);
+      if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 5 && request.method === 'PATCH') {
+        // writeDay checks active-user status, permissions and revision together
+        // in its atomic D1 batch, including the retry path. No cached admission.
+        const data = await repository.writeDay(parts[2], parts[4], await readBody(request));
+        return Response.json({ data }, { headers });
+      }
+      // Other routes enforce disablement before dispatch.
       const user = await env.DB.prepare('SELECT disabled FROM users WHERE sub = ?').bind(identity.sub).first<{ disabled: number }>();
       if (user?.disabled) throw new ApiError(403, 'forbidden', 'This user is disabled.');
       if (path === '/v1/session' && request.method === 'GET') {
         return Response.json({ data: identity }, { headers });
       }
-      const repository = new CalendarRepository(env.DB, identity.sub);
-      const parts = path.split('/').filter(Boolean);
       const query = new URL(request.url).searchParams;
       let data: unknown;
       let status = 200;
@@ -66,8 +72,7 @@ export default {
         data = await repository.get(parts[2]);
       } else if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 4 && request.method === 'GET') {
         data = await repository.days(parts[2], query.get('from') ?? '', query.get('to') ?? '');
-      } else if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 5 && request.method === 'PATCH') {
-        data = await repository.writeDay(parts[2], parts[4], await readBody(request));
+
       } else if (parts[1] === 'calendars' && parts.length === 4 && request.method === 'GET' && parts[3] === 'shift-types') {
         await repository.get(parts[2]);
         // M1 uses built-in shift definitions. Custom definitions arrive in M2.

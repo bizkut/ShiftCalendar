@@ -1,0 +1,153 @@
+{
+  "timePeriod": "1h",
+  "queryShapes": 13,
+  "executions": 573,
+  "rowsRead": 540,
+  "rowsWritten": 596,
+  "caveat": "Lagging aggregate includes preceding candidates and other checks, not just this sample.",
+  "queries": [
+    {
+      "query": "INSERT INTO transaction_checks(valid) SELECT CASE WHEN (EXISTS (SELECT 1 FROM calendars c WHERE c.id = ? AND c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? AND u.disabled = 0)\n  AND ((c.team_id IS NULL AND c.owner_sub = ?) OR\n    (c.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM teams t JOIN memberships m ON m.team_id = t.id\n      WHERE t.id = c.team_id AND t.deleted = 0 AND m.user_sub = ?))) AND (c.team_id IS NULL OR EXISTS (SELECT 1 FROM memberships m\n  WHERE m.team_id = c.team_id AND m.user_sub = ? AND\n    (m.role IN ('owner', 'manager') OR (m.role = 'member' AND c.assigned_sub = ?)))))) THEN 1 ELSE 0 END",
+      "avgRowsRead": 1,
+      "totalRowsRead": 100,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 50,
+      "avgDurationMs": 0.522875925925926,
+      "totalDurationMs": 28.235300000000002,
+      "numberOfTimesRun": 54,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "SELECT disabled FROM users WHERE sub = ?",
+      "avgRowsRead": 1,
+      "totalRowsRead": 94,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.21452234042553195,
+      "totalDurationMs": 20.165100000000002,
+      "numberOfTimesRun": 94,
+      "queryEfficiency": 1
+    },
+    {
+      "query": "INSERT INTO transaction_checks(valid) SELECT CASE WHEN (COALESCE((SELECT version FROM calendar_days WHERE calendar_id = ? AND date = ?), 0) = ?) THEN 1 ELSE 0 END",
+      "avgRowsRead": 1,
+      "totalRowsRead": 74,
+      "avgRowsWritten": 1,
+      "totalRowsWritten": 74,
+      "avgDurationMs": 0.2389054054054054,
+      "totalDurationMs": 17.679,
+      "numberOfTimesRun": 74,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "SELECT c.* FROM calendars c WHERE c.id = ? AND c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? AND u.disabled = 0)\n  AND ((c.team_id IS NULL AND c.owner_sub = ?) OR\n    (c.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM teams t JOIN memberships m ON m.team_id = t.id\n      WHERE t.id = c.team_id AND t.deleted = 0 AND m.user_sub = ?)))",
+      "avgRowsRead": 1,
+      "totalRowsRead": 52,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.4846111111111111,
+      "totalDurationMs": 13.0845,
+      "numberOfTimesRun": 27,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "INSERT INTO transaction_checks(valid) SELECT CASE WHEN (EXISTS (SELECT 1 FROM calendars c WHERE c.id = ? AND c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? AND u.disabled = 0)\n  AND ((c.team_id IS NULL AND c.owner_sub = ?) OR\n    (c.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM teams t JOIN memberships m ON m.team_id = t.id\n      WHERE t.id = c.team_id AND t.deleted = 0 AND m.user_sub = ?))))) THEN 1 ELSE 0 END",
+      "avgRowsRead": 1,
+      "totalRowsRead": 46,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 23,
+      "avgDurationMs": 0.42516551724137924,
+      "totalDurationMs": 12.329799999999999,
+      "numberOfTimesRun": 29,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "INSERT INTO calendar_days(calendar_id,date,shift_code,version,deleted,updated_at,updated_by)\n          VALUES(?,?,?,?,?,?,?) ON CONFLICT(calendar_id,date) DO UPDATE SET shift_code=excluded.shift_code,\n          version=excluded.version,deleted=excluded.deleted,updated_at=excluded.updated_at,updated_by=excluded.updated_by",
+      "avgRowsRead": 1,
+      "totalRowsRead": 87,
+      "avgRowsWritten": 1,
+      "totalRowsWritten": 87,
+      "avgDurationMs": 0.13657931034482756,
+      "totalDurationMs": 11.882399999999999,
+      "numberOfTimesRun": 87,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "INSERT INTO audit(actor_sub,mutation_id,operation,created_at) VALUES(?,?,?,?)",
+      "avgRowsRead": 0,
+      "totalRowsRead": 0,
+      "avgRowsWritten": 2,
+      "totalRowsWritten": 96,
+      "avgDurationMs": 0.12365833333333331,
+      "totalDurationMs": 5.935599999999999,
+      "numberOfTimesRun": 48,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "INSERT INTO mutations(user_sub,id,operation,fingerprint,result) VALUES(?,?,?,?,?)",
+      "avgRowsRead": 0,
+      "totalRowsRead": 0,
+      "avgRowsWritten": 2,
+      "totalRowsWritten": 104,
+      "avgDurationMs": 0.10787307692307692,
+      "totalDurationMs": 5.6094,
+      "numberOfTimesRun": 52,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "DELETE FROM transaction_checks",
+      "avgRowsRead": 0,
+      "totalRowsRead": 0,
+      "avgRowsWritten": 1,
+      "totalRowsWritten": 162,
+      "avgDurationMs": 0.05391123595505619,
+      "totalDurationMs": 4.798100000000001,
+      "numberOfTimesRun": 89,
+      "queryEfficiency": 0
+    },
+    {
+      "query": "SELECT * FROM calendar_days WHERE calendar_id = ? AND date BETWEEN ? AND ? ORDER BY date LIMIT ?",
+      "avgRowsRead": 1,
+      "totalRowsRead": 20,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.19792500000000002,
+      "totalDurationMs": 3.1668000000000003,
+      "numberOfTimesRun": 16,
+      "queryEfficiency": 1
+    },
+    {
+      "query": "SELECT calendar_id,date,shift_code,version FROM calendar_days WHERE calendar_id IN ('e4d4edc1-29c4-49ae-a773-25880a6cc59a','505e8f60-001c-4c54-9adf-7ad6eb18c75a');",
+      "avgRowsRead": 5,
+      "totalRowsRead": 5,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.2646,
+      "totalDurationMs": 0.2646,
+      "numberOfTimesRun": 1,
+      "queryEfficiency": 0.4
+    },
+    {
+      "query": "SELECT COUNT(*) AS measured_mutations FROM mutations WHERE user_sub='6c8cb775-0d39-50c7-809b-da5d01e637b0' AND operation='day:e4d4edc1-29c4-49ae-a773-25880a6cc59a:2026-09-14';",
+      "avgRowsRead": 31,
+      "totalRowsRead": 31,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.1785,
+      "totalDurationMs": 0.1785,
+      "numberOfTimesRun": 1,
+      "queryEfficiency": 0.03225806451612903
+    },
+    {
+      "query": "SELECT COUNT(*) AS measured_audit FROM audit WHERE actor_sub='6c8cb775-0d39-50c7-809b-da5d01e637b0' AND operation='day:e4d4edc1-29c4-49ae-a773-25880a6cc59a:2026-09-14';",
+      "avgRowsRead": 31,
+      "totalRowsRead": 31,
+      "avgRowsWritten": 0,
+      "totalRowsWritten": 0,
+      "avgDurationMs": 0.1119,
+      "totalDurationMs": 0.1119,
+      "numberOfTimesRun": 1,
+      "queryEfficiency": 0.03225806451612903
+    }
+  ]
+}

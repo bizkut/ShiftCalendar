@@ -47,4 +47,18 @@ it('runs session → bootstrap → create → edit → reload through the real h
   expect((await worker.fetch(new Request('http://localhost:8787/v1/session'), configured)).status).toBe(401);
   await env.DB.prepare("UPDATE users SET disabled=1 WHERE sub='alice'").run();
   expect((await call('alice', '/session')).status).toBe(403);
+  for (const edit of [
+    { mutationId: 'disabled-new', expectedVersion: 1, value: { shiftCode: 'N' } },
+    { mutationId: 'edit-api', expectedVersion: 0, value: { shiftCode: 'D' } },
+  ]) {
+    const denied = await call('alice', `/calendars/${calendar.id}/days/2026-09-13`, 'PATCH', edit);
+    expect(denied.status).toBe(403);
+    expect(denied.headers.get('Cache-Control')).toBe('no-store');
+  }
+  expect((await call('missing-user', `/calendars/${calendar.id}/days/2026-09-13`, 'PATCH', {
+    mutationId: 'missing-edit', expectedVersion: 1, value: { shiftCode: 'N' },
+  })).status).toBe(403);
+  expect(await env.DB.prepare('SELECT shift_code, version FROM calendar_days WHERE calendar_id = ?')
+    .bind(calendar.id).first()).toMatchObject({ shift_code: 'D', version: 1 });
+  expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM audit WHERE actor_sub = ?').bind('alice').first('n')).toBe(2);
 });
