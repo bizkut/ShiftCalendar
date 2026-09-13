@@ -13,6 +13,8 @@ export async function verifyIdentity(request: Request, env: Env) {
   }
   let resolver = resolvers.get(env.ACCESS_ISSUER);
   if (!resolver) {
+    // No identity/token data: distinguish cold JWKS setup in live CPU samples.
+    console.info(JSON.stringify({ event: 'jwks_resolver_cold' }));
     resolver = createRemoteJWKSet(new URL(`${env.ACCESS_ISSUER}/cdn-cgi/access/certs`), {
       timeoutDuration: 5000, cooldownDuration: 30000, cacheMaxAge: 600000,
     });

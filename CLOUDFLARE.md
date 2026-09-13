@@ -1,4 +1,4 @@
-# Cloudflare local readiness and deployment handoff
+# Cloudflare pilot deployment and verification
 
 M0 + M1a, checked 2026-09-13. The private-calendar vertical slice runs locally.
 M2b deployment is in progress (the earlier plan called it M1b). The dedicated
@@ -240,3 +240,77 @@ every deployment; code rollback and D1 recovery are separate operations.
 - Second identity completed real PIN login; the UI showed its own empty calendar and no first-user shift. Foreign-calendar metadata and date-range reads returned 403. A valid PATCH with the CSRF header and correct body schema also returned 403 (“Calendar access is not allowed”). An earlier malformed test body returned 400 and was not counted as authorization evidence.
 - Authenticated `/login` and `/teams` returned HTTP 200 HTML with no-cache; missing JavaScript returned 404 plain text with no-store.
 - Remaining acceptance now focuses on actual expiry/reauthentication, disallowed-email behavior, first-admin bootstrap and measured request CPU/D1 usage.
+
+### Bootstrap and measured runtime checks
+
+Migration `0002_application_administrators.sql` is applied. The operator command
+`rtk proxy node scripts/bootstrap-cloudflare-admin.mjs <verified-subject-uuid>`
+bootstrapped only the first identity, using its verified `/v1/session` subject.
+The command refuses absent/disabled users and a different existing administrator;
+a repeat for the same subject succeeds without adding records. Local SQLite checks
+covered these cases. This records initial administration for the later team APIs;
+it grants no additional access to private calendars in this pilot.
+
+A token-free `jwks_resolver_cold` event now identifies fresh public-key resolvers
+in live tail samples. Version `ead79a80-e214-4af5-b8c3-a56324d8f12b` measured:
+
+| Operation | Observed CPU | Samples |
+|---|---|---|
+| Cold resolver + session verification | 5–6 ms | 2 |
+| Warm session verification | 1 ms | 4 |
+| Warm bounded month read | 1–4 ms | 5 |
+| Warm versioned single-day write | 3–5 ms | 5 |
+
+The five-write browser observation timed out, but the underlying requests
+completed; tail recorded five successful executions and D1 confirmed final
+version 8. They were not repeated on the assumption of failure. Earlier version
+`c1da4442` had one successful write at 11 ms CPU, above the nominal 10 ms Free
+allowance. This outlier remains a headroom concern; a small passing sample does
+not guarantee all future requests fit. No paid plan was enabled.
+
+D1 dashboard snapshot during acceptance showed 162 rows read and 88 written;
+query insights confirmed indexed membership/calendar/date lookups and small row
+counts. These include setup/test traffic and can lag. They are observed pilot
+usage, not an estimate for a larger team rollout.
+
+Cold-write follow-up on version `e19c4acb-2cf0-452f-a6e9-e3475652f75b`
+confirmed 11 ms CPU with a fresh resolver and HTTP 200. Current deployment is
+that version; the preceding protected version is `ead79a80-e214-4af5-b8c3-a56324d8f12b`.
+Sanitized samples are stored in `cloudflare/live-evidence/2026-09-13-cpu.json`.
+Cloudflare documents limited flexibility for infrequent CPU overruns, explaining
+why this request succeeded, but sustained overruns can terminate execution.
+Treat the pilot as capacity-limited and keep team expansion paused pending more
+headroom; do not treat 11 ms as a new guaranteed allowance.
+[CPU enforcement](https://developers.cloudflare.com/workers/platform/limits/#cpu-time).
+
+### Reproducible verification and rollback
+
+1. Run the production smoke script without credentials; all listed paths must
+   redirect to this Access issuer. An unprotected 200 API response is a failure.
+2. Sign in through the PIN page as the first pilot identity. Verify the account
+   label, save a shift, reload, and check it in an independently signed-in browser.
+3. Sign out, sign in as the second identity and confirm its calendar is separate.
+   With its browser session, GET the first calendar's `/v1/calendars/<id>` and
+   date-range `/days?from=YYYY-MM-DD&to=YYYY-MM-DD`; expect 403. PATCH
+   `/v1/calendars/<id>/days/YYYY-MM-DD` with JSON
+   `{ "value": { "shiftCode": "N" }, "expectedVersion": 1, "mutationId": "<fresh UUID>" }`
+   and `X-ShiftCalendar-Request: 1`; expect 403. The owner's saved version must
+   remain unchanged. Omitting the CSRF header must also be rejected.
+4. Verify logged-in nested routes return HTML, missing assets return 404, and
+   private APIs use no-store. Wait out the 15-minute policy session and check
+   expiry/reauthentication; a logout test alone is not expiry evidence.
+5. Use `wrangler tail shiftcalendar --config wrangler.production.jsonc --format json`
+   locally for CPU/outcome measurements. Filter to operation, timestamp, CPU,
+   version and the cold-resolver marker before retaining evidence; do not retain
+   raw request headers. Read D1 metrics and `wrangler d1 insights shiftcalendar
+   --config wrangler.production.jsonc --time-period 1h --json` for actual rows and
+   query counts. Distinguish wall latency from CPU and sampled aggregates from
+   per-request statement bounds.
+
+For code rollback, from `cloudflare/` run
+`rtk proxy npm exec -- wrangler rollback <previous-protected-version-id> --config wrangler.production.jsonc`.
+Use a version with the correct Access audience, preserve the Access application,
+and rerun smoke/login checks. Do not roll back to the unpublished/unconfigured
+initial version. Both current migrations are additive; rolling code back does
+not delete users, shifts or the administrator record. Export/recover D1
+separately for a data incident; retain production data when removing a Worker.
