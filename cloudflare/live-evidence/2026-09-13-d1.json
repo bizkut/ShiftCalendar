@@ -1,0 +1,9 @@
+{
+  "captured_at": "2026-09-13T15:36:48.487380+00:00",
+  "window": "1h",
+  "query_shapes_returned": 25,
+  "reported_executions": 295,
+  "reported_rows_read": 303,
+  "reported_rows_written": 252,
+  "note": "Query Insights aggregates include migration and diagnostic traffic and may lag; these are not per-request billing guarantees."
+}

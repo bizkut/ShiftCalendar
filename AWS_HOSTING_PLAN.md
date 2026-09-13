@@ -194,7 +194,9 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 M2b is in progress. Dedicated D1 migration, protected workers.dev publication,
 first-user real PIN login, single-shift save/reload, logout and unauthenticated
-edge-protection checks are verified. Cross-user/independent-browser acceptance,
-expiry, administrator bootstrap and live usage measurements remain open.
+edge-protection checks are verified. Cross-user privacy, independent-browser persistence (user-confirmed),
+administrator bootstrap and live usage measurements are now recorded. Expiry
+and disallowed-email acceptance remain open. Cold writes reached 11 ms CPU;
+keep team expansion paused until CPU headroom is improved.
 [CLOUDFLARE.md](CLOUDFLARE.md) records the authoritative resource IDs, versions
 and evidence; no milestone is complete solely because deployment succeeded.

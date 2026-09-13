@@ -124,8 +124,7 @@ Validation performed locally:
   `/login` and `/teams` return HTML, missing JavaScript returns 404, and unsigned
   `/v1/session` returns 401 JSON with `no-store`.
 
-The initial Worker dry-run measured approximately 14 KiB compressed, far below
-the Free Worker code limit of 3 MB; the final packaging output is authoritative.
+The initial Worker dry-run measured approximately 14 KiB compressed, with a small packaged footprint; the final packaging output is authoritative.
 The Expo JavaScript asset is approximately 3.6 MB uncompressed and is a static
 asset, separate from Worker code. Both figures will change with later features.
 
@@ -314,3 +313,16 @@ and rerun smoke/login checks. Do not roll back to the unpublished/unconfigured
 initial version. Both current migrations are additive; rolling code back does
 not delete users, shifts or the administrator record. Export/recover D1
 separately for a data incident; retain production data when removing a Worker.
+
+Final pre-expiry dashboard snapshot: 103 Worker invocations, zero runtime errors
+(including zero exceeded-CPU events), CPU P50 2.76 ms / P90 5.45 ms / P99 11.49 ms.
+The latest version had only one measured request at that snapshot, so its median
+is the cold-write sample rather than a representative population. Query Insights
+reported 295 executions, 303 rows read and 252 rows written across 25 query shapes
+in the last hour (includes migrations/diagnostics). See the sanitized D1 evidence
+file. These are far below daily row/request allowances but do not remove the
+cold-CPU concern. Access lists exactly two active users.
+
+The refreshed Domains dashboard confirms the production workers.dev URL enabled,
+preview URLs disabled, and no custom domains or routes. All Worker traffic also
+has Access protection.
