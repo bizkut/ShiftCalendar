@@ -1,4 +1,4 @@
-# Cloudflare private browser pilot
+# Cloudflare ShiftCalendar pilot
 
 Phase 1 M2b verified on 2026-09-13 in this repository. The earlier plan called this milestone M1b. [AWS_HOSTING_PLAN.md](AWS_HOSTING_PLAN.md) is the authoritative phased plan.
 
@@ -6,7 +6,7 @@ Phase 1 M2b verified on 2026-09-13 in this repository. The earlier plan called t
 
 Custom domain deployed on 2026-09-13. Public DNS resolves it and verified HTTPS reaches Access. The initial NextDNS block cleared on 2026-09-14. Normal DNS/HTTPS smoke, first-user login, persistence, CSRF, foreign-resource denial, deep links and logout now pass. Second-user real-PIN login and reverse privacy checks also passed; the earlier M2b browser evidence below was collected on the former workers.dev address.
 
-This is an Access-protected, two-user private-calendar pilot. Real login, persistence, isolation, logout and expiry checks passed. Full personal features, team administration and broader release readiness remain later milestones. **M2c is complete:** the latest candidate passed the CPU sample and both users passed persistence and cross-user privacy checks. Team implementation remains a separate milestone. Earlier candidates exceeded the CPU gate. No paid plan was enabled.
+This is an Access-protected two-user pilot. **M2c is complete.** The M3 team-administration candidate is deployed and its first-user team-creation flow passed; two-user invitation, role-revocation, team-edit and M3-specific CPU acceptance are still in progress. Earlier M2c candidates exceeded the CPU gate before the final resolver passed. No paid plan was enabled.
 
 ## Deployed resources
 
@@ -15,12 +15,12 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `fac6525b-82ae-45be-ae9b-9e9eb3e5438e` — RS256 resolver; CPU and two-user correctness checks passed |
-| Previous protected version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — same custom-domain origin, safe candidate rollback |
+| Current version | `256d1577-b915-4930-9fed-5a9b469df760` — M3 candidate with bounded administration pages and read-only steady-state identity admission |
+| Previous protected version | `e1242228-97df-48fa-ab32-425c8d8c6ebf` — M3 invitation-status candidate using the same schema and origin |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
 | D1 database | `shiftcalendar`, `79c5678c-e084-49da-bfca-fbfbb5c41fdf` |
-| Applied migrations | `0001_calendar.sql`, `0002_application_administrators.sql` |
+| Applied migrations | `0001_calendar.sql`, `0002_application_administrators.sql`, `0003_team_administration.sql` |
 | Access application | `7286318b-f239-43e3-a57a-01b5e81034eb`, “ShiftCalendar pilot” |
 | Reusable allow policy | `0d65d035-cd9e-4de1-b297-1623fd35d070`, “ShiftCalendar pilot emails” |
 | Access issuer | `https://bitter-cell-8976.cloudflareaccess.com` |
@@ -217,8 +217,14 @@ The first user completed a new real PIN login on the final version. Its Septembe
 All four M2c plan checks are complete: profiling and focused optimization; security/concurrency regression validation (44 Worker/D1 plus six client tests, typechecks, dry run and public smoke); six confirmed cold writes at 6–8 ms plus twenty warm writes at 1–2 ms; and real persistence/privacy checks for both identities on the final candidate. Signature, issuer/audience/expiry verification remain in `jose`; active-user/ownership checks, CSRF, atomic revision/idempotency/audit behavior and native local-only behavior are preserved. Source commit `28bc7ca` and prior evidence commit `cb4c62f` identify the candidate. The documented rollback is `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a` with the same origin, audience and D1. No service plan or unrelated resource changed. The sample demonstrates observed headroom, not a guarantee against future runtime variance. M3 team access remains a separate milestone, including the manager/team-leader-only edit policy.
 
 
-## M3 permission foundation — local checkpoint
+## M3 candidate — team administration and permissions
 
-The calendar write guard no longer permits assigned members to edit team calendars. Both the atomic batch predicate and retry authorization use the same manager/team-leader restriction. Internal `owner` means team leader for team access; private-calendar ownership stays independent. Eleven new workerd/D1 permission cases cover permitted roles, read-only assigned users, global-administrator and team-creator non-bypass, demotion/removal/deactivation and retries, per-team roles, private-calendar isolation and a demotion between permission lookup and transaction execution.
+Migration `0003_team_administration.sql` adds user identity/status revisions, team metadata, membership revisions, targeted invitation status and an active team-calendar-per-assignee index. It is additive: rolling back Worker code leaves the new columns/table unused and preserves calendars. Do not reverse it by dropping columns in production. Use D1 Time Travel for data recovery; use Worker version rollback for code recovery.
 
-Validation: 55 Worker/D1 tests plus six browser-client tests pass; all three typechecks pass. This change is local and not deployed. The production pilot remains on the completed M2c version. Next work is the additive administration schema/API and browser team flow, followed by hosted correctness and CPU acceptance.
+Access admission, application activation and team membership are separate. A verified Access JWT provisions only its own subject/email. Invitations target an existing verified subject through its normalized email and do not send email or modify the Access allow policy. Application administrators create teams and activate/deactivate users. A team's internal `owner` is displayed as team leader; the leader manages invitations/memberships and can transfer leadership. Team leaders and managers create/edit team calendars. Members and viewers remain read-only even for a calendar assigned to them, while private calendars stay owner-only. Every administration mutation has an atomic current-permission/version guard, stable mutation ID and audit record. Concurrent application-admin changes must preserve at least one active administrator.
+
+Local validation passes: 62 Worker/D1 tests plus six browser-client tests, all app/Worker/test/client type checks, Expo web export and Wrangler production dry run. Coverage includes real `/v1` routing, targeted invitation/acceptance, two-team roles, assigned member/viewer denial, administrator non-bypass, removal/deactivation/demotion with retry denial, stale revisions, forged identifiers, idempotency, invitation revocation, bounded cursor pages and concurrent last-admin removal.
+
+Deployment preflight reconfirmed scoped Wrangler access, Workers **Free** as the current plan, 423 Worker invocations, zero runtime errors and September billable/projected cost of **US$0.00**. The 24-hour aggregate CPU view was P50 3.03 ms, P90 6.52 ms and P99 11.7 ms across several M2c/M3 versions; it is not the required M3-specific sample. Remote migration execution took 5.13 ms. D1 remained APAC/HKG and 245,760 bytes after migration; both original private Morning records remained intact at versions 30 and 113. The hosted first administrator created `ShiftCalendar Pilot` successfully. Two-user acceptance and operation-specific tail sampling remain pending.
+
+M3 rollback target after final acceptance is the immediately preceding protected version recorded for that release. Version `fac6525b-82ae-45be-ae9b-9e9eb3e5438e` restores completed M2c behavior with the same issuer, audience, domain and D1; the additive M3 schema can remain. A rollback hides team APIs, so retain team rows and redeploy the M3 candidate to restore them. Never delete team/private data as part of a Worker rollback.

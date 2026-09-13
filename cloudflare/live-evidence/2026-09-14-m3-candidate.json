@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-09-14T01:35:00+08:00",
+  "milestone": "M3",
+  "status": "hosted acceptance in progress",
+  "sourceCommits": ["e0edf10", "338462f", "eca7925"],
+  "worker": {
+    "name": "shiftcalendar",
+    "version": "256d1577-b915-4930-9fed-5a9b469df760",
+    "hostname": "shifts.amazonian.my",
+    "workersDev": false,
+    "previewUrls": false,
+    "startupMs": 4
+  },
+  "database": {
+    "name": "shiftcalendar",
+    "id": "79c5678c-e084-49da-bfca-fbfbb5c41fdf",
+    "migration": "0003_team_administration.sql",
+    "migrationCommands": 17,
+    "migrationExecutionMs": 5.13,
+    "sizeBytesAfterMigration": 245760,
+    "servedRegion": "APAC",
+    "servedColo": "HKG"
+  },
+  "preflight": {
+    "workersPlan": "Free — current plan",
+    "workerInvocationsDisplayed": 423,
+    "workerErrorsDisplayed": 0,
+    "billingPeriodCostUsd": 0,
+    "projectedCycleCostUsd": 0,
+    "aggregate24hCpuMs": { "p50": 3.03, "p90": 6.52, "p99": 11.7 },
+    "aggregateWarning": "The dashboard range includes earlier M2c and M3 versions; it is not the operation-specific M3 gate."
+  },
+  "localValidation": {
+    "workerAndD1Tests": 62,
+    "browserClientTests": 6,
+    "typechecks": "passed",
+    "webExport": "passed",
+    "wranglerDryRun": "passed"
+  },
+  "preservedPrivateRecords": [
+    { "calendarId": "e4d4edc1-29c4-49ae-a773-25880a6cc59a", "date": "2026-09-14", "shiftCode": "M", "dayVersion": 30 },
+    { "calendarId": "505e8f60-001c-4c54-9adf-7ad6eb18c75a", "date": "2026-09-15", "shiftCode": "M", "dayVersion": 113 }
+  ],
+  "hostedChecks": {
+    "firstAdministratorTeamCreate": "passed",
+    "teamName": "ShiftCalendar Pilot",
+    "secondIdentityInvitationAndAcceptance": "pending fresh PIN",
+    "roleAndRevocationMatrix": "pending",
+    "operationSpecificCpuSample": "pending"
+  },
+  "secretsRetained": false
+}
