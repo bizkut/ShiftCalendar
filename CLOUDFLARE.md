@@ -234,3 +234,9 @@ every deployment; code rollback and D1 recovery are separate operations.
 - Production unsigned/forged-header smoke checks passed for root, login, teams, missing asset and session paths. All redirected to Access; authenticated missing-asset status still requires its own check.
 - All 31 Worker/D1 and browser-client tests passed again.
 - Outstanding: second identity forged-ID reads/writes; separate-browser same-user persistence; disallowed-email flow; actual expiry/reauthentication; authenticated deep links and missing assets; first-admin bootstrap; live CPU and API D1 metrics. No PINs/session tokens are retained in these records.
+
+- Independent-browser persistence: the user confirmed signing in as the first identity in a different browser and seeing the September 14 Morning shift after refresh. This is user-reported acceptance evidence, not an agent-inspected second-browser trace.
+
+- Second identity completed real PIN login; the UI showed its own empty calendar and no first-user shift. Foreign-calendar metadata and date-range reads returned 403. A valid PATCH with the CSRF header and correct body schema also returned 403 (“Calendar access is not allowed”). An earlier malformed test body returned 400 and was not counted as authorization evidence.
+- Authenticated `/login` and `/teams` returned HTTP 200 HTML with no-cache; missing JavaScript returned 404 plain text with no-store.
+- Remaining acceptance now focuses on actual expiry/reauthentication, disallowed-email behavior, first-admin bootstrap and measured request CPU/D1 usage.
