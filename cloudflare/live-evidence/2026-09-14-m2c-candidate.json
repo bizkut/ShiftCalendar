@@ -1,7 +1,7 @@
 {
   "date": "2026-09-14",
   "milestone": "M2c",
-  "status": "RS256 candidate CPU sample passed; final first-user check pending",
+  "status": "M2c complete; CPU sample and both real identities passed",
   "version": "75e523c7-1a4b-472e-b65b-860fec8295f0",
   "rollbackVersion": "f28fefba-c2b9-4e14-90d1-d72932c5dd40",
   "origin": "https://shifts.amazonian.my",
@@ -30,11 +30,11 @@
     "source": "Wrangler whoami/d1 info and Cloudflare dashboard; snapshots may lag"
   },
   "blocker": null,
-  "cpuImprovementClaimed": false,
+  "cpuImprovementClaimed": true,
   "liveCpuEvidence": "2026-09-14-m2c-cpu.json",
   "currentVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
-  "nextStep": "Complete first-user login/persistence and reverse privacy on final candidate",
-  "pendingUserInput": "New first-user PIN",
+  "nextStep": "Separate M3 team access milestone",
+  "pendingUserInput": null,
   "latestCpuEvidence": "2026-09-14-m2c-rs256-cpu.json",
   "latestAttempt": {
     "workerCpuSampleCaptured": true,
@@ -53,5 +53,6 @@
     "postAttemptSecondDayVersion": 113,
     "shiftCode": "M",
     "stateVerifiedBy": "browser reload and remote D1 read"
-  }
+  },
+  "finalIdentityEvidence": "2026-09-14-m2c-final-identity.json"
 }

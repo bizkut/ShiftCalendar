@@ -35,12 +35,12 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; both pilot logins, private persistence and cross-user denial passed.
-A tested write-path optimization is deployed. The latest RS256 resolver sample passed: cold writes used 6–8 ms and warm writes 1–2 ms. The final first-user recheck remains pending; team expansion stays paused.
+A tested write-path optimization is deployed. The latest RS256 resolver sample passed: cold writes used 6–8 ms and warm writes 1–2 ms. Both users passed persistence and privacy rechecks. M2c is complete; team implementation is the next separate milestone.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
 The two-user Cloudflare private-calendar pilot is deployed and verified. Full
-team features remain pending, and final M2c identity checks must finish before expansion. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+team features remain pending, and M2c CPU and two-user identity checks are complete. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 

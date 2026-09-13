@@ -1,0 +1,264 @@
+{
+  "date": "2026-09-14",
+  "version": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e",
+  "firstUserRealLogin": true,
+  "reloadPassed": true,
+  "privateIsolationPassed": true,
+  "checks": [
+    {
+      "cache": "no-store",
+      "path": "/v1/session",
+      "ray": "a3a8afd8afd9d437-SIN",
+      "status": 200,
+      "cpuTimeMs": 1,
+      "wallTimeMs": 102,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED/days?from=2026-09-01&to=2026-09-30",
+      "ray": "a3a8afd9882ed437-SIN",
+      "status": 200,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 275,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED",
+      "ray": "a3a8afdb691dd437-SIN",
+      "status": 403,
+      "cpuTimeMs": 2,
+      "wallTimeMs": 190,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "cache": "no-store",
+      "path": "/v1/calendars/REDACTED/days?from=2026-09-01&to=2026-09-30",
+      "ray": "a3a8afdcd9a4d437-SIN",
+      "status": 403,
+      "cpuTimeMs": 3,
+      "wallTimeMs": 365,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "check": "own-write",
+      "cold": false,
+      "ray": "a3a8afdf8b9ad437-SIN",
+      "status": 200,
+      "version": 30,
+      "cpuTimeMs": 3,
+      "wallTimeMs": 189,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "check": "idempotent-retry",
+      "cold": false,
+      "ray": "a3a8afe0ec70d437-SIN",
+      "status": 200,
+      "version": 30,
+      "cpuTimeMs": 5,
+      "wallTimeMs": 544,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    },
+    {
+      "check": "foreign-write",
+      "cold": false,
+      "ray": "a3a8afe48e4cd437-SIN",
+      "status": 403,
+      "cpuTimeMs": 3,
+      "wallTimeMs": 192,
+      "workerVersion": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+    }
+  ],
+  "allCapturedTraces": [
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 102,
+      "eventTimestamp": 1789318603626,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "ray": "a3a8afd8afd9d437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 275,
+      "eventTimestamp": 1789318603765,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8afd9882ed437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 190,
+      "eventTimestamp": 1789318604071,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED",
+      "method": "GET",
+      "ray": "a3a8afdb691dd437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 365,
+      "eventTimestamp": 1789318604298,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8afdcd9a4d437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 189,
+      "eventTimestamp": 1789318604726,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "ray": "a3a8afdf8b9ad437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 5,
+      "wallTime": 544,
+      "eventTimestamp": 1789318604950,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "ray": "a3a8afe0ec70d437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 192,
+      "eventTimestamp": 1789318605533,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "ray": "a3a8afe48e4cd437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 13,
+      "eventTimestamp": 1789318605796,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/",
+      "method": "GET",
+      "ray": "a3a8afe62f09d437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 93,
+      "eventTimestamp": 1789318606013,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "ray": "a3a8afe7880bd437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 191,
+      "eventTimestamp": 1789318606147,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "ray": "a3a8afe8688ed437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 193,
+      "eventTimestamp": 1789318606371,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/shift-types",
+      "method": "GET",
+      "ray": "a3a8afe9c950d437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 288,
+      "eventTimestamp": 1789318606370,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "ray": "a3a8afe9c94ed437",
+      "coldLogMarker": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 292,
+      "eventTimestamp": 1789318606371,
+      "scriptVersion": {
+        "id": "fac6525b-82ae-45be-ae9b-9e9eb3e5438e"
+      },
+      "path": "/v1/calendars/REDACTED/private-details",
+      "method": "GET",
+      "ray": "a3a8afe9c951d437",
+      "coldLogMarker": false
+    }
+  ],
+  "finalD1": {
+    "firstDay": {
+      "date": "2026-09-14",
+      "shiftCode": "M",
+      "version": 30,
+      "auditCount": 30
+    },
+    "secondDay": {
+      "date": "2026-09-15",
+      "shiftCode": "M",
+      "version": 113,
+      "auditCount": 113
+    },
+    "calendarCreationAuditCount": 2,
+    "mutationCount": 145,
+    "transactionCheckCount": 0,
+    "sizeBytes": 208896
+  },
+  "note": "Own save and identical retry returned the same version 30; remote counts prove one new audit/mutation. These follow-up writes used 3 and 5 ms CPU; kept separately from, and do not replace, the complete 26-write acceptance sample. Tail stopped after capture."
+}
