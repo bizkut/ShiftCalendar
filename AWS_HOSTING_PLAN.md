@@ -57,7 +57,8 @@ Keep the account on the applicable Free plans. Exhausted quotas can cause failed
 - Verify forwarded Access JWTs using the configured issuer, JWKS and application audience. Never trust an email header alone; bind application users to verified identity subjects.
 - Let Access manage its browser cookie. Do not put authentication tokens in browser local/session storage. Clear protected in-memory data on logout, account change and expiry; return to Access for login.
 - Check active user status and current membership in the backend on every protected operation. Access admission does not grant team permissions. Deactivation must block API access even if an Access cookie remains valid.
-- Administrators manage teams and roles; managers edit assigned team rosters; members read their teams and manage their own requests. Users can have different roles in multiple teams. Preserve at least one active administrator under concurrent changes.
+- Administrators manage teams and roles. **Only a team's manager or team leader can edit that team's calendars**, including calendars assigned to individual members. Members and viewers are read-only, even for their own assigned schedule; members submit change requests instead of editing shifts directly. Application administrator status alone does not grant calendar editing. Users can have different roles in multiple teams. Preserve at least one active administrator under concurrent changes.
+- Apply the manager/team-leader restriction in backend mutation and retry checks as well as the UI: single-day edits, deletion, bulk patterns, imports and approved-request application must enforce the current role for the calendar's team. Map the existing internal team `owner` role explicitly to team leader during M3; do not confuse it with ownership of a private calendar.
 - Private calendars remain owner-only, including from team administrators unless a separate explicit policy is introduced. Shared responses exclude private notes, pay rates and request reasons.
 - Use same-origin requests and CSRF protection for writes. Return private API responses with `Cache-Control: no-store`; do not persist them in a service-worker cache. Keep tokens, PINs and private schedule content out of diagnostic logs.
 
@@ -150,9 +151,10 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 - [ ] Add administration screens/APIs for invitations, deactivation, team creation and membership roles; keep Access admission and application membership lifecycle consistent.
 - [ ] Add team switching and multi-team roles with backend authorization and permission audit records.
+- [ ] Enforce manager/team-leader-only team calendar editing. Remove the existing repository helper's allowance for a member to edit their assigned team calendar before enabling team APIs. Joining a team does not make a private calendar shared; keep the separate owner-only private-calendar policy above.
 - [ ] Preserve the last active administrator under concurrent changes and revoke application access immediately on deactivation or membership removal.
 
-**Exit evidence:** permission-matrix tests for forged IDs, removed users/memberships, different roles across two teams and concurrent administrator removal; administrator demonstrates the complete invite/assign/deactivate flow.
+**Exit evidence:** permission-matrix tests for forged IDs, removed users/memberships, different roles across two teams and concurrent administrator removal; administrator demonstrates the complete invite/assign/deactivate flow. Verify that members cannot edit their own assigned team calendar, that an application administrator without a manager/team-leader role cannot edit it, and that demotion immediately rejects writes and retries.
 
 ### Phase 2 — M4: shared roster
 
@@ -161,7 +163,7 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 - [ ] Apply revisions, retry protection and audit writes; refresh views after edits and reject offline writes safely.
 - [ ] Use Kuala Lumpur calendar dates consistently, including overnight shifts and month/year boundaries.
 
-**Exit evidence:** manager edits and member sees the result; members cannot edit team rosters directly. Cover concurrent writes, cross-team attempts, private-field exclusion and native local compatibility.
+**Exit evidence:** a manager or team leader edits and the member sees the result; members cannot edit team rosters directly, including their own assigned dates. The member UI is read-only with a change-request path, and forged API writes are denied. Cover concurrent writes, cross-team attempts, private-field exclusion and native local compatibility.
 
 ### Phase 3 — M5: scheduling tools
 
