@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Linking } from 'react-native';
 import { Alert } from '../../utils/platformAlert';
 import { resetLocalData } from '../../utils/exportImport';
 import * as Haptics from 'expo-haptics';
@@ -49,25 +48,6 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy, cloudMode = 
         </TouchableOpacity>
       </View>
       </>}
-
-      {/* Support */}
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SUPPORT</Text>
-      <TouchableOpacity
-        style={[styles.coffeeCard, { backgroundColor: '#FFDD0020', borderColor: '#FFDD0050' }]}
-        onPress={() => Linking.openURL('https://buymeacoffee.com/itroy0')}
-        activeOpacity={0.7}
-      >
-        <View style={styles.coffeeIconWrap}>
-          <MaterialCommunityIcons name="coffee" size={28} color="#FFDD00" />
-        </View>
-        <View style={styles.coffeeInfo}>
-          <Text style={[styles.coffeeTitle, { color: colors.text }]}>Buy Me a Coffee</Text>
-          <Text style={[styles.coffeeDesc, { color: colors.textSecondary }]}>
-            If you enjoy ShiftCalendar, consider supporting its development!
-          </Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
-      </TouchableOpacity>
 
       {/* About */}
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ABOUT</Text>
@@ -185,11 +165,6 @@ const styles = StyleSheet.create({
   aboutValue: { fontSize: 15 },
   madeBy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 12, gap: 6 },
   madeByText: { fontSize: 14, fontWeight: '600' },
-  coffeeCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, gap: 14 },
-  coffeeIconWrap: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#FFDD0020', alignItems: 'center', justifyContent: 'center' },
-  coffeeInfo: { flex: 1 },
-  coffeeTitle: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  coffeeDesc: { fontSize: 13, lineHeight: 18 },
   privacyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
   privacyTitle: { fontSize: 20, fontWeight: '800' },
   privacyClose: { padding: 4 },
