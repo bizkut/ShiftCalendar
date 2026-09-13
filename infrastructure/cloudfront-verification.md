@@ -1,5 +1,12 @@
 # CloudFront project verification required
 
+> **Historical AWS reference — superseded 2026-09-13.** Follow the
+> [Cloudflare plan](../PLAN.md) for current work. Do not run the AWS deployment
+> or resume the verification request as part of the Cloudflare migration.
+> The AWS attempt was rolled back; no live calendar deployment remains.
+> Support intake was sent, but the case form was not submitted and no case ID exists.
+> Cloudflare deployment instructions will be added with M1; this is not its runbook.
+
 Deployment attempt: 2026-09-13. AWS rejected distribution creation with HTTP 403
 and `HandlerErrorCode: AccessDenied`. No distribution or flat-rate subscription
 was created. This failure occurred before subscription activation; it does not

@@ -1,6 +1,6 @@
 # ShiftCalendar
 
-A shift scheduling app for shift workers, built with React Native + Expo. Use local-only calendars on a device, or configure the AWS pilot for login, private cloud calendars, and shared team schedules. Cloud saves require connectivity.
+A shift scheduling app for shift workers, built with React Native + Expo. Use local-only calendars on a device, with a planned Cloudflare pilot for login, private cloud calendars, and shared team schedules. Cloud saves require connectivity.
 
 [![Download APK](https://img.shields.io/github/v/release/iTroy0/ShiftCalendar?label=Download%20APK&style=for-the-badge)](https://github.com/iTroy0/ShiftCalendar/releases/latest)
 
@@ -26,16 +26,19 @@ A shift scheduling app for shift workers, built with React Native + Expo. Use lo
 - **Export & Import** -- CSV export/import, PDF export, full backup/restore
 - **Notifications** -- Evening reminders for the next day's shift
 - **Configurable** -- Week start day, currency (33 supported), haptic feedback
-- **Local-only mode** -- Keep calendars on the device without a login. Cloud mode uses Cognito authentication and stores calendars and team memberships in AWS.
+- **Local-only mode** -- Keep calendars on the device without a login. Cloud mode is being migrated from the existing AWS implementation to Cloudflare; see the phased plan for readiness.
 - **Accessible** -- Screen reader labels on all interactive elements
 
-## AWS hosting and teams
+## Cloudflare hosting and teams
 
-The Malaysia pilot uses private S3 + CloudFront's $0 Free flat-rate plan for the website, Cognito for login,
-API Gateway + Lambda for operations, and DynamoDB for calendars and team roles.
-See [the phased plan](PLAN.md) for component ownership and milestone checks, and
-[deployment instructions](DEPLOYMENT.md) for setup, current costs, validation,
-rollback and remaining release work. No AWS deployment has been performed yet.
+The target uses Workers Static Assets for the website, a Worker for the API,
+D1 for calendars and team roles, and Cloudflare Access for approved-email login.
+Start on a generated `workers.dev` address; `shifts.amazonian.my` comes later.
+The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
+
+See [the phased plan](PLAN.md) for service mapping, limits and migration milestones.
+Cloudflare deployment is not implemented yet. The attempted AWS deployment was
+blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
 The browser supports CSV and JSON file flows and PDF through the browser print
 dialog. Android widgets and native reminders remain device features. Local JSON

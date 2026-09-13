@@ -1,5 +1,12 @@
 # AWS pilot deployment
 
+> **Historical AWS reference — superseded 2026-09-13.** Follow the
+> [Cloudflare plan](PLAN.md) for current work. Do not run the AWS deployment
+> or resume the verification request as part of the Cloudflare migration.
+> The AWS attempt was rolled back; no live calendar deployment remains.
+> Support intake was sent, but the case form was not submitted and no case ID exists.
+> Cloudflare deployment instructions will be added with M1; this is not its runbook.
+
 Status: M1a local deployment/login readiness passed on 2026-09-13. The broader
 pilot implementation and live acceptance checks remain in progress. Deployment
 was attempted on 2026-09-13; AWS requires project verification before creating
