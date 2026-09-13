@@ -1,0 +1,129 @@
+{
+  "date": "2026-09-14",
+  "diagnosticOnly": true,
+  "note": "Local profiler sampling includes runtime/native/program time and is not production CPU. Two candidate runs do not establish improvement. Initial candidate run failed on unsupported redirect:error; manual redirect plus non-200 rejection fixed it before these successful runs.",
+  "runs": [
+    {
+      "variant": "baseline",
+      "profiles": [
+        {
+          "phase": "cold",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 4011,
+            "(program)": 3407,
+            "ue": 2709,
+            "(anonymous)": 902,
+            "fetch": 386,
+            "xe": 386,
+            "at": 255,
+            "importKey": 130,
+            "D1PreparedStatement": 128,
+            "_sendOrThrow": 128,
+            "Ve": 127,
+            "J": 127,
+            "writeDay": 127,
+            "pe": 126,
+            "C": 125,
+            "Ne": 124
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(program)": 952,
+            "(idle)": 844,
+            "setAttributes": 130
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 957,
+            "be": 944,
+            "Ve": 130,
+            "fetch": 127
+          }
+        }
+      ]
+    },
+    {
+      "variant": "candidate",
+      "profiles": [
+        {
+          "phase": "cold",
+          "sampledMicrosecondsByFunction": {
+            "fetch": 3429,
+            "(idle)": 2842,
+            "r": 2744,
+            "json": 909,
+            "Be": 379,
+            "ve": 265,
+            "writeDay": 259,
+            "bind": 132,
+            "(anonymous)": 129,
+            "_wrappedFetch": 129,
+            "ae": 128,
+            "verify": 128
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 1837,
+            "text": 634,
+            "De": 128
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 880,
+            "verify": 809,
+            "_wrappedFetch": 130
+          }
+        }
+      ]
+    },
+    {
+      "variant": "candidate-2",
+      "profiles": [
+        {
+          "phase": "cold",
+          "sampledMicrosecondsByFunction": {
+            "(program)": 3257,
+            "(idle)": 3047,
+            "r": 2469,
+            "addAggregatedD1MetaToSpan": 909,
+            "Be": 262,
+            "ve": 262,
+            "fetch": 255,
+            "batch": 132,
+            "set": 131,
+            "writeDay": 129,
+            "ee": 128,
+            "Te": 127,
+            "oe": 127,
+            "Se": 126,
+            "re": 126
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 923,
+            "verify": 920,
+            "_sendOrThrow": 128
+          }
+        },
+        {
+          "phase": "warm",
+          "sampledMicrosecondsByFunction": {
+            "(idle)": 879,
+            "verify": 806,
+            "Ne": 127
+          }
+        }
+      ]
+    }
+  ]
+}

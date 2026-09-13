@@ -1,8 +1,9 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { jwtVerify } from 'jose';
+import { createAccessKeyResolver } from './access-keys';
 import { ApiError } from './errors';
 
 // Cache only public verification keys, never request identity or session data.
-const resolvers = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+const resolvers = new Map<string, ReturnType<typeof createAccessKeyResolver>>();
 
 export async function verifyIdentity(request: Request, env: Env, onColdResolver?: () => void) {
   const token = request.headers.get('Cf-Access-Jwt-Assertion');
@@ -13,11 +14,8 @@ export async function verifyIdentity(request: Request, env: Env, onColdResolver?
   }
   let resolver = resolvers.get(env.ACCESS_ISSUER);
   if (!resolver) {
-    // Let the caller mark the response without initializing console formatting.
     onColdResolver?.();
-    resolver = createRemoteJWKSet(new URL(`${env.ACCESS_ISSUER}/cdn-cgi/access/certs`), {
-      timeoutDuration: 5000, cooldownDuration: 30000, cacheMaxAge: 600000,
-    });
+    resolver = createAccessKeyResolver(env.ACCESS_ISSUER);
     if (resolvers.size >= 4) resolvers.clear();
     resolvers.set(env.ACCESS_ISSUER, resolver);
   }
