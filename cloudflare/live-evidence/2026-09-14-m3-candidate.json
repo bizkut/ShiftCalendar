@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-14T01:35:00+08:00",
+  "capturedAt": "2026-09-14T06:35:09+08:00",
   "milestone": "M3",
-  "status": "hosted acceptance in progress",
+  "status": "multi-user acceptance deferred; production restricted to one active user",
   "sourceCommits": ["e0edf10", "338462f", "eca7925", "222eab1", "546d09a"],
   "worker": {
     "name": "shiftcalendar",
@@ -45,9 +45,23 @@
   "hostedChecks": {
     "firstAdministratorTeamCreate": "passed",
     "teamName": "ShiftCalendar Pilot",
-    "secondIdentityInvitationAndAcceptance": "pending fresh PIN",
-    "roleAndRevocationMatrix": "pending",
-    "operationSpecificCpuSample": "pending"
+    "secondIdentityPrivateIsolationBaseline": "passed before deactivation; only its private calendar was returned and no team or invitation existed",
+    "secondIdentityInvitationAndAcceptance": "not run; operator selected single-user production",
+    "roleAndRevocationMatrix": "automated coverage passed; live multi-user acceptance deferred",
+    "operationSpecificCpuSample": {
+      "sessionTeamAndAdminReadsCpuMs": "1-2",
+      "coldUserDeactivationCpuMs": 13,
+      "deactivationStatus": 200,
+      "gate": "not passed; required below 10 ms"
+    },
+    "finalProductionState": {
+      "accessAllowedEmails": ["bizkut.limau@gmail.com"],
+      "activeApplicationAdministrators": 1,
+      "disabledPreservedUsers": 1,
+      "teamMemberships": [{ "teamName": "ShiftCalendar Pilot", "role": "owner" }],
+      "invitations": 0,
+      "failedTransactionChecks": 0
+    }
   },
   "secretsRetained": false
 }

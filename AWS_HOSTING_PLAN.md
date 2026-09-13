@@ -45,14 +45,14 @@ Published allowances are ongoing Free-plan limits, not a contractual promise tha
 
 Sources: [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/), [D1 limits](https://developers.cloudflare.com/d1/platform/limits/), [Zero Trust plans](https://www.cloudflare.com/plans/). Verify available Access seats in the account dashboard before invitations.
 
-Baseline for measurement: two pilot users, followed by one team; approximately 100,000 API calls/month and less than 100 MB of initial data. These are workload assumptions, not performance evidence. Daily peaks and per-request CPU matter more than the monthly average.
+Current production baseline: one active pilot user and one owner-only team; approximately 100,000 API calls/month and less than 100 MB of initial data. The second historical pilot identity and its private calendar are retained in D1 but disabled. These are workload assumptions, not performance evidence. Daily peaks and per-request CPU matter more than the monthly average.
 
 Keep the account on the applicable Free plans. Exhausted quotas can cause failed operations or an unavailable app; US$0 does not imply unlimited service. Use operational review thresholds at 50% and 80% of shared allowances, bound requests, and reduce load or pause onboarding before exhaustion. Dashboard reviews/alerts are not spending caps. No paid upgrade is authorized by this plan.
 
 ## Login, permissions and privacy
 
 - Use Access's managed email/PIN page as the initial login page. Add a branded in-app sign-in/retry/session-expired view; an outer Access gate may appear before the app loads. Password setup/reset and Cognito callbacks are no longer applicable.
-- Configure a reusable allow policy for the two approved pilot emails, `bizkut.limau@gmail.com` and `hasanuddin.abakar@gmail.com`. Keep operational identity details out of public examples and never record PINs or session tokens.
+- Keep the reusable production allow policy restricted to `bizkut.limau@gmail.com` while the app operates in single-user mode. Adding another identity and resuming team admission requires a deliberate future rollout. Keep operational identity details out of public examples and never record PINs or session tokens.
 - Protect all traffic to this specific Worker, including assets and API. Avoid account-wide rules that would affect unrelated apps. Disable unused preview URLs and test all exposed hostnames. [Worker Access protection](https://developers.cloudflare.com/workers/configuration/cloudflare-access/)
 - Verify forwarded Access JWTs using the configured issuer, JWKS and application audience. Never trust an email header alone; bind application users to verified identity subjects.
 - Let Access manage its browser cookie. Do not put authentication tokens in browser local/session storage. Clear protected in-memory data on logout, account change and expiry; return to Access for login.
@@ -83,7 +83,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 1 — M2a: local Cloudflare slice | Authenticated private-calendar API and web integration pass locally | M0, M1; validate reused implementation |
 | Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | Verified two-user pilot; CPU gate before expansion |
 | Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | Complete — CPU and two-user correctness checks passed |
-| Phase 2 — M3: teams and access | Administrator manages teams and current permissions | M2c |
+| Phase 2 — M3: teams and access | Administrator manages teams and current permissions | Implementation deployed; multi-user acceptance deferred while production remains single-user |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | M3 |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | M4, M5 |
@@ -151,14 +151,14 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 ### Phase 2 — M3: teams and access
 
-**In progress:** M3 Worker version `841deab6-458a-4735-b4cc-6826318980b5` is deployed with data-preserving migrations `0003_team_administration.sql` and `0004_expired_invitations.sql`. It includes targeted invitations for existing Access-admitted users, truthful pending/accepted/declined/revoked/expired status, application deactivation/admin controls, team creation, memberships, role changes, leadership transfer, team switching and team-calendar provisioning. Access admission remains external to the application. Internal `owner` is displayed as team leader. Team leaders/managers can edit team calendars; assigned members/viewers remain read-only. Atomic permission/version checks, idempotent mutation/audit records, bounded cursor pages and the concurrent last-active-admin guard are covered by repository and real-handler tests. Local type checks, 69 tests, web and Android local-only exports, and Wrangler dry run pass. The first hosted team-creation flow passed and private records survived migration; two-user hosted role/revocation checks and M3-specific CPU sampling remain pending.
+**Deferred after deployment:** M3 Worker version `841deab6-458a-4735-b4cc-6826318980b5` is deployed with data-preserving migrations `0003_team_administration.sql` and `0004_expired_invitations.sql`. It includes targeted invitations for existing Access-admitted users, truthful pending/accepted/declined/revoked/expired status, application deactivation/admin controls, team creation, memberships, role changes, leadership transfer, team switching and team-calendar provisioning. Access admission remains external to the application. Internal `owner` is displayed as team leader. Team leaders/managers can edit team calendars; assigned members/viewers remain read-only. Atomic permission/version checks, idempotent mutation/audit records, bounded cursor pages and the concurrent last-active-admin guard are covered by repository and real-handler tests. Local type checks, 69 tests, web and Android local-only exports, and Wrangler dry run pass. The first hosted team-creation flow passed. On 2026-09-14 the operator chose single-user production: only `bizkut.limau@gmail.com` remains in the Access allow policy, the second application identity is disabled without deleting its private data, the team has only its owner, and no invitations exist. A cold application-deactivation request succeeded but measured 13 ms CPU, so the M3 live performance gate did not pass. Resume two-user role/revocation and operation-specific CPU acceptance only when multi-user rollout is requested again.
 
-- [ ] Add administration screens/APIs for invitations, deactivation, team creation and membership roles; keep Access admission and application membership lifecycle consistent.
-- [ ] Add team switching and multi-team roles with backend authorization and permission audit records.
-- [ ] Enforce manager/team-leader-only team calendar editing. Remove the existing repository helper's allowance for a member to edit their assigned team calendar before enabling team APIs. Joining a team does not make a private calendar shared; keep the separate owner-only private-calendar policy above.
-- [ ] Preserve the last active administrator under concurrent changes and revoke application access immediately on deactivation or membership removal.
+- [x] Add administration screens/APIs for invitations, deactivation, team creation and membership roles; keep Access admission and application membership lifecycle consistent.
+- [x] Add team switching and multi-team roles with backend authorization and permission audit records.
+- [x] Enforce manager/team-leader-only team calendar editing. Remove the existing repository helper's allowance for a member to edit their assigned team calendar before enabling team APIs. Joining a team does not make a private calendar shared; keep the separate owner-only private-calendar policy above.
+- [x] Preserve the last active administrator under concurrent changes and revoke application access immediately on deactivation or membership removal.
 
-**Exit evidence:** permission-matrix tests for forged IDs, removed users/memberships, different roles across two teams and concurrent administrator removal; administrator demonstrates the complete invite/assign/deactivate flow. Verify that members cannot edit their own assigned team calendar, that an application administrator without a manager/team-leader role cannot edit it, and that demotion immediately rejects writes and retries.
+**Exit evidence:** implementation and automated permission-matrix coverage are complete, but this milestone remains deferred until a future multi-user rollout supplies live invite/assign/role/revocation evidence and a new operation-specific CPU sample with every request below 10 ms. The current production acceptance target is one active user only.
 
 ### Phase 2 — M4: shared roster
 
@@ -214,4 +214,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2c is verified for the two-user private browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, CPU, D1, resource/version and measurement evidence. The M3 candidate is locally validated as described above and has not yet changed hosted data or code. Full roster views, scheduling tools, change requests, recovery drills and native release checks remain later milestones.
+M2c is verified for the historical two-user private browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, CPU, D1, resource/version and measurement evidence. The M3 implementation and additive schema are deployed, but production is restricted to one active identity and multi-user acceptance is deferred as described above. Full roster views, scheduling tools, change requests, recovery drills and native release checks remain later milestones.
