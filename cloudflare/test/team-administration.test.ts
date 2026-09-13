@@ -24,6 +24,10 @@ it('keeps Access admission separate while an administrator creates a team', asyn
   expect(users.items.map(value => [value.username,value.accessAdmission])).toEqual([
     ['alice@example.com','external'],['bob@example.com','external'],
   ]);
+  const firstPage=await alice.listUsers('',1);
+  expect(firstPage.items).toHaveLength(1); expect(firstPage.nextCursor).toBe(firstPage.items[0].sub);
+  expect((await alice.listUsers(firstPage.nextCursor!,1)).items).toHaveLength(1);
+  await expect(alice.listUsers('',101)).rejects.toMatchObject({status:400});
   const created = await alice.createTeam(mutation({ name:'Ward A', timezone:'Asia/Kuala_Lumpur' }));
   expect(created.role).toBe('owner');
   await expect(bob.createTeam(mutation({ name:'Forged', timezone:'Asia/Kuala_Lumpur' }))).rejects.toMatchObject({ status:403 });

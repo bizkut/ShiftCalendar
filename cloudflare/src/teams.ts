@@ -46,6 +46,12 @@ export class TeamRepository {
       WHERE m.user_sub=? AND m.team_id=? AND m.role='owner' AND t.deleted=0`).bind(this.sub, teamId).first();
     if (!row) throw new ApiError(403, 'forbidden', 'Team leader access is required.');
   }
+
+  private page(cursor = '', limit = 100) {
+    if (cursor) identifier(cursor);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new ApiError(400, 'invalid_request', 'Invalid page size.');
+    return { cursor, limit };
+  }
   private async prior<T>(mutationId: string, operation: string, hash: string) {
     const row = await this.db.prepare(`SELECT m.operation,m.fingerprint,m.result FROM mutations m JOIN users u ON u.sub=m.user_sub WHERE m.user_sub=? AND m.id=? AND u.disabled=0`).bind(this.sub, mutationId).first<{ operation: string; fingerprint: string; result: string }>();
     if (!row) return undefined;
@@ -68,12 +74,19 @@ export class TeamRepository {
   async provision(username: string) {
     const normalized = username.trim().toLowerCase();
     if (!normalized || normalized.length > 254) throw new ApiError(401, 'unauthorized', 'Invalid identity.');
+    const existing = await this.db.prepare(`SELECT u.*,EXISTS(SELECT 1 FROM application_administrators a
+      WHERE a.user_sub=u.sub) application_admin FROM users u WHERE u.sub=?`).bind(this.sub).first<UserRow>();
+    if (existing?.disabled) throw new ApiError(403, 'forbidden', 'This user is disabled.');
+    if (existing?.username === normalized) return user(existing);
     const now = new Date().toISOString();
-    await this.db.prepare(`INSERT INTO users(sub,username,display_name,updated_at) VALUES(?,?,?,?)
-      ON CONFLICT(sub) DO UPDATE SET username=excluded.username,
-      display_name=CASE WHEN users.display_name='' THEN excluded.display_name ELSE users.display_name END,
-      updated_at=CASE WHEN users.username IS excluded.username THEN users.updated_at ELSE excluded.updated_at END`)
-      .bind(this.sub, normalized, normalized, now).run();
+    if (existing) {
+      await this.db.prepare(`UPDATE users SET username=?,
+        display_name=CASE WHEN display_name='' THEN ? ELSE display_name END,updated_at=? WHERE sub=? AND disabled=0`)
+        .bind(normalized, normalized, now, this.sub).run();
+    } else {
+      await this.db.prepare('INSERT INTO users(sub,username,display_name,updated_at) VALUES(?,?,?,?)')
+        .bind(this.sub, normalized, normalized, now).run();
+    }
     return this.session();
   }
   async session() {
@@ -81,24 +94,29 @@ export class TeamRepository {
     if (!row || row.disabled) throw new ApiError(403, 'forbidden', 'This user is disabled.');
     return user(row);
   }
-  async listUsers() {
-    await this.requireAdmin();
-    const rows = await this.db.prepare(`SELECT u.*,EXISTS(SELECT 1 FROM application_administrators a WHERE a.user_sub=u.sub) application_admin FROM users u ORDER BY COALESCE(u.username,u.sub) LIMIT 100`).all<UserRow>();
-    return { items: rows.results.map(user) };
+  async listUsers(cursor = '', limit = 100) {
+    await this.requireAdmin(); const page = this.page(cursor, limit);
+    const rows = await this.db.prepare(`SELECT u.*,EXISTS(SELECT 1 FROM application_administrators a WHERE a.user_sub=u.sub) application_admin
+      FROM users u WHERE u.sub>? ORDER BY u.sub LIMIT ?`).bind(page.cursor,page.limit+1).all<UserRow>();
+    const items=rows.results.slice(0,page.limit).map(user);
+    return { items, ...(rows.results.length>page.limit ? {nextCursor:items.at(-1)!.sub}:{}) };
   }
-  async listTeams() {
-    await this.session();
-    const rows = await this.db.prepare(`SELECT t.*,m.role FROM teams t JOIN memberships m ON m.team_id=t.id WHERE m.user_sub=? AND t.deleted=0 ORDER BY t.name,t.id LIMIT 101`).bind(this.sub).all<TeamRow>();
-    return { items: rows.results.slice(0, 100).map(team), ...(rows.results.length > 100 ? { nextCursor: rows.results[99].id } : {}) };
+  async listTeams(cursor = '', limit = 100) {
+    await this.session(); const page=this.page(cursor,limit);
+    const rows = await this.db.prepare(`SELECT t.*,m.role FROM teams t JOIN memberships m ON m.team_id=t.id
+      WHERE m.user_sub=? AND t.deleted=0 AND t.id>? ORDER BY t.id LIMIT ?`).bind(this.sub,page.cursor,page.limit+1).all<TeamRow>();
+    const items=rows.results.slice(0,page.limit).map(team);
+    return {items,...(rows.results.length>page.limit?{nextCursor:items.at(-1)!.id}:{})};
   }
-  async listMembers(teamId: string) {
-    identifier(teamId); await this.session();
-    const rows = await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND EXISTS(SELECT 1 FROM memberships self WHERE self.team_id=m.team_id AND self.user_sub=?) ORDER BY COALESCE(u.display_name,u.username,u.sub) LIMIT 100`).bind(teamId, this.sub).all<MemberRow>();
-    if (!rows.results.length) {
-      const access = await this.db.prepare('SELECT 1 FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId, this.sub).first();
-      if (!access) throw new ApiError(403, 'forbidden', 'Team access is not allowed.');
-    }
-    return { items: rows.results.map(member) };
+  async listMembers(teamId: string, cursor = '', limit = 100) {
+    identifier(teamId); await this.session(); const page=this.page(cursor,limit);
+    const access=await this.db.prepare('SELECT 1 FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId,this.sub).first();
+    if(!access)throw new ApiError(403,'forbidden','Team access is not allowed.');
+    const rows = await this.db.prepare(`SELECT m.user_sub,u.username,u.display_name,m.role,m.joined_at,m.version
+      FROM memberships m JOIN users u ON u.sub=m.user_sub WHERE m.team_id=? AND m.user_sub>?
+      ORDER BY m.user_sub LIMIT ?`).bind(teamId,page.cursor,page.limit+1).all<MemberRow>();
+    const items=rows.results.slice(0,page.limit).map(member);
+    return {items,...(rows.results.length>page.limit?{nextCursor:items.at(-1)!.sub}:{})};
   }
   async createTeam(input: unknown) {
     await this.requireAdmin();
@@ -110,14 +128,16 @@ export class TeamRepository {
     catch { const prior=await this.prior<CloudTeam>(m.mutationId,'create-team',m.hash); if (prior) return prior; throw new ApiError(409,'conflict','Team creation conflicted.'); }
     return result;
   }
-  async listInvitations(teamId?: string) {
-    await this.session();
+  async listInvitations(teamId?: string, cursor = '', limit = 100) {
+    await this.session(); const page=this.page(cursor,limit);
     if (teamId) await this.requireLeader(identifier(teamId));
-    const base = `SELECT i.*,t.name team_name,u.username invitee_username FROM team_invitations i JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub`;
+    const base = `SELECT i.*,t.name team_name,u.username invitee_username FROM team_invitations i
+      JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub`;
     const rows = teamId
-      ? await this.db.prepare(`${base} WHERE i.team_id=? AND EXISTS(SELECT 1 FROM memberships m WHERE m.team_id=i.team_id AND m.user_sub=? AND m.role='owner') ORDER BY i.created_at DESC LIMIT 100`).bind(identifier(teamId),this.sub).all<InviteRow>()
-      : await this.db.prepare(`${base} WHERE i.invitee_sub=? ORDER BY i.created_at DESC LIMIT 100`).bind(this.sub).all<InviteRow>();
-    return { items: rows.results.map(invitation) };
+      ? await this.db.prepare(`${base} WHERE i.team_id=? AND i.id>? ORDER BY i.id LIMIT ?`).bind(teamId,page.cursor,page.limit+1).all<InviteRow>()
+      : await this.db.prepare(`${base} WHERE i.invitee_sub=? AND i.id>? ORDER BY i.id LIMIT ?`).bind(this.sub,page.cursor,page.limit+1).all<InviteRow>();
+    const items=rows.results.slice(0,page.limit).map(invitation);
+    return {items,...(rows.results.length>page.limit?{nextCursor:items.at(-1)!.id}:{})};
   }
   async createInvitation(teamId: string, input: unknown) {
     identifier(teamId);

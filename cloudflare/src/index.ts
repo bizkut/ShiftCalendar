@@ -54,6 +54,8 @@ export default {
         return Response.json({ data: { sub: session.sub, username: session.username, applicationAdmin: session.applicationAdmin } }, { headers });
       }
       const query = new URL(request.url).searchParams;
+      const cursor = query.get('cursor') ?? '';
+      const limit = Number(query.get('limit') ?? '100');
       let data: unknown;
       let status = 200;
       if (path === '/v1/bootstrap' && request.method === 'GET') {
@@ -63,7 +65,7 @@ export default {
       } else if (path === '/v1/calendars' && request.method === 'POST') {
         data = await repository.create(await readBody(request)); status = 201;
       } else if (path === '/v1/calendars' && request.method === 'GET') {
-        data = await repository.list(query.get('cursor') ?? '', Number(query.get('limit') ?? '100'));
+        data = await repository.list(cursor, limit);
       } else if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 5 && request.method === 'PATCH') {
         data = await repository.writeDay(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'calendars' && parts.length === 3 && request.method === 'GET') {
@@ -77,11 +79,11 @@ export default {
         if (selected.scope !== 'private') throw new ApiError(403, 'forbidden', 'Personal details are private.');
         data = { calendarId: selected.id, days: [], leaveBalances: {}, version: 0, updatedAt: selected.updatedAt };
       } else if (path === '/v1/teams' && request.method === 'GET') {
-        data = await teams.listTeams();
+        data = await teams.listTeams(cursor, limit);
       } else if (path === '/v1/teams' && request.method === 'POST') {
         data = await teams.createTeam(await readBody(request)); status = 201;
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 4 && request.method === 'GET') {
-        data = await teams.listMembers(parts[2]);
+        data = await teams.listMembers(parts[2], cursor, limit);
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'PATCH') {
         data = await teams.changeMember(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'DELETE') {
@@ -89,17 +91,17 @@ export default {
       } else if (parts[1] === 'teams' && parts[3] === 'transfer-ownership' && parts.length === 4 && request.method === 'POST') {
         data = await teams.transfer(parts[2], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'invitations' && parts.length === 4 && request.method === 'GET') {
-        data = await teams.listInvitations(parts[2]);
+        data = await teams.listInvitations(parts[2], cursor, limit);
       } else if (parts[1] === 'teams' && parts[3] === 'invitations' && parts.length === 4 && request.method === 'POST') {
         data = await teams.createInvitation(parts[2], await readBody(request)); status = 201;
       } else if (parts[1] === 'teams' && parts[3] === 'invitations' && parts.length === 5 && request.method === 'DELETE') {
         data = await teams.revokeInvitation(parts[2], parts[4], await readBody(request));
       } else if (path === '/v1/invitations' && request.method === 'GET') {
-        data = await teams.listInvitations();
+        data = await teams.listInvitations(undefined, cursor, limit);
       } else if (parts[1] === 'invitations' && parts.length === 3 && request.method === 'PATCH') {
         data = await teams.respondInvitation(parts[2], await readBody(request));
       } else if (path === '/v1/admin/users' && request.method === 'GET') {
-        data = await teams.listUsers();
+        data = await teams.listUsers(cursor, limit);
       } else if (parts[1] === 'admin' && parts[2] === 'users' && parts.length === 4 && request.method === 'PATCH') {
         data = await teams.updateUser(parts[3], await readBody(request));
       } else {
