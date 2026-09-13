@@ -1,0 +1,661 @@
+{
+  "candidateCommit": "125813f",
+  "date": "2026-09-14",
+  "writeRequests": 28,
+  "coldCpuMs": [
+    13,
+    12,
+    7,
+    12,
+    13,
+    7,
+    13,
+    6
+  ],
+  "warmCpuMs": [
+    3,
+    2,
+    2,
+    3,
+    5,
+    4,
+    3,
+    3,
+    6,
+    5,
+    4,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "writeHttpStatuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "versionsBeforeAfter": [
+    1,
+    29
+  ],
+  "allWritesRetained": true,
+  "gatePassed": false,
+  "samples": [
+    {
+      "outcome": "ok",
+      "cpuTime": 13,
+      "wallTime": 847,
+      "eventTimestamp": 1789315538869,
+      "scriptVersion": {
+        "id": "21150764-4d76-4bed-aecf-17575c684811"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 551,
+      "eventTimestamp": 1789315561254,
+      "scriptVersion": {
+        "id": "21150764-4d76-4bed-aecf-17575c684811"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 282,
+      "eventTimestamp": 1789315561852,
+      "scriptVersion": {
+        "id": "21150764-4d76-4bed-aecf-17575c684811"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 288,
+      "eventTimestamp": 1789315562201,
+      "scriptVersion": {
+        "id": "21150764-4d76-4bed-aecf-17575c684811"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 286,
+      "eventTimestamp": 1789315562542,
+      "scriptVersion": {
+        "id": "21150764-4d76-4bed-aecf-17575c684811"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 12,
+      "wallTime": 365,
+      "eventTimestamp": 1789315598583,
+      "scriptVersion": {
+        "id": "b0f24f37-0db6-40e0-83c6-93510255618a"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 5,
+      "wallTime": 286,
+      "eventTimestamp": 1789315599040,
+      "scriptVersion": {
+        "id": "b0f24f37-0db6-40e0-83c6-93510255618a"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 4,
+      "wallTime": 286,
+      "eventTimestamp": 1789315599390,
+      "scriptVersion": {
+        "id": "b0f24f37-0db6-40e0-83c6-93510255618a"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 291,
+      "eventTimestamp": 1789315599726,
+      "scriptVersion": {
+        "id": "b0f24f37-0db6-40e0-83c6-93510255618a"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 277,
+      "eventTimestamp": 1789315600066,
+      "scriptVersion": {
+        "id": "b0f24f37-0db6-40e0-83c6-93510255618a"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 7,
+      "wallTime": 1148,
+      "eventTimestamp": 1789315638150,
+      "scriptVersion": {
+        "id": "388d084d-36f2-42d0-aff9-b52cae48b14c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 12,
+      "wallTime": 294,
+      "eventTimestamp": 1789315639432,
+      "scriptVersion": {
+        "id": "388d084d-36f2-42d0-aff9-b52cae48b14c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 6,
+      "wallTime": 239,
+      "eventTimestamp": 1789315639855,
+      "scriptVersion": {
+        "id": "388d084d-36f2-42d0-aff9-b52cae48b14c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 5,
+      "wallTime": 227,
+      "eventTimestamp": 1789315640216,
+      "scriptVersion": {
+        "id": "388d084d-36f2-42d0-aff9-b52cae48b14c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 4,
+      "wallTime": 238,
+      "eventTimestamp": 1789315640569,
+      "scriptVersion": {
+        "id": "388d084d-36f2-42d0-aff9-b52cae48b14c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 13,
+      "wallTime": 1029,
+      "eventTimestamp": 1789315677750,
+      "scriptVersion": {
+        "id": "62ada324-1055-4719-afe1-970c5bf51366"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 7,
+      "wallTime": 254,
+      "eventTimestamp": 1789315679012,
+      "scriptVersion": {
+        "id": "62ada324-1055-4719-afe1-970c5bf51366"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 219,
+      "eventTimestamp": 1789315679472,
+      "scriptVersion": {
+        "id": "62ada324-1055-4719-afe1-970c5bf51366"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 221,
+      "eventTimestamp": 1789315679862,
+      "scriptVersion": {
+        "id": "62ada324-1055-4719-afe1-970c5bf51366"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 219,
+      "eventTimestamp": 1789315680225,
+      "scriptVersion": {
+        "id": "62ada324-1055-4719-afe1-970c5bf51366"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 13,
+      "wallTime": 299,
+      "eventTimestamp": 1789315717927,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 6,
+      "wallTime": 901,
+      "eventTimestamp": 1789315718386,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": true
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 128,
+      "eventTimestamp": 1789315719385,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 121,
+      "eventTimestamp": 1789315719617,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 121,
+      "eventTimestamp": 1789315719947,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 128,
+      "eventTimestamp": 1789315720176,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 126,
+      "eventTimestamp": 1789315720382,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 123,
+      "eventTimestamp": 1789315736699,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-14",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 13,
+      "eventTimestamp": 1789315736923,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 104,
+      "eventTimestamp": 1789315737010,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 38,
+      "eventTimestamp": 1789315737178,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 48,
+      "eventTimestamp": 1789315737286,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 3,
+      "wallTime": 62,
+      "eventTimestamp": 1789315754082,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 0,
+      "eventTimestamp": 1789315754228,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days/2026-09-15",
+      "method": "PATCH",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 12,
+      "eventTimestamp": 1789315754320,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/login",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 7,
+      "eventTimestamp": 1789315754409,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/teams",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 2,
+      "eventTimestamp": 1789315754482,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/_expo/static/missing.js",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 0,
+      "wallTime": 6,
+      "eventTimestamp": 1789315754591,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 18,
+      "eventTimestamp": 1789315755075,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 35,
+      "eventTimestamp": 1789315755159,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 122,
+      "eventTimestamp": 1789315755256,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 122,
+      "eventTimestamp": 1789315755259,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/shift-types",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 62,
+      "eventTimestamp": 1789315755334,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/private-details",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 2,
+      "wallTime": 102,
+      "eventTimestamp": 1789315771867,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/session",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 42,
+      "eventTimestamp": 1789315772030,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 49,
+      "eventTimestamp": 1789315772495,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/shift-types",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 132,
+      "eventTimestamp": 1789315772496,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/days",
+      "method": "GET",
+      "cold": false
+    },
+    {
+      "outcome": "ok",
+      "cpuTime": 1,
+      "wallTime": 132,
+      "eventTimestamp": 1789315772497,
+      "scriptVersion": {
+        "id": "4f843406-c818-4f8a-932e-54be59b56f9c"
+      },
+      "path": "/v1/calendars/REDACTED/private-details",
+      "method": "GET",
+      "cold": false
+    }
+  ],
+  "databaseVerification": {
+    "firstShiftCode": "M",
+    "firstVersion": 29,
+    "firstDayMutationRecords": 29,
+    "firstDayAuditRecords": 29,
+    "note": "Totals include the original write plus 28 measured writes.",
+    "secondShiftCode": "M",
+    "secondVersion": 9,
+    "databaseSizeBytes": 131072
+  }
+}

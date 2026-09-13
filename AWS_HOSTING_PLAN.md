@@ -9,7 +9,7 @@ Extend the Expo calendar into a responsive, invited-user website for one organiz
 - Use **Cloudflare Free services**, with a **US$0 monthly hosting requirement**. Do not enable paid subscriptions or metered add-ons automatically.
 - Start with two pilot identities, then one team. Cloudflare Access Free has a 50-user ceiling shared with other Zero Trust usage. The original 100-user ambition remains a future requirement, conditional on an authentication redesign or an explicitly approved budget change; it is not supported by this Free Access design.
 - Use **https://shifts.amazonian.my** as the canonical pilot address, selected by the user and attached to the existing Worker. Production `workers.dev` and preview URLs are disabled.
-- `amazonian.my` is active on Cloudflare Free. Domain registration/renewal is outside the US$0 hosting scope. Local NextDNS currently blocks the newly registered domain; authenticated browser acceptance on this hostname is pending that filter being cleared.
+- `amazonian.my` is active on Cloudflare Free. Domain registration/renewal is outside the US$0 hosting scope. The initial local NextDNS block has cleared. First-user authenticated domain checks passed; second-user revalidation is pending.
 - Use `Asia/Kuala_Lumpur` for schedule dates. Workers operate globally; request an `apac` D1 location hint. This is **not a guarantee of Malaysia data residency**. Update privacy notices accordingly. [D1 data location](https://developers.cloudflare.com/d1/configuration/data-location/)
 - Remove the Support / “Buy me a coffee” section before releasing this checkout.
 
@@ -135,9 +135,9 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 ### Phase 1 — M2c: CPU headroom
 
-**Domain change alongside M2c:** `shifts.amazonian.my` is deployed with the exact matching `APP_ORIGIN`; all ten unsigned/forged-header probes reached Access over verified TLS using public DNS. Complete real login, save/reload, origin/CSRF, logout and deep-link checks after the local NextDNS block clears. Earlier M2b browser evidence applies to the former hostname.
+**Domain change alongside M2c:** `shifts.amazonian.my` is deployed with the exact matching `APP_ORIGIN`; all ten unsigned/forged-header probes reached Access over verified TLS using public DNS. First-user login, save/reload, CSRF, foreign-resource denial, logout and deep-link checks now pass on this hostname. Second-user revalidation is pending. Earlier M2b browser evidence applies to the former hostname.
 
-**Candidate deployed 2026-09-14:** removed two preliminary D1 reads from normal writes while retaining atomic authorization/revision/mutation guards. All 32 tests and typechecks pass. Version `75e523c7-1a4b-472e-b65b-860fec8295f0` has no optimized live CPU samples yet; DNS/browser access is required for the acceptance gate. See the runbook for rollback and measurement protocol.
+**Candidate deployed 2026-09-14:** removed two preliminary D1 reads from normal writes while retaining atomic authorization/revision/mutation guards. All 32 tests and typechecks pass. The full candidate sample contains eight cold writes at 6–13 ms and twenty warm writes at 1–6 ms, all HTTP 200. The CPU gate failed; further profiling/optimization is required. Current identical-code version: `4f843406-c818-4f8a-932e-54be59b56f9c`. See the runbook for rollback and measurement protocol.
 
 - [ ] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
 - [ ] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.

@@ -1,7 +1,7 @@
 {
   "date": "2026-09-14",
   "milestone": "M2c",
-  "status": "candidate deployed; live acceptance incomplete",
+  "status": "candidate measured; cold CPU gate failed",
   "version": "75e523c7-1a4b-472e-b65b-860fec8295f0",
   "rollbackVersion": "f28fefba-c2b9-4e14-90d1-d72932c5dd40",
   "origin": "https://shifts.amazonian.my",
@@ -29,7 +29,10 @@
     "shiftcalendarRowsWritten24h": 194,
     "source": "Wrangler whoami/d1 info and Cloudflare dashboard; snapshots may lag"
   },
-  "liveCpuSamples": [],
-  "blocker": "Local NextDNS resolves shifts.amazonian.my to 0.0.0.0; authenticated browser measurement pending",
-  "cpuImprovementClaimed": false
+  "blocker": null,
+  "cpuImprovementClaimed": false,
+  "liveCpuEvidence": "2026-09-14-m2c-cpu.json",
+  "currentVersion": "4f843406-c818-4f8a-932e-54be59b56f9c",
+  "nextStep": "Local authenticated-write CPU profiling; further optimization and a new full live acceptance sample",
+  "pendingUserInput": "Second pilot PIN for reverse privacy check"
 }
