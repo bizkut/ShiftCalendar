@@ -45,7 +45,7 @@ export interface CloudInvitation {
   inviteeSub: string;
   inviteeUsername: string;
   role: Exclude<TeamRole, 'owner'>;
-  status: 'pending' | 'accepted' | 'declined' | 'revoked';
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
   expiresAt: string;
   createdAt: string;
   version: number;

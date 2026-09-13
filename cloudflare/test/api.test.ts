@@ -5,12 +5,13 @@ import worker from '../src/index';
 import schema from '../migrations/0001_calendar.sql?raw';
 import administrators from '../migrations/0002_application_administrators.sql?raw';
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
+import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
 
 const issuer = 'https://api-test.cloudflareaccess.com';
 const configured = { ...env, ACCESS_ISSUER: issuer, ACCESS_AUDIENCE: 'api-audience' };
 let keys: Awaited<ReturnType<typeof generateKeyPair>>;
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
   keys = await generateKeyPair('RS256', { extractable: true });
   const jwk = await exportJWK(keys.publicKey);
   vi.stubGlobal('fetch', async () => Response.json({ keys: [{ ...jwk, kid: 'api-key', alg: 'RS256' }] }));

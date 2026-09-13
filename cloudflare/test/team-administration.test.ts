@@ -3,6 +3,7 @@ import { beforeAll, beforeEach, expect, it } from 'vitest';
 import schema from '../migrations/0001_calendar.sql?raw';
 import administrators from '../migrations/0002_application_administrators.sql?raw';
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
+import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
 import { CalendarRepository } from '../src/calendar';
 import { TeamRepository } from '../src/teams';
 
@@ -11,7 +12,7 @@ const bob = new TeamRepository(env.DB, 'bob');
 const mutation = (value: Record<string, unknown> = {}) => ({ mutationId: crypto.randomUUID(), value });
 
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration).split(';').map(value => value.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations).split(';').map(value => value.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
 });
 beforeEach(async () => {
   for (const table of ['team_invitations','audit','mutations','calendar_days','calendars','memberships','teams','application_administrators','users','transaction_checks']) await env.DB.prepare(`DELETE FROM ${table}`).run();
@@ -53,6 +54,15 @@ it('records and idempotently revokes a pending targeted invitation', async () =>
   expect(await alice.revokeInvitation(created.id,invite.id,request)).toMatchObject({status:'revoked',version:2});
   expect((await bob.listInvitations()).items[0]).toMatchObject({status:'revoked'});
   await expect(bob.respondInvitation(invite.id,mutation({status:'accepted'}))).rejects.toMatchObject({status:409});
+});
+
+it('reports expired status truthfully and allows a replacement invitation', async () => {
+  const created=await alice.createTeam(mutation({name:'Ward A',timezone:'Asia/Kuala_Lumpur'}));
+  await env.DB.prepare(`INSERT INTO team_invitations(id,team_id,invitee_sub,role,status,expires_at,created_by,created_at)
+    VALUES(?,?,?,'member','pending',?,?,?)`).bind('expired-invite',created.id,'bob',new Date(Date.now()-1000).toISOString(),'alice',new Date(Date.now()-86_400_000).toISOString()).run();
+  expect((await bob.listInvitations()).items[0].status).toBe('expired');
+  const replacement=await alice.createInvitation(created.id,mutation({inviteeUsername:'bob@example.com',role:'member',expiresAt:new Date(Date.now()+86_400_000).toISOString()}));
+  expect(replacement.status).toBe('pending');
 });
 
 it('lets leaders and managers provision calendars while assigned members remain read-only', async () => {

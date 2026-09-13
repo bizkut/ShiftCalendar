@@ -25,7 +25,7 @@ async function fingerprint(value: unknown) {
 }
 const team = (row: TeamRow): CloudTeam => ({ id: row.id, name: row.name, timezone: row.timezone, ownerSub: row.owner_sub, role: row.role, version: row.version, updatedAt: row.updated_at });
 const member = (row: MemberRow): CloudMember => ({ sub: row.user_sub, displayName: row.display_name || row.username || row.user_sub, role: row.role, joinedAt: row.joined_at, version: row.version });
-const invitation = (row: InviteRow): CloudInvitation => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, inviteeSub: row.invitee_sub, inviteeUsername: row.invitee_username || row.invitee_sub, role: row.role, status: row.status, expiresAt: row.expires_at, createdAt: row.created_at, version: row.version });
+const invitation = (row: InviteRow): CloudInvitation => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, inviteeSub: row.invitee_sub, inviteeUsername: row.invitee_username || row.invitee_sub, role: row.role, status: row.status === 'pending' && Date.parse(row.expires_at) <= Date.now() ? 'expired' : row.status, expiresAt: row.expires_at, createdAt: row.created_at, version: row.version });
 const user = (row: UserRow): CloudUser => ({ sub: row.sub, username: row.username || '', displayName: row.display_name || row.username || row.sub, disabled: !!row.disabled, applicationAdmin: !!row.application_admin, version: row.version, updatedAt: row.updated_at, accessAdmission: 'external' });
 
 export class TeamRepository {
@@ -148,7 +148,7 @@ export class TeamRepository {
     const invitee = await this.db.prepare('SELECT sub FROM users WHERE username=? AND disabled=0').bind(m.parsed.inviteeUsername).first<{sub:string}>();
     if (!invitee) throw new ApiError(404,'not_found','That user must sign in through Cloudflare Access before being invited.');
     const result: CloudInvitation={id:crypto.randomUUID(),teamId,teamName:'',inviteeSub:invitee.sub,inviteeUsername:m.parsed.inviteeUsername,role:m.parsed.role,status:'pending',expiresAt:m.parsed.expiresAt,createdAt:m.now,version:1};
-    try { await this.db.batch([this.leader(teamId),this.guard('NOT EXISTS(SELECT 1 FROM memberships WHERE team_id=? AND user_sub=?)',[teamId,invitee.sub]),this.db.prepare(`INSERT INTO team_invitations(id,team_id,invitee_sub,role,status,expires_at,created_by,created_at) VALUES(?,?,?,?,'pending',?,?,?)`).bind(result.id,teamId,invitee.sub,result.role,result.expiresAt,this.sub,m.now),...this.record(m.mutationId,'create-invitation',m.hash,result,m.now)]); }
+    try { await this.db.batch([this.leader(teamId),this.guard('NOT EXISTS(SELECT 1 FROM memberships WHERE team_id=? AND user_sub=?)',[teamId,invitee.sub]),this.guard(`NOT EXISTS(SELECT 1 FROM team_invitations WHERE team_id=? AND invitee_sub=? AND status='pending' AND expires_at>?)`,[teamId,invitee.sub,m.now]),this.db.prepare(`INSERT INTO team_invitations(id,team_id,invitee_sub,role,status,expires_at,created_by,created_at) VALUES(?,?,?,?,'pending',?,?,?)`).bind(result.id,teamId,invitee.sub,result.role,result.expiresAt,this.sub,m.now),...this.record(m.mutationId,'create-invitation',m.hash,result,m.now)]); }
     catch { const prior=await this.prior<CloudInvitation>(m.mutationId,'create-invitation',m.hash); if(prior)return prior; throw new ApiError(409,'conflict','Invitation creation conflicted.'); }
     return result;
   }
@@ -174,7 +174,7 @@ export class TeamRepository {
       FROM team_invitations i JOIN teams t ON t.id=i.team_id JOIN users u ON u.sub=i.invitee_sub
       WHERE i.id=? AND i.team_id=?`).bind(invitationId, teamId).first<InviteRow>();
     if (!row) throw new ApiError(404, 'not_found', 'Invitation was not found.');
-    if (row.status !== 'pending') throw new ApiError(409, 'conflict', 'Invitation is no longer pending.');
+    if (invitation(row).status !== 'pending') throw new ApiError(409, 'conflict', 'Invitation is no longer pending.');
     const now = new Date().toISOString(); const result = { ...invitation(row), status: 'revoked' as const, version: row.version + 1 };
     try {
       await this.db.batch([this.leader(teamId), this.guard(`EXISTS(SELECT 1 FROM team_invitations WHERE id=? AND team_id=? AND status='pending' AND version=?)`, [invitationId,teamId,row.version]),
