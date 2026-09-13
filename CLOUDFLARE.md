@@ -1,8 +1,9 @@
 # Cloudflare local readiness and deployment handoff
 
 M0 + M1a, checked 2026-09-13. The private-calendar vertical slice runs locally.
-No ShiftCalendar Worker, D1 database or Access application has been created in
-Cloudflare. Hosted OTP/session delivery is an M1b check, not a completed test.
+M2b deployment is in progress (the earlier plan called it M1b). The dedicated
+D1 database and staged Worker now exist; public targets remain disabled. Hosted
+OTP/session delivery is not yet verified. See the progress record below.
 
 ## Verified account state
 
@@ -189,3 +190,15 @@ calendar database to undo a failed Worker deployment. Local test databases can b
 recreated by applying migrations to a fresh local persistence directory.
 [Rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/),
 [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+## M2b deployment progress — 2026-09-13
+
+- Dedicated D1: `shiftcalendar`, UUID `79c5678c-e084-49da-bfca-fbfbb5c41fdf`, created with the APAC hint. Migration `0001_calendar.sql` applied remotely successfully (13 commands). Other databases were preserved.
+- Production config: `cloudflare/wrangler.production.jsonc`; separate from local configuration. `workers_dev` and `preview_urls` are false; the audience remains unconfigured pending Access attachment.
+- Staged Worker version: `4d1eaa46-4f59-42b4-b91d-fc04001ce837`; upload succeeded with **no public targets**. Intended address: `https://shiftcalendar.bizkut-limau.workers.dev`. This is not yet an accessible pilot URL.
+- Reusable Access allow policy: `0d65d035-cd9e-4de1-b297-1623fd35d070`, “ShiftCalendar pilot emails”; exactly the two approved identities, 15-minute session for acceptance testing. Created but not yet attached to an application.
+- Refreshed scoped Wrangler OAuth: account/user read, Workers and Worker scripts write, Workers tail read, D1 write; no credentials recorded here.
+- Dashboard recheck: Zero Trust Free; Workers daily requests 2,431/100,000, current-period billable usage US$0.00. The earlier inventory table is historical; D1 now has four databases including ShiftCalendar.
+- Clean Expo export, root typecheck and production dry run passed. Worker bundle: 51.51 KiB raw / 13.87 KiB gzip; upload reports 5 ms startup. Startup is not representative request/JWT CPU evidence.
+- Donation section remains removed; privacy text now describes Cloudflare and avoids a Malaysia-only residency claim.
+- Still required: scoped Access attachment, actual audience, protected publication, administrator bootstrap, live two-identity login/persistence/privacy/expiry tests, metrics and final release/rollback records.

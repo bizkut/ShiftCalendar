@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "shiftcalendar",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../dist",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "run_worker_first": [
+      "/v1",
+      "/v1/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shiftcalendar",
+      "database_id": "79c5678c-e084-49da-bfca-fbfbb5c41fdf",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "ACCESS_ISSUER": "https://bitter-cell-8976.cloudflareaccess.com",
+    "ACCESS_AUDIENCE": "unconfigured",
+    "APP_ORIGIN": "https://shiftcalendar.bizkut-limau.workers.dev"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+      "invocation_logs": false
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "account_id": "21f5adfe18eb705dbc0fd820ccc88a28"
+}

@@ -102,7 +102,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy, cloudMode = 
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Data Storage</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              Local-only calendars and preferences stay in application storage on your device. In cloud mode, login information is handled by Amazon Cognito and calendars, private details, and team memberships are stored in AWS in Malaysia. Cognito verification email may be processed through other AWS Regions.
+              Local-only calendars and preferences stay in application storage on your device. The Cloudflare browser pilot uses Cloudflare Access for login and D1 for saved calendars. Cloudflare operates globally; cloud data is not guaranteed to remain in Malaysia.
             </Text>
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Login and Sharing</Text>
@@ -127,7 +127,7 @@ export function AboutSection({ colors, showPrivacy, setShowPrivacy, cloudMode = 
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Third-Party Services</Text>
             <Text style={[styles.privacyBody, { color: colors.text }]}>
-              Cloud mode uses AWS for authentication, hosting, and storage. Files you export or invitation links you share are under your control. Removing a team member prevents future server access but cannot erase copies they previously downloaded.
+              The Cloudflare browser pilot uses Cloudflare for authentication, hosting, and storage. Files you export or links you share are under your control. Revoking access cannot erase copies someone previously downloaded.
             </Text>
 
             <Text style={[styles.privacySectionTitle, { color: colors.text }]}>Children's Privacy</Text>
