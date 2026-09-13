@@ -8,10 +8,11 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test:pilot": "node --test scripts/pilot.test.mjs",
+    "test:pilot": "node --test scripts/pilot.test.mjs scripts/smoke-aws.test.mjs",
     "build:web": "expo export --platform web",
     "aws:prepare": "node scripts/deploy-aws.mjs prepare",
-    "aws:deploy": "node scripts/deploy-aws.mjs deploy"
+    "aws:deploy": "node scripts/deploy-aws.mjs deploy",
+    "aws:smoke": "node scripts/smoke-aws.mjs"
   },
   "dependencies": {
     "@aws-amplify/react-native": "^1.3.3",

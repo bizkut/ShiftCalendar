@@ -144,6 +144,23 @@ and state returns to login after checking the current session. Native URLs are `
 
 ## Live acceptance checks
 
+After deployment, run the read-only HTTP checks:
+
+```sh
+rtk npm run aws:smoke
+```
+
+This reads `.deployment/outputs.json`, makes GET/OPTIONS requests to the deployed
+AWS endpoints, and writes `.deployment/smoke-results.json`. It needs no AWS
+credentials or login tokens and does not create, edit, or delete AWS resources.
+Requests still count as normal deployed service usage. It checks HTTPS/security
+headers, direct SPA routes, the published client configuration, missing assets,
+private S3 access, missing/invalid token rejection, and CORS. It does not execute
+browser JavaScript or prove registration, email delivery, token expiry, or logout.
+Six local fixture tests exercise success, exposed data/APIs, permissive CORS,
+stale assets/configuration, network failures, and invalid endpoint selection;
+those fixture results are not live AWS evidence.
+
 Local checks do not establish that AWS creation permissions, Cognito email
 delivery, or production OAuth work. Before inviting real teams:
 

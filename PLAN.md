@@ -54,6 +54,8 @@ existing prepared S3/CloudFront/Cognito/API Gateway/Lambda/DynamoDB stack.
 - [ ] Create and review CloudFormation change sets and their validation results,
   then deploy the Malaysia stacks through `rtk npm run aws:deploy`.
 - [ ] Record the actual CloudFront URL, stack outputs, and deployment evidence.
+- [x] Prepare `rtk npm run aws:smoke` and validate it with six offline fixture
+  tests; record live results separately in `.deployment/smoke-results.json`.
 - [ ] Verify HTTPS, direct application routes, incomplete-callback recovery,
   missing-asset errors, and denied direct access to the private S3 objects.
 - [ ] Verify real registration, email verification, sign-in, password recovery,
@@ -69,6 +71,12 @@ work remain separate. Do not replace retained user pools or data to fix rollout.
 **Git workflow:** commit coherent, validated checkpoints occasionally, as
 requested by the user. Keep local credentials, deployment reports, generated
 bundles, and unrelated agent configuration out of commits.
+
+**Latest pre-deployment evidence (2026-09-13):** the plan-state API was rechecked
+and still returned “Missing data”; Free/Paid status remains unverified. The
+read-only smoke checker is prepared and its nine script tests (three existing
+pilot tests plus six checker tests) pass. No live smoke checks or provisioning
+have run; the nonzero-cost decision remains pending.
 
 ## Completed slice — M1a: Pilot readiness on the AWS address
 
