@@ -4,7 +4,7 @@ import { ApiError } from './errors';
 // Cache only public verification keys, never request identity or session data.
 const resolvers = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
-export async function verifyIdentity(request: Request, env: Env) {
+export async function verifyIdentity(request: Request, env: Env, onColdResolver?: () => void) {
   const token = request.headers.get('Cf-Access-Jwt-Assertion');
   if (!token || token.length > 16384) throw new ApiError(401, 'unauthorized', 'Please sign in again.');
   if (!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(env.ACCESS_ISSUER)
@@ -13,8 +13,8 @@ export async function verifyIdentity(request: Request, env: Env) {
   }
   let resolver = resolvers.get(env.ACCESS_ISSUER);
   if (!resolver) {
-    // No identity/token data: distinguish cold JWKS setup in live CPU samples.
-    console.info(JSON.stringify({ event: 'jwks_resolver_cold' }));
+    // Let the caller mark the response without initializing console formatting.
+    onColdResolver?.();
     resolver = createRemoteJWKSet(new URL(`${env.ACCESS_ISSUER}/cdn-cgi/access/certs`), {
       timeoutDuration: 5000, cooldownDuration: 30000, cacheMaxAge: 600000,
     });

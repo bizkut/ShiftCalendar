@@ -27,8 +27,12 @@ async function call(sub: string, path: string, method = 'GET', body?: unknown) {
 }
 
 it('runs session → bootstrap → create → edit → reload through the real handler and D1', async () => {
-  expect((await call('alice', '/session')).status).toBe(200);
-  expect((await call('alice', '/bootstrap')).status).toBe(200);
+  const firstSession = await call('alice', '/session');
+  expect(firstSession.status).toBe(200);
+  expect(firstSession.headers.get('Server-Timing')).toBe('jwks;desc="cold"');
+  const warmBootstrap = await call('alice', '/bootstrap');
+  expect(warmBootstrap.status).toBe(200);
+  expect(warmBootstrap.headers.get('Server-Timing')).toBeNull();
   const created = await call('alice', '/calendars', 'POST', { mutationId: 'create-api', value: {
     scope: 'private', name: 'My Shifts', color: '#123456', timezone: 'Asia/Kuala_Lumpur',
   } });

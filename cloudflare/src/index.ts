@@ -35,14 +35,16 @@ export default {
       }
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
     }
-    const headers = {
+    const headers: Record<string, string> = {
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
     };
     try {
       requireSameOrigin(request, env);
-      const identity = await verifyIdentity(request, env);
+      const identity = await verifyIdentity(request, env, () => {
+        headers['Server-Timing'] = 'jwks;desc="cold"';
+      });
       const repository = new CalendarRepository(env.DB, identity.sub);
       const parts = path.split('/').filter(Boolean);
       if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 5 && request.method === 'PATCH') {

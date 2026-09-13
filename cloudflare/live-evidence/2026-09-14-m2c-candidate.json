@@ -32,8 +32,14 @@
   "blocker": null,
   "cpuImprovementClaimed": false,
   "liveCpuEvidence": "2026-09-14-m2c-cpu.json",
-  "currentVersion": "3090433c-8a80-44f3-856b-3c4041c30f63",
-  "nextStep": "Investigate remaining cold initialization; gate still fails after profiling, minification and transaction-only day authorization",
-  "pendingUserInput": null,
-  "latestCpuEvidence": "2026-09-14-m2c-atomic-cpu.json"
+  "currentVersion": "b04cf729-0ab9-44d1-9c63-e26d7ab98fb7",
+  "nextStep": "Measure response-marked cold resolver candidate with header/trace correlation; no new CPU samples yet",
+  "pendingUserInput": "Fresh second-user PIN after session expiry",
+  "latestCpuEvidence": "2026-09-14-m2c-atomic-cpu.json",
+  "latestAttempt": {
+    "workerCpuSampleCaptured": false,
+    "postAttemptSecondDayVersion": 61,
+    "shiftCode": "M",
+    "stateVerifiedBy": "remote D1 read"
+  }
 }

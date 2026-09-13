@@ -15,7 +15,7 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `3090433c-8a80-44f3-856b-3c4041c30f63` — minified, transaction-only day-write authorization; cold CPU gate failed |
+| Current version | `b04cf729-0ab9-44d1-9c63-e26d7ab98fb7` — cold resolver marked in response; live CPU sample pending |
 | Previous protected version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — same custom-domain origin, safe candidate rollback |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
@@ -111,6 +111,12 @@ The next candidate routes day PATCH requests directly to the repository after th
 The [transaction-only authorization sample](cloudflare/live-evidence/2026-09-14-m2c-atomic-cpu.json) contains six cold writes at 7–12 ms and twenty warm writes at 1–2 ms. All 26 returned 200, advancing the second user's unchanged September 15 Morning shift from version 35 to 61 (the preceding minified sample advanced version 9 to 35). The first user's September 14 Morning remains version 29. A subsequent second-user session/read/reload and foreign write denial passed. [D1 aggregate](cloudflare/live-evidence/2026-09-14-m2c-atomic-d1.json): 573 query executions, 540 rows read, 596 written across 13 shapes in a lagging one-hour window including earlier candidates. Preflight dashboard showed 2,638/100,000 daily requests and US$0 billable usage. No services or paid subscriptions were added. Tail sessions were stopped after capture.
 
 **M2c remains incomplete:** warm work has decreased, but cold CPU has not passed the strict below-10-ms gate. Investigate remaining cold initialization before further changes; retain JWT cryptographic verification. Cloudflare's native `ctx.access` cannot directly replace it in this layout because the Static Assets router does not forward that context. [Access limitation](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations). The current bundle is 30.69 KiB / 11.15 KiB gzip. Rollback to `5260138e-d23e-46ca-b28b-974291f1f30f` restores the minified candidate's preliminary active-user read; `f28fefba-c2b9-4e14-90d1-d72932c5dd40` restores the original domain-enabled code. Both use the same issuer, audience, origin and database. Re-run smoke/login checks after rollback.
+
+## Cold-marker overhead experiment
+
+Version `b04cf729-0ab9-44d1-9c63-e26d7ab98fb7` replaces the cold resolver console log with `Server-Timing: jwks;desc="cold"` on the response that creates the resolver. The caller supplies a request-local callback; identity output, JWT verification and D1 authorization are unchanged. The hypothesis is that first-use console formatting may add diagnostic overhead. Local profiling is inconclusive because of variance; no production improvement is claimed. Tests verify cold versus warm response markers; all 32 tests and typechecks passed, and normal public Access smoke passed after deployment.
+
+For this candidate, obtain cold/warm classification from the response header and correlate each browser request with its Cloudflare CPU trace (prefer the CF-Ray identifier). Absence of the old console marker is not evidence that a request is warm. Keep the earlier log-based samples separate. The first attempted authenticated measurement encountered an expired session; no matching Worker trace was captured, and a remote read confirmed the second user's shift remained Morning, version 61. The PIN reauthentication is pending; no CPU sample from this attempt counts toward the gate. Tail capture was stopped. Roll back to `3090433c-8a80-44f3-856b-3c4041c30f63` to restore the previous instrumentation; domain, Access and schema match.
 
 ## Local development and validation
 
