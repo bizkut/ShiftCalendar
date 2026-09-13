@@ -2,7 +2,9 @@
 
 Phase 1 M2b verified on 2026-09-13 in this repository. The earlier plan called this milestone M1b. [AWS_HOSTING_PLAN.md](AWS_HOSTING_PLAN.md) is the authoritative phased plan.
 
-**Pilot URL:** https://shiftcalendar.bizkut-limau.workers.dev
+**Pilot URL:** https://shifts.amazonian.my
+
+Custom domain deployed on 2026-09-13. Public DNS resolves it and verified HTTPS reaches Access. Local NextDNS returns `0.0.0.0` with reason `nrd~day`, preventing Edge and the normal smoke script from connecting. Authenticated acceptance on the new hostname is pending allowlisting/expiry of that block; the M2b browser evidence below was collected on the former workers.dev address.
 
 This is an Access-protected, two-user private-calendar pilot. Real login, persistence, isolation, logout and expiry checks passed. Full personal features, team administration and broader release readiness remain later milestones. **Keep team expansion paused:** a cold write used 11 ms CPU, above the nominal Free allowance, although it succeeded. No paid plan was enabled.
 
@@ -13,8 +15,8 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `e19c4acb-2cf0-452f-a6e9-e3475652f75b` |
-| Previous protected version | `ead79a80-e214-4af5-b8c3-a56324d8f12b` |
+| Current version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — custom-domain origin |
+| Previous protected version | `e19c4acb-2cf0-452f-a6e9-e3475652f75b` — former workers.dev origin |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
 | D1 database | `shiftcalendar`, `79c5678c-e084-49da-bfca-fbfbb5c41fdf` |
@@ -25,7 +27,9 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Exact audience | `2144aea2386c954b57eefea72beac6423609bb2d26ad66465d87fe81618ae712` |
 | Login provider | Existing one-time PIN provider, `1654ec6c-a8f1-404f-b418-103c0a63a8ee` |
 | Policy session | 15 minutes; Access global SSO can renew the application session without another PIN |
-| Hostnames | Production workers.dev enabled; previews disabled; no custom domains/routes |
+| Hostnames | `shifts.amazonian.my`; production workers.dev and previews disabled |
+| DNS zone | `amazonian.my`, active Free zone `9d9edd283771814a7af75941869d7715` |
+| Custom domain | `9ce1505cfd571c8d6f9bbab1bde3a0b3fe83a07f`; managed certificate `c9813d20-1107-4ec6-ad7d-945bd82d7849` |
 
 The reusable policy permits only `bizkut.limau@gmail.com` and `hasanuddin.abakar@gmail.com`. It protects all production and preview traffic for this Worker. No Bypass policy or account-wide protection was introduced. The app is restricted to the existing OTP provider, rather than accepting future identity providers automatically. The Worker independently verifies JWT signature, issuer, audience and expiry and reads active-user status from D1.
 
@@ -105,7 +109,7 @@ Validation passed: 25 workerd JWT/CSRF/D1 persistence, isolation, concurrent-wri
 
 ## Deployment and bootstrap
 
-Scoped Wrangler OAuth grants account/user read, Workers and Worker scripts write, Workers tail read and D1 write. Credentials stay outside Git. MCP OAuth does not authenticate Wrangler automatically. Inspect `wrangler whoami` and the explicit account/config before mutations.
+Scoped Wrangler OAuth grants account/user read, Workers and Worker scripts write, Workers tail read, D1 write, zone read and Worker routes write. The last two scopes were added for repeatable custom-domain deployment. Credentials stay outside Git. MCP OAuth does not authenticate Wrangler automatically. Inspect `wrangler whoami` and the explicit account/config before mutations.
 
 The database already exists: do not create a duplicate. Review new SQL migrations, then from `cloudflare/` run:
 
@@ -150,8 +154,8 @@ Record the previous protected version before each release. From `cloudflare/`:
 rtk proxy npm exec -- wrangler rollback <previous-protected-version-id> --config wrangler.production.jsonc
 ```
 
-Choose a version with the actual Access audience, preserve Access, and repeat smoke/login checks. Both current migrations are additive. Code rollback does not restore D1 data or remove the administrator record. Export production D1 to an encrypted, access-controlled recovery copy before destructive changes; demonstrate restoration separately before a broader release. Free Time Travel provides seven days. Do not delete the database to undo a failed Worker release. [Rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/), [D1 recovery](https://developers.cloudflare.com/d1/reference/time-travel/).
+Choose a version with the actual Access audience, preserve Access, and repeat smoke/login checks. Versions before `f28fefba` use the former workers.dev `APP_ORIGIN`: rolling back only the version would reject custom-domain writes. Prefer redeploying the previous code with the current domain configuration. To restore the old hostname instead, coordinate route/origin changes and reverify Access; version rollback alone does not restore routing. Both current migrations are additive. Code rollback does not restore D1 data or remove the administrator record. Export production D1 to an encrypted, access-controlled recovery copy before destructive changes; demonstrate restoration separately before a broader release. Free Time Travel provides seven days. Do not delete the database to undo a failed Worker release. [Rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/), [D1 recovery](https://developers.cloudflare.com/d1/reference/time-travel/).
 
 Team administration, full private details/notes/pay/leave, imports, custom shift types, calendar rename/delete, bulk patterns and complete pagination remain later milestones. Unsupported writes return errors rather than acknowledging unsaved data. The current UI still exposes some later-feature controls; the pilot is not a general release. The donation section is removed, and privacy text describes Cloudflare without promising Malaysia-only storage.
 
-`amazonian.my` is not used. Attach `shifts.amazonian.my` only after it is ready and repeat Access, origin/CSRF, logout and deep-link checks. Existing AWS deployment records are historical; this Cloudflare pilot did not modify AWS resources or claim a new AWS cost inventory.
+`shifts.amazonian.my` now uses the existing Worker and D1. The zone had no conflicting DNS record, Worker route or hostname Access application. Ten unsigned/forged-header probes (root, login, teams, missing JavaScript and session) returned Access redirects over verified TLS using the public A record with curl `--resolve`; no CORS allowance was returned. The former workers.dev URL returned 404, and the API confirmed production and preview URLs disabled. Normal DNS/browser checks remain pending the local NextDNS block; repeat authenticated origin/CSRF, save/reload, logout and deep-link checks before calling the domain transition fully accepted. [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/). Existing AWS deployment records are historical; this Cloudflare pilot did not modify AWS resources or claim a new AWS cost inventory.

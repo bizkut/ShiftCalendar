@@ -8,8 +8,8 @@ Extend the Expo calendar into a responsive, invited-user website for one organiz
 
 - Use **Cloudflare Free services**, with a **US$0 monthly hosting requirement**. Do not enable paid subscriptions or metered add-ons automatically.
 - Start with two pilot identities, then one team. Cloudflare Access Free has a 50-user ceiling shared with other Zero Trust usage. The original 100-user ambition remains a future requirement, conditional on an authentication redesign or an explicitly approved budget change; it is not supported by this Free Access design.
-- Use `https://shiftcalendar.<account-subdomain>.workers.dev` initially; the exact address must be recorded after deployment. No ready custom domain is required.
-- When `amazonian.my` is ready, prefer `shifts.amazonian.my`, subject to DNS ownership and availability. Domain registration/renewal is outside the US$0 hosting scope.
+- Use **https://shifts.amazonian.my** as the canonical pilot address, selected by the user and attached to the existing Worker. Production `workers.dev` and preview URLs are disabled.
+- `amazonian.my` is active on Cloudflare Free. Domain registration/renewal is outside the US$0 hosting scope. Local NextDNS currently blocks the newly registered domain; authenticated browser acceptance on this hostname is pending that filter being cleared.
 - Use `Asia/Kuala_Lumpur` for schedule dates. Workers operate globally; request an `apac` D1 location hint. This is **not a guarantee of Malaysia data residency**. Update privacy notices accordingly. [D1 data location](https://developers.cloudflare.com/d1/configuration/data-location/)
 - Remove the Support / “Buy me a coffee” section before releasing this checkout.
 
@@ -21,8 +21,8 @@ Extend the Expo calendar into a responsive, invited-user website for one organiz
 | Backend API | Workers Free | Same-origin `/v1/*` TypeScript API, request validation, authorization, concurrency checks and audit writes |
 | Invited-user login | Cloudflare Access on Zero Trust Free | Protect this application's traffic; email allowlist and managed one-time PIN login; no public registration |
 | Application records | D1 on Workers Free | SQL tables for users, teams, memberships, calendars, days, shift types, requests, mutations and audit records |
-| Temporary URL and TLS | Workers-provided `workers.dev` hostname | Launch before the custom domain is ready; protect or disable every alternate/preview URL |
-| Future custom hostname | Cloudflare DNS + Workers Custom Domain | Attach `shifts.amazonian.my` when ready and repeat Access/session tests |
+| Former temporary URL | Workers-provided `workers.dev` hostname | Disabled after attaching the canonical custom domain; previews also disabled |
+| Canonical hostname and TLS | Cloudflare DNS + Workers Custom Domain | `shifts.amazonian.my` routes to the existing Worker, with managed HTTPS and Worker-scoped Access |
 | Identity enforcement | Access JWT verification in the Worker | Verify signature, issuer, application audience and expiry; D1 supplies current user status and team roles |
 | Recovery | D1 Time Travel + protected SQL exports | Short-window recovery plus owner-held backups; no object-storage subscription needed for the pilot |
 | Metrics and diagnostics | Workers metrics/logs + D1 metrics + Access logs | Measure CPU, errors, requests, row reads/writes and login decisions; redact credentials and private content |
@@ -134,6 +134,8 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 **Verified 2026-09-13:** two real PIN identities, private persistence/isolation, logout/expiry/SSO renewal and live measurements are recorded in [CLOUDFLARE.md](CLOUDFLARE.md). Independent-browser persistence was user-confirmed. Cold writes reached 11 ms CPU despite succeeding; keep team expansion paused pending improved CPU headroom.
 
 ### Phase 1 — M2c: CPU headroom
+
+**Domain change alongside M2c:** `shifts.amazonian.my` is deployed with the exact matching `APP_ORIGIN`; all ten unsigned/forged-header probes reached Access over verified TLS using public DNS. Complete real login, save/reload, origin/CSRF, logout and deep-link checks after the local NextDNS block clears. Earlier M2b browser evidence applies to the former hostname.
 
 - [ ] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
 - [ ] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.

@@ -6,8 +6,14 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "workers_dev": true,
+  "workers_dev": false,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "shifts.amazonian.my",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "../dist",
     "binding": "ASSETS",
@@ -29,7 +35,7 @@
   "vars": {
     "ACCESS_ISSUER": "https://bitter-cell-8976.cloudflareaccess.com",
     "ACCESS_AUDIENCE": "2144aea2386c954b57eefea72beac6423609bb2d26ad66465d87fe81618ae712",
-    "APP_ORIGIN": "https://shiftcalendar.bizkut-limau.workers.dev"
+    "APP_ORIGIN": "https://shifts.amazonian.my"
   },
   "observability": {
     "enabled": true,

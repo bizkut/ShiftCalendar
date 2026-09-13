@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 // Deliberately fixed to this pilot. No credentials or redirect tokens are logged.
-const origin = 'https://shiftcalendar.bizkut-limau.workers.dev';
+const origin = 'https://shifts.amazonian.my';
 const issuer = 'https://bitter-cell-8976.cloudflareaccess.com';
 for (const path of ['/', '/login', '/teams', '/_expo/static/missing.js', '/v1/session']) {
   for (const forged of [false, true]) {
