@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-14",
+  "milestone": "M2c",
+  "status": "candidate deployed; live acceptance incomplete",
+  "version": "75e523c7-1a4b-472e-b65b-860fec8295f0",
+  "rollbackVersion": "f28fefba-c2b9-4e14-90d1-d72932c5dd40",
+  "origin": "https://shifts.amazonian.my",
+  "normalWriteSqlStatements": {
+    "baseline": 9,
+    "candidate": 7
+  },
+  "validation": {
+    "workerD1Tests": 26,
+    "browserClientTests": 6,
+    "typechecks": "passed",
+    "productionDryRun": "passed",
+    "publicAccessProbes": 10,
+    "publicProbeDnsOverride": "104.21.47.179",
+    "tlsVerified": true
+  },
+  "preflight": {
+    "workersPlan": "Free (dashboard current plan)",
+    "dailyWorkerRequests": 2559,
+    "dailyWorkerRequestLimit": 100000,
+    "currentPeriodBillableUSD": 0,
+    "d1DatabaseCount": 4,
+    "shiftcalendarSizeBytes": 106496,
+    "shiftcalendarRowsRead24h": 326,
+    "shiftcalendarRowsWritten24h": 194,
+    "source": "Wrangler whoami/d1 info and Cloudflare dashboard; snapshots may lag"
+  },
+  "liveCpuSamples": [],
+  "blocker": "Local NextDNS resolves shifts.amazonian.my to 0.0.0.0; authenticated browser measurement pending",
+  "cpuImprovementClaimed": false
+}

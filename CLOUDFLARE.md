@@ -15,8 +15,8 @@ This is an Access-protected, two-user private-calendar pilot. Real login, persis
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — custom-domain origin |
-| Previous protected version | `e19c4acb-2cf0-452f-a6e9-e3475652f75b` — former workers.dev origin |
+| Current version | `75e523c7-1a4b-472e-b65b-860fec8295f0` — M2c candidate, live CPU acceptance pending |
+| Previous protected version | `f28fefba-c2b9-4e14-90d1-d72932c5dd40` — same custom-domain origin, safe candidate rollback |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
 | D1 database | `shiftcalendar`, `79c5678c-e084-49da-bfca-fbfbb5c41fdf` |
@@ -86,6 +86,18 @@ Across the dashboard's 103-invocation sample, CPU P50 was 2.76 ms, P90 5.45 ms a
 Query Insights reported 295 executions, 303 rows read and 252 rows written across 25 query shapes in the last hour, including migrations and diagnostics. Indexed membership, calendar and date-range queries were observed. These aggregates can lag and are not per-request billing guarantees. Code bounds are 93 days/read, 100 calendars/page plus one lookahead, and nine SQL statements for a normal successful day write; retry/conflict paths are separately bounded below the 50-query Free limit.
 
 The five-write diagnostic observation timed out while requests continued. Tail subsequently recorded all five successful executions and D1 confirmed version 8; the requests were not repeated on an assumed failure. A later cold-write measurement advanced the second user's test date to version 9.
+
+## M2c candidate — 2026-09-14
+
+The successful write path now relies on its existing atomic permission/revision guards and unique mutation insert, avoiding the preliminary calendar and mutation reads. This reduces normal writes from nine to seven SQL statements (including the handler's active-user read) and removes two D1 binding calls. Failed batches still recheck current authorization and mutation fingerprints before returning current retry state or a conflict. JWT verification, CSRF, schema, audit writes and revision/tombstone semantics are unchanged. D1 rolls back the complete batch if any statement fails. [D1 batch transactions](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch).
+
+This is a performance hypothesis supported by source-path inspection, not a measured CPU improvement. Retries now attempt a guarded batch first and may cost more than before. All 26 Worker/D1 tests and six browser-client tests passed, including the adjusted revocation-at-batch-boundary test and new duplicate-ID rollback cases with an otherwise valid revision or a different date. Worker/test/client typechecks and production dry run passed. The deployed package is 51.41 KiB / 13.88 KiB gzip; 5 ms startup is not request CPU.
+
+[Candidate evidence](cloudflare/live-evidence/2026-09-14-m2c-candidate.json) records the deployment and preflight snapshot. The dashboard showed Workers Free as current, 2,559/100,000 requests today and US$0.00 current-period billable usage. D1 still has four databases totaling approximately 18.3 MB; ShiftCalendar reports 326 rows read and 194 written in 24 hours. Other databases show zero queries in the dashboard snapshot; these are lagging observations, not quota reservations.
+
+Post-deployment, ten unsigned/forged requests reached Access with TLS verification and a public-DNS override. Local NextDNS still blocks browser access. No optimized authenticated CPU samples have been collected. After DNS access and real login are restored, record five cold write cycles with four warm writes per cycle, plus session/date-range reads. Confirm cold markers after each fresh deployment; retain every attempt, including failed or unexpectedly warm attempts, and add further cycles if needed to obtain five confirmed cold samples. Record request outcomes, versions, D1 usage and all CPU values. Recheck persistence and cross-user denial. M2c remains incomplete and team expansion remains paused.
+
+Candidate rollback: deploy version `f28fefba-c2b9-4e14-90d1-d72932c5dd40` with `wrangler rollback` from `cloudflare/` using the production config. It has the same domain origin and schema; preserve Access and repeat smoke/login checks.
 
 ## Local development and validation
 

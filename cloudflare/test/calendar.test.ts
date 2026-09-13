@@ -22,6 +22,24 @@ beforeEach(async () => {
   await alice.ensureUser(); await bob.ensureUser();
 });
 
+it('rolls back a changed-payload duplicate even when its revision would permit an update', async () => {
+  const c = await create();
+  const request = edit();
+  await alice.writeDay(c.id, '2026-09-13', request);
+  await expect(alice.writeDay(c.id, '2026-09-13', edit(1, 'N', request.mutationId)))
+    .rejects.toMatchObject({ status: 409 });
+  const rows = await alice.days(c.id, '2026-09-13', '2026-09-14');
+  expect(rows.items).toHaveLength(1);
+  expect(rows.items[0]).toMatchObject({ shiftCode: 'D', version: 1 });
+  // Cross-date reuse reaches the unique mutation guard after the day INSERT.
+  await expect(alice.writeDay(c.id, '2026-09-14', edit(0, 'N', request.mutationId)))
+    .rejects.toMatchObject({ status: 409 });
+  expect((await alice.days(c.id, '2026-09-14', '2026-09-14')).items).toHaveLength(0);
+  expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM mutations').first('n')).toBe(2);
+  expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM audit').first('n')).toBe(2);
+  expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM transaction_checks').first('n')).toBe(0);
+});
+
 describe('D1 calendar persistence and isolation', () => {
   it('saves and reads a private day across repository instances', async () => {
     const c = await create();
@@ -73,16 +91,20 @@ describe('D1 calendar persistence and isolation', () => {
       env.DB.prepare("INSERT INTO memberships(team_id,user_sub,role) VALUES('team-a','bob','manager')"),
       env.DB.prepare("UPDATE calendars SET team_id='team-a',assigned_sub='bob' WHERE id=?").bind(c.id),
     ]);
-    const originalGet = bob.get.bind(bob);
-    const spy = vi.spyOn(bob, 'get').mockImplementationOnce(async (...args) => {
-      const result = await originalGet(...args);
+    expect((await bob.get(c.id, true)).id).toBe(c.id);
+    const originalBatch = env.DB.batch.bind(env.DB);
+    const spy = vi.spyOn(env.DB, 'batch').mockImplementationOnce(async <T>(statements: D1PreparedStatement[]) => {
       await env.DB.prepare("DELETE FROM memberships WHERE user_sub='bob'").run();
-      return result;
+      return originalBatch<T>(statements);
     });
-    await expect(bob.writeDay(c.id, '2026-09-13', edit())).rejects.toMatchObject({ status: 403 });
-    spy.mockRestore();
+    try {
+      await expect(bob.writeDay(c.id, '2026-09-13', edit())).rejects.toMatchObject({ status: 403 });
+    } finally {
+      spy.mockRestore();
+    }
     expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM calendar_days').first('n')).toBe(0);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE actor_sub='bob'").first('n')).toBe(0);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM mutations WHERE user_sub='bob'").first('n')).toBe(0);
   });
   it.each(['viewer', 'member'])('denies %s edits to another member schedule', async (role) => {
     const c = await create();

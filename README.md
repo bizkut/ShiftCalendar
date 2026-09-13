@@ -35,6 +35,7 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 Local NextDNS currently blocks the new domain; authenticated domain acceptance is pending.
+A tested write-path optimization is deployed, but live CPU acceptance remains pending.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.

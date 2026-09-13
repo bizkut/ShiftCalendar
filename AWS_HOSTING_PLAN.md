@@ -137,6 +137,8 @@ Historical evidence reports Expo web/native bundle exports, TypeScript, browser 
 
 **Domain change alongside M2c:** `shifts.amazonian.my` is deployed with the exact matching `APP_ORIGIN`; all ten unsigned/forged-header probes reached Access over verified TLS using public DNS. Complete real login, save/reload, origin/CSRF, logout and deep-link checks after the local NextDNS block clears. Earlier M2b browser evidence applies to the former hostname.
 
+**Candidate deployed 2026-09-14:** removed two preliminary D1 reads from normal writes while retaining atomic authorization/revision/mutation guards. All 32 tests and typechecks pass. Version `75e523c7-1a4b-472e-b65b-860fec8295f0` has no optimized live CPU samples yet; DNS/browser access is required for the acceptance gate. See the runbook for rollback and measurement protocol.
+
 - [ ] Profile cold authentication and the D1 write path against the M2b baseline; preserve all security, revision, retry and audit guarantees.
 - [ ] Implement and regression-test a focused optimization; deploy with scoped credentials, existing Access protection and a rollback record.
 - [ ] Record at least five confirmed cold-resolver writes and twenty warm writes, plus session/date-range reads. Retain all samples and measure CPU separately from wall time and D1 usage.

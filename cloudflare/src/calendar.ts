@@ -155,9 +155,9 @@ export class CalendarRepository {
       || !/^[A-Za-z0-9_-]{1,32}$/.test(value.shiftCode))) throw new ApiError(400, 'invalid_request', 'Invalid shift.');
     const operation = `day:${calendarId}:${dayDate}`;
     const hash = await fingerprint({ version, shiftCode: value?.shiftCode ?? null });
-    await this.get(calendarId, true);
-    const prior = await this.previous<CloudCalendarDay | CloudCalendarDayTombstone>(mutationId, operation, hash);
-    if (prior) return this.currentDay(calendarId, dayDate, true);
+    // The batch checks current permissions and revision atomically. Its unique
+    // mutation insert also rolls back duplicate IDs. Read retry state only after
+    // a failed batch, avoiding two D1 round trips on a successful new edit.
     const now = new Date().toISOString();
     const nextVersion = (version as number) + 1;
     const result = day({ date: dayDate, shift_code: value?.shiftCode as string ?? null,
