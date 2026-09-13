@@ -1,8 +1,11 @@
 # AWS pilot deployment
 
 Status: M1a local deployment/login readiness passed on 2026-09-13. The broader
-pilot implementation and live acceptance checks remain in progress. No AWS
-resources have been created by this task. The selected Region is Malaysia
+pilot implementation and live acceptance checks remain in progress. Deployment
+was attempted on 2026-09-13; AWS requires project verification before creating
+CloudFront distributions. No live URL or subscription exists. See the
+[support-request draft](infrastructure/cloudfront-verification.md).
+The selected Region is Malaysia
 (`ap-southeast-5`).
 
 ## Services
@@ -263,8 +266,17 @@ set. Do not replace the user pool or table as a rollback shortcut.
 
 Failed updates leave diagnostic reports in `.deployment/`; inspect stack events
 and retained resources before retrying. Cleanup requires an explicit decision
-about keeping user data, deployed assets and artifact versions. There are no
-temporary AWS resources from the current local preparation to clean up.
+about keeping user data, deployed assets and artifact versions.
+
+**Failed attempt cleanup (2026-09-13):** under the user's instruction to proceed
+with the recommended approach, the unused resources were removed to avoid
+ongoing charges. The user pool and table contained no users/calendar data, and
+the web bucket was empty. The single SAM artifact version was removed. All three
+stacks are DELETE_COMPLETE, and read-only checks confirmed the buckets, retained
+pool/table, IAM role, global WAF, CloudFront Function, and OAC are absent. No
+subscription was created. Evidence: `.deployment/failed-attempt.json`,
+`.deployment/shiftcalendar-failure.json`, and `.deployment/cleanup-results.json`.
+Brief standalone WAF usage and setup requests may still appear on the bill.
 
 For full teardown, disable the distribution first, then remove the application
 stack/subscription and finally the dedicated `<stack>-edge` WAF stack in

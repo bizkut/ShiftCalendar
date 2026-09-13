@@ -1,6 +1,6 @@
 # ShiftCalendar: AWS Hosting, Users, and Teams
 
-Updated: 2026-09-13. Status: serverless implementation in progress; no AWS resources deployed yet.
+Updated: 2026-09-13. Status: local implementation validated; AWS deployment stopped by CloudFront project verification.
 
 ## Goal and confirmed constraints
 
@@ -35,7 +35,7 @@ Check off a milestone only when its implementation and exit checks pass.
 | Phase / milestone | Dependency | Demonstrable result | Status |
 |---|---|---|---|
 | 0 — M0: Deployment feasibility | None | Verified constraints and working production web build | Web build passes; legacy billing verified; deployment authorized |
-| 1 — M1: Hosted website and login | M0 | HTTPS URL and working authentication | Infrastructure and login implemented locally; not deployed |
+| 1 — M1: Hosted website and login | M0 | HTTPS URL and working authentication | Local checks pass; AWS requires CloudFront project verification |
 | 2 — M2: Personal cloud calendars | M1 | Persistent calendars across sessions/devices | Implementation and validation in progress |
 | 3 — M3: Teams and rosters | M2 | Multiple isolated teams with role-based editing | Implementation and validation in progress |
 | 4 — M4: Pilot release | M3 | Tested hosted calendar ready for the first teams | Planned |
@@ -45,7 +45,7 @@ Check off a milestone only when its implementation and exit checks pass.
 
 ## Current goal slice — M1b: Deploy and verify the CloudFront pilot
 
-**Status: in progress — adapt and deploy the CloudFront flat-rate Free plan.**
+**Status: awaiting AWS project verification for CloudFront; Free-plan implementation validated.**
 
 **Outcome:** a live `https://<distribution>.cloudfront.net` address serving the
 calendar, with working Cognito login and a protected Malaysia API. Use the
@@ -56,6 +56,8 @@ existing prepared S3/CloudFront/Cognito/API Gateway/Lambda/DynamoDB stack.
   before tax with the CloudFront S3 storage credit; this is not a spending cap.
 - [x] Validate Free-compatible managed policies, the global WAF dependency,
   and a fail-closed subscription check before publishing or enabling the site.
+- [ ] Obtain AWS Support verification allowing CloudFront distribution creation.
+  [Support request draft](infrastructure/cloudfront-verification.md).
 - [ ] Create and review CloudFormation change sets and their validation results,
   then deploy through `rtk npm run aws:deploy`: application/artifacts in Malaysia,
   with only the required CloudFront-scope WAF dependency in `us-east-1`.
@@ -91,6 +93,19 @@ The user selected flat-rate CloudFront and authorized the recommended deployment
 Local validation passes: 14 script tests (including five Free-subscription
 checks), 11 backend tests, app/backend type checks, template lint/Guard, and a
 fresh web export. These are preparation checks, not live AWS evidence.
+
+**Deployment attempt (2026-09-13):** artifact and global WAF stacks were created.
+AWS rejected `WebDistribution` with HTTP 403: “Your account must be verified
+before you can add new CloudFront resources.” AWS explicitly directs this
+verification request to Support. The application stack rolled back; no
+distribution, subscription, public URL, or published app exists. Temporary
+resources from this attempt were removed after confirming the user pool,
+calendar table, and web bucket were empty. All three stacks are DELETE_COMPLETE;
+the retained buckets/pool/table and global WAF/routing resources are absent.
+Cleanup was verified at 2026-09-13 12:32 UTC and recorded in
+`.deployment/cleanup-results.json`. Setup requests and the brief standalone WAF
+period may appear on the bill; removal prevents these resources continuing to run.
+This is an AWS verification requirement, not a pending cost-approval decision.
 
 ## Completed slice — M1a: Pilot readiness on the AWS address
 
@@ -485,7 +500,8 @@ two-user/team, native-device or recovery acceptance tests.
 Remaining first-release gaps include personal import, some team administration
 screens, cloud pay/export/recovery flows, full roster pagination and live smoke
 tests. M0–M4 remain incomplete until their exit checks pass. The deployment
-script is prepared; no AWS resources have been created.
+script is prepared. The first deployment attempt was blocked by AWS CloudFront
+verification and its temporary resources were cleaned up, as recorded in M1b.
 
 ### Phase 0 — M0: Confirm deployment feasibility
 
