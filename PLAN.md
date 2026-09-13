@@ -1,3 +1,5 @@
+> Superseded by [AWS_HOSTING_PLAN.md](AWS_HOSTING_PLAN.md), the active Cloudflare plan. Retained below as historical local-slice evidence. Its M1b hosted pilot is M2b in the active plan.
+
 # ShiftCalendar: Cloudflare Hosting, Users, and Teams
 
 Updated 2026-09-13. This plan supersedes the AWS hosting plan. The Cloudflare

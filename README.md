@@ -36,7 +36,7 @@ D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Start on a generated `workers.dev` address; `shifts.amazonian.my` comes later.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
-See [the phased plan](PLAN.md) for service mapping, limits and migration milestones.
+See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
 A local Cloudflare private-calendar slice is implemented; live deployment and full
 team features remain pending. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
