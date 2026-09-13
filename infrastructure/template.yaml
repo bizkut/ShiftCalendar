@@ -7,9 +7,29 @@ Metadata:
   com.aws.cloudformation.Context:
     why: Host private calendars and isolated teams with usage-based services and local builds.
     must:
-      - All Regional resources stay in ap-southeast-5.
+      - All application resources stay in ap-southeast-5; global WAF is supplied by the edge stack.
       - No EC2, VPC, NAT, provisioned concurrency, or cross-Region replication.
       - Retain user data and require JWT authorization.
+Parameters:
+  WebAclArn:
+    Type: String
+    AllowedPattern: 'arn:aws:wafv2:us-east-1:[0-9]{12}:global/webacl/.+'
+  HtmlCachePolicyId:
+    Type: String
+    Description: AWS managed CachingDisabled policy, resolved by the deployment script.
+  AssetCachePolicyId:
+    Type: String
+    Description: AWS managed CachingOptimized policy, used only for immutable asset paths.
+  SecurityHeadersPolicyId:
+    Type: String
+    Description: AWS managed SecurityHeadersPolicy, resolved by the deployment script.
+  WebEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Enable only after the FREE subscription has been verified active.
+Conditions:
+  ServeWeb: !Equals [!Ref WebEnabled, 'true']
 Rules:
   MalaysiaOnly:
     Assertions:
@@ -50,39 +70,6 @@ Resources:
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
-  WebHeaders:
-    Type: AWS::CloudFront::ResponseHeadersPolicy
-    Properties:
-      ResponseHeadersPolicyConfig:
-        Name: !Sub '${AWS::StackName}-web'
-        SecurityHeadersConfig:
-          ContentTypeOptions: {Override: true}
-          FrameOptions: {FrameOption: DENY, Override: true}
-          ReferrerPolicy: {ReferrerPolicy: no-referrer, Override: true}
-          StrictTransportSecurity:
-            AccessControlMaxAgeSec: 31536000
-            IncludeSubdomains: true
-            Preload: false
-            Override: true
-        CustomHeadersConfig:
-          Items:
-            - Header: Permissions-Policy
-              Value: camera=(), microphone=(), geolocation=()
-              Override: true
-  WebCache:
-    Type: AWS::CloudFront::CachePolicy
-    Properties:
-      CachePolicyConfig:
-        Name: !Sub '${AWS::StackName}-web'
-        DefaultTTL: 60
-        MinTTL: 0
-        MaxTTL: 31536000
-        ParametersInCacheKeyAndForwardedToOrigin:
-          EnableAcceptEncodingGzip: true
-          EnableAcceptEncodingBrotli: true
-          CookiesConfig: {CookieBehavior: none}
-          HeadersConfig: {HeaderBehavior: none}
-          QueryStringsConfig: {QueryStringBehavior: none}
   AppRoutes:
     Type: AWS::CloudFront::Function
     Metadata:
@@ -111,10 +98,11 @@ Resources:
     Metadata:
       com.aws.cloudformation.Context:
         why: Global HTTPS delivery from the Malaysia bucket using a default AWS domain.
-        must: [Use standard pay-as-you-go distribution, No Lambda@Edge, No public S3 website]
+        must: [Require active FREE flat-rate subscription before publishing, Managed policies only, No Lambda@Edge, No public S3 website]
     Properties:
       DistributionConfig:
-        Enabled: true
+        Enabled: !If [ServeWeb, true, false]
+        WebACLId: !Ref WebAclArn
         HttpVersion: http2and3
         IPV6Enabled: true
         DefaultRootObject: index.html
@@ -131,11 +119,37 @@ Resources:
           AllowedMethods: [GET, HEAD, OPTIONS]
           CachedMethods: [GET, HEAD]
           Compress: true
-          CachePolicyId: !Ref WebCache
-          ResponseHeadersPolicyId: !Ref WebHeaders
+          CachePolicyId: !Ref HtmlCachePolicyId
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicyId
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt AppRoutes.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /_expo/*
+            TargetOriginId: web
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: !Ref AssetCachePolicyId
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicyId
+          - PathPattern: /assets/*
+            TargetOriginId: web
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            CachePolicyId: !Ref AssetCachePolicyId
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicyId
+  FreeDeliveryPlan:
+    Type: AWS::PricingPlanManager::Subscription
+    Properties:
+      PlanFamily: CloudFront
+      PlanTier: FREE
+      UsageLevel: DEFAULT
+      ResourceArns:
+        - !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${WebDistribution}'
+        - !Ref WebAclArn
   WebBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -364,6 +378,12 @@ Outputs:
     Value: !Ref WebBucket
   DistributionId:
     Value: !Ref WebDistribution
+  DistributionArn:
+    Value: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${WebDistribution}'
+  WebAclArn:
+    Value: !Ref WebAclArn
+  CloudFrontSubscriptionArn:
+    Value: !Ref FreeDeliveryPlan
   ApiUrl:
     Value: !Sub 'https://${CalendarApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
   UserPoolId:

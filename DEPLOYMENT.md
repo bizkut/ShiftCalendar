@@ -9,7 +9,8 @@ resources have been created by this task. The selected Region is Malaysia
 
 | Component | Service |
 |---|---|
-| Expo web bundle | Private S3 + standard CloudFront distribution |
+| Expo web bundle | Private S3 + CloudFront flat-rate Free ($0/month) |
+| Required edge association | Dedicated CloudFront-scope WAF in `us-east-1`, included in the active Free subscription |
 | Registration, login, recovery | Cognito Essentials managed login, code + PKCE |
 | Authenticated requests | API Gateway HTTP API with Cognito JWT and scope checks |
 | Calendar/team operations | Node.js 24 Lambda, arm64, 256 MB, 15-second timeout |
@@ -17,7 +18,8 @@ resources have been created by this task. The selected Region is Malaysia
 | Application and API logs | CloudWatch, seven-day retention |
 | Deployment | Local SAM CLI + CloudFormation; private S3 artifact bucket |
 
-All Regional resources stay in Malaysia. CloudFront is global. The user has
+All application resources stay in Malaysia. CloudFront is global; its required
+WAF web ACL is the permitted `us-east-1` dependency. The user has
 selected the default CloudFront HTTPS address for now, with a private S3 origin
 and Cognito's generated login domain.
 
@@ -38,27 +40,27 @@ lint/Guard, and web export. Browser checks verified incomplete-callback recovery
 and protected-team redirects. Separate export inspections verified fresh public
 configuration after clearing the build cache. Real OAuth/email checks remain pending.
 
-**M1b — active goal, deploy and verify:** after the cost decision and billing/eligibility
-checkpoint below, deploy in Malaysia, record the resulting CloudFront URL, and
+**M1b — active goal, deploy and verify:** deploy the authorized Free flat-rate
+design, verify subscription activation, record the resulting CloudFront URL, and
 complete the live acceptance checks. Domain readiness is not a prerequisite.
 Keep M2–M4 open until their calendar, team, and recovery checks pass.
 Create Git checkpoints after coherent, validated milestones; exclude generated
 builds, local deployment reports, credentials, and unrelated agent configuration.
 
-## Cost decision before deployment
+## Authorized cost scenario
 
 The signed-in billing console showed **no active credits and $0.00 remaining**
-on 2026-09-13. September's estimated bill was $0.00. The user described a Free
-plan, but `aws freetier get-account-plan-state` returned “Missing data”.
-The plan type and any time-limited eligibility remain unverified.
+on 2026-09-13. September's estimated bill was $0.00.
+`aws account get-account-information` subsequently confirmed the connected
+project is ACTIVE and was created on **30 May 2019**. It uses legacy Free Tier
+rules: initial first-year offers have expired, while ongoing eligible service
+allowances remain. The newer plan-state API's “Missing data” response does not
+turn this into a new six-month Free-plan project.
+[Legacy rules](https://aws.amazon.com/free/free-tier-faqs/).
 
-**Credit balance and plan type are separate.** A zero credit balance does not
-by itself establish that AWS will charge a payment method. Under the current
-Free plan, the project closes when credits are depleted or the plan expires.
-Under the Paid plan, eligible allowances/credits offset usage and remaining
-usage is billed. Verify the project's actual plan before treating the scenario
-below as an expected cash bill. Do not automatically upgrade the plan.
-[AWS plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html).
+The user selected **CloudFront flat-rate plans**, then authorized the recommended
+setup on 2026-09-13. Use only the **FREE** tier. Paid CloudFront plans, automatic
+upgrades, and a pay-as-you-go fallback are outside this deployment's selection.
 
 The following is a **scenario estimate, not a spending cap**, assuming S3/API
 usage is billable rather than covered by a verified offer. It estimates usage
@@ -70,15 +72,25 @@ for Malaysia on 2026-09-13, using numeric
 |---|---:|---:|---:|
 | HTTP API requests | 100,000 | 0.000001125 per request | $0.1125 |
 | S3 Standard (builds, artifacts, retained versions combined) | 1 GB-month | 0.0225 per GB-month | $0.0225 |
+| CloudFront Free storage credit applied to that storage | Full-month active plan, unused shared credit | Up to 5 GB of S3 Standard | −$0.0225 |
+| CloudFront Free + associated WAF | 1M requests / 100 GB delivery allowance | Flat subscription | $0.00 |
 | S3 PUT/COPY/POST/LIST | 1,000 | 0.0000045 per request | $0.0045 |
 | S3 GET/other | 10,000 | 0.00000036 per request | $0.0036 |
-| **Subtotal** | | | **$0.1431/month** |
+| **Subtotal** | | | **$0.1206/month** |
 
 This assumes 50 direct Cognito users, Lambda requests/compute and CloudWatch
 usage within their applicable free allowances, DynamoDB capacity/storage within
-the shared allowance, and CloudFront delivery/Functions within its allowances.
-It excludes taxes, paid backup/PITR, SMS, custom domains, excess traffic, and other
+the shared allowance, and an active CloudFront Free subscription. Its 5 GB S3
+Standard storage credit applies across the project, including artifact storage;
+it does not cover S3 requests or API Gateway requests. This is a full-month
+scenario; activation timing or other storage consuming the credit can change it.
+CloudFront delivery has no overage charges; sustained high usage can reduce
+delivery performance. The subscription is not a cap on backend spending.
+It excludes taxes, paid backup/PITR, SMS, custom domains, excess backend usage, and other
 workloads consuming shared free allowances. It is not measured pilot traffic.
+WAF can incur standalone charges between creation and subscription activation,
+or if activation fails/cancels. Resolve failed deployments promptly; do not leave
+an unassociated ACL running. S3 deployment requests are also separately billed.
 
 API Gateway is limited to five requests/second with a burst of ten, Lambda
 concurrency is limited to five, and logs have short retention. These limit load
@@ -97,6 +109,8 @@ Price List evidence:
 
 References: [HTTP API pricing](https://aws.amazon.com/api-gateway/pricing/),
 [S3 pricing](https://aws.amazon.com/s3/pricing/),
+[CloudFront plan coverage and limits](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html),
+[CloudFormation subscription](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-pricingplanmanager-subscription.html),
 [Price List API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html),
 [Free Tier](https://aws.amazon.com/free/).
 
@@ -120,7 +134,7 @@ The Guard rules check private encrypted buckets, retained provisioned data,
 JWT scopes, restricted CORS, public OAuth clients, bounded compute and log retention.
 They are project-specific checks, not a claim of comprehensive compliance.
 
-## Deploy after accepting the cost scenario
+## Deploy
 
 ```sh
 rtk npm run aws:deploy
@@ -131,15 +145,25 @@ Malaysia Region. Optional environment variables:
 `SHIFTCALENDAR_AWS_PROFILE` and `SHIFTCALENDAR_STACK`.
 
 The script:
-1. Runs local validation again.
-2. Creates and validates a change set for the private artifact bucket.
-3. Packages the Lambda bundle with SAM.
-4. Creates the application change set, reads **describe-events** validation
-   results, and stops on failed validation or resource replacements.
-5. Executes the validated change sets and waits for completion.
-6. Clears Expo's transform cache and builds web assets with the actual public
-   configuration, uploads assets before HTML, and invalidates `/index.html`.
-   Clearing the cache prevents a previous preview's endpoints from being reused.
+
+1. Runs local validation and resolves the AWS managed cache/security policies.
+   For an existing deployment, verifies its Free subscription before changing it.
+2. Deploys the private artifact bucket in Malaysia and packages Lambda with SAM.
+3. Deploys `infrastructure/edge.yaml` as `<stack>-edge` in `us-east-1`, containing
+   only the required global WAF. No application services are created there.
+4. Deploys the Malaysia application stack with CloudFront initially disabled and
+   an `AWS::PricingPlanManager::Subscription` fixed to `CloudFront` / `FREE` /
+   `DEFAULT`, referencing exactly this distribution and WAF. Every change set
+   receives **describe-events** validation; failures/replacements stop deployment.
+5. Verifies the subscription is ACTIVE, has no scheduled change, covers both
+   expected resources, and matches the actual distribution's WAF association.
+   A paid, missing, failed, or cancelled plan stops publication without a fallback.
+6. Clears Expo's transform cache, builds with actual public configuration,
+   rechecks the plan, then uploads immutable assets before HTML. This prevents
+   preview endpoints from leaking into the deployed bundle.
+7. Rechecks the plan, enables the new distribution through a validated stack
+   update, and invalidates `/index.html`. Existing active sites stay enabled
+   during ordinary updates. Records `.deployment/cloudfront-plan.json`.
 
 Change-set reports, public configuration and outputs are written to ignored
 `.deployment/`. Those files contain identifiers/public endpoints, not client
@@ -147,7 +171,20 @@ secrets. The public web bundle necessarily includes its client IDs and API URL.
 No Cognito app client has a secret.
 
 Application routes rewrite to `index.html`; missing assets keep their error
-status. Cognito web callbacks are `https://<distribution>/callback` and logout
+status. Managed CachingDisabled keeps HTML/routes uncached. Only `/_expo/*` and
+`/assets/*` use managed CachingOptimized and immutable object headers. The managed
+SecurityHeadersPolicy provides HSTS, nosniff, SAMEORIGIN, and
+strict-origin-when-cross-origin. The previous custom policies are removed because
+Free does not support them. There is no custom Permissions-Policy or CSP yet.
+CloudFront/WAF access logs are unavailable on Free; backend logs remain in Malaysia.
+
+The WAF rate rule initially observes counts at 2,000 requests/IP per five minutes;
+it does not block. Review aggregate metrics during the pilot before tuning and
+switching to Block. Request sampling is off to avoid capturing OAuth query data.
+The WAF covers the website; the HTTP API and Cognito endpoints are accessed
+directly and retain their own authentication/throttling controls.
+
+Cognito web callbacks are `https://<distribution>/callback` and logout
 returns to `/login`. Opening the web `/callback` route without the OAuth code
 and state returns to login after checking the current session. Native URLs are `shiftcalendar://callback` and
 `shiftcalendar://login`. API requests require `shiftcalendar/access`.
@@ -175,6 +212,9 @@ Local checks do not establish that AWS creation permissions, Cognito email
 delivery, or production OAuth work. Before inviting real teams:
 
 - Verify direct S3 object access is denied and CloudFront serves HTTPS.
+- Verify `.deployment/cloudfront-plan.json` reports ACTIVE/FREE, the exact
+  distribution/WAF association, and no scheduled change. Track plan usage and
+  S3 credits in billing. A successful resource-list call alone is not activation.
 - Load `/login` and a deep route directly. Open `/callback` without OAuth
   parameters and confirm recovery to login; separately complete a real OAuth
   callback. Missing assets must not return the app HTML.
@@ -225,6 +265,12 @@ Failed updates leave diagnostic reports in `.deployment/`; inspect stack events
 and retained resources before retrying. Cleanup requires an explicit decision
 about keeping user data, deployed assets and artifact versions. There are no
 temporary AWS resources from the current local preparation to clean up.
+
+For full teardown, disable the distribution first, then remove the application
+stack/subscription and finally the dedicated `<stack>-edge` WAF stack in
+`us-east-1`. Verify cancellation and inspect any retained buckets/pool/table.
+Cancelling the subscription can expose remaining resources to standard charges;
+do not leave a serving distribution or standalone WAF after cancellation.
 
 Review combined bucket storage monthly against the 1 GB cost assumption. The
 30-day lifecycle removes old versions of an existing key; distinct hashed web

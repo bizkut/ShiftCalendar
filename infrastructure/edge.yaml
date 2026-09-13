@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Global WAF dependency for the ShiftCalendar CloudFront FREE flat-rate plan
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@2
+  com.aws.cloudformation.Context:
+    why: PricingPlanManager requires one CloudFront-scope web ACL per subscription.
+    must: [Global WAF only in us-east-1, No application resources outside Malaysia, No paid rule groups or logging]
+Rules:
+  GlobalWafOnly:
+    Assertions:
+      - Assert: !Equals [!Ref 'AWS::Region', us-east-1]
+        AssertDescription: CloudFront-scope WAF requires us-east-1.
+Resources:
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Scope: CLOUDFRONT
+      Description: Dedicated to the ShiftCalendar FREE subscription, observe traffic before rate blocking.
+      DefaultAction: {Allow: {}}
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        SampledRequestsEnabled: false
+        MetricName: ShiftCalendarWeb
+      Rules:
+        - Name: ObserveHighRequestRate
+          Priority: 0
+          Action: {Count: {}}
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              EvaluationWindowSec: 300
+              Limit: 2000
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            SampledRequestsEnabled: false
+            MetricName: ShiftCalendarHighRequestRate
+Outputs:
+  WebAclArn:
+    Value: !GetAtt WebAcl.Arn

@@ -31,7 +31,7 @@ A shift scheduling app for shift workers, built with React Native + Expo. Use lo
 
 ## AWS hosting and teams
 
-The Malaysia pilot uses S3 + CloudFront for the website, Cognito for login,
+The Malaysia pilot uses private S3 + CloudFront's $0 Free flat-rate plan for the website, Cognito for login,
 API Gateway + Lambda for operations, and DynamoDB for calendars and team roles.
 See [the phased plan](PLAN.md) for component ownership and milestone checks, and
 [deployment instructions](DEPLOYMENT.md) for setup, current costs, validation,

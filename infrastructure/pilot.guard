@@ -63,3 +63,28 @@ rule public_pkce_clients when %clients !empty {
     RefreshTokenRotation.Feature == 'ENABLED'
   }
 }
+let distributions = Resources.*[ Type == 'AWS::CloudFront::Distribution' ]
+rule free_delivery_configuration when %distributions !empty {
+  Resources.FreeDeliveryPlan {
+    Type == 'AWS::PricingPlanManager::Subscription'
+    Properties {
+      PlanFamily == 'CloudFront'
+      PlanTier == 'FREE'
+      UsageLevel == 'DEFAULT'
+    }
+  }
+  Parameters.WebEnabled.Default == 'false'
+  Resources.*.Type NOT IN ['AWS::CloudFront::CachePolicy', 'AWS::CloudFront::OriginRequestPolicy', 'AWS::CloudFront::ResponseHeadersPolicy']
+  %distributions.Properties.DistributionConfig {
+    WebACLId.Ref == 'WebAclArn'
+    Logging !exists
+    DefaultCacheBehavior.CachePolicyId.Ref == 'HtmlCachePolicyId'
+    DefaultCacheBehavior.ResponseHeadersPolicyId.Ref == 'SecurityHeadersPolicyId'
+    DefaultCacheBehavior.LambdaFunctionAssociations !exists
+  }
+}
+let web_acls = Resources.*[ Type == 'AWS::WAFv2::WebACL' ]
+rule global_waf_dependency_only when %web_acls !empty {
+  Resources.*.Type == 'AWS::WAFv2::WebACL'
+  %web_acls.Properties.Scope == 'CLOUDFRONT'
+}

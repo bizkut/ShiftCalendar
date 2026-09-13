@@ -9,10 +9,12 @@ multiple teams, and schedules shared only with authorized team members.
 Keep the existing Expo / React Native application and preserve local-only mode.
 
 - Selected Region: **Asia Pacific (Malaysia), `ap-southeast-5`**.
-- AWS plan: **Free**, as stated by the user; the billing API could not verify it.
+- Connected AWS project: **active, created 30 May 2019**, verified with
+  `aws account get-account-information`. Legacy Free Tier rules apply; original
+  first-year offers have expired. Ongoing service allowances remain available.
   The billing console shows **$0.00 active credits** (checked 2026-09-13).
 - Guidance level: **Medium**.
-- Confirmed hosting choice: **standard CloudFront with a private S3 origin**,
+- Confirmed hosting choice: **CloudFront flat-rate Free ($0/month), private S3 origin**,
   using the generated **`https://<distribution>.cloudfront.net`** address for now.
 - Owned domain: **amazonian.my**, **not ready yet**.
   **shifts.amazonian.my** remains the recommended later address; domain readiness
@@ -32,7 +34,7 @@ Check off a milestone only when its implementation and exit checks pass.
 
 | Phase / milestone | Dependency | Demonstrable result | Status |
 |---|---|---|---|
-| 0 — M0: Deployment feasibility | None | Verified constraints and working production web build | Web build passes; billing decision pending |
+| 0 — M0: Deployment feasibility | None | Verified constraints and working production web build | Web build passes; legacy billing verified; deployment authorized |
 | 1 — M1: Hosted website and login | M0 | HTTPS URL and working authentication | Infrastructure and login implemented locally; not deployed |
 | 2 — M2: Personal cloud calendars | M1 | Persistent calendars across sessions/devices | Implementation and validation in progress |
 | 3 — M3: Teams and rosters | M2 | Multiple isolated teams with role-based editing | Implementation and validation in progress |
@@ -43,16 +45,22 @@ Check off a milestone only when its implementation and exit checks pass.
 
 ## Current goal slice — M1b: Deploy and verify the CloudFront pilot
 
-**Status: blocked on the user's pilot-cost decision; local preparation complete.**
+**Status: in progress — adapt and deploy the CloudFront flat-rate Free plan.**
 
 **Outcome:** a live `https://<distribution>.cloudfront.net` address serving the
 calendar, with working Cognito login and a protected Malaysia API. Use the
 existing prepared S3/CloudFront/Cognito/API Gateway/Lambda/DynamoDB stack.
 
-- [ ] Resolve the nonzero-cost decision and verify project billing eligibility;
-  the recorded estimate is not a spending cap or a zero-cost guarantee.
+- [x] Record legacy billing evidence and the user's authorization to proceed
+  with the recommended setup (2026-09-13). Estimated light usage is $0.1206/month
+  before tax with the CloudFront S3 storage credit; this is not a spending cap.
+- [x] Validate Free-compatible managed policies, the global WAF dependency,
+  and a fail-closed subscription check before publishing or enabling the site.
 - [ ] Create and review CloudFormation change sets and their validation results,
-  then deploy the Malaysia stacks through `rtk npm run aws:deploy`.
+  then deploy through `rtk npm run aws:deploy`: application/artifacts in Malaysia,
+  with only the required CloudFront-scope WAF dependency in `us-east-1`.
+- [ ] Verify the distribution and its WAF share an ACTIVE, FREE subscription;
+  save the subscription evidence alongside the deployment outputs.
 - [ ] Record the actual CloudFront URL, stack outputs, and deployment evidence.
 - [x] Prepare `rtk npm run aws:smoke` and validate it with six offline fixture
   tests; record live results separately in `.deployment/smoke-results.json`.
@@ -72,14 +80,17 @@ work remain separate. Do not replace retained user pools or data to fix rollout.
 requested by the user. Keep local credentials, deployment reports, generated
 bundles, and unrelated agent configuration out of commits.
 
-**Latest pre-deployment evidence (2026-09-13):** the plan-state API was rechecked
-and still returned “Missing data”; Free/Paid status remains unverified. The
-read-only smoke checker is prepared and its nine script tests (three existing
-pilot tests plus six checker tests) pass. No live smoke checks or provisioning
-have run; the nonzero-cost decision remains pending.
-The final read-only deployment check found no `shiftcalendar` stack in Malaysia
-and no local stack outputs. Resume provisioning after the cost decision; then
-verify project billing eligibility and run the prepared deployment/live checks.
+**Latest pre-deployment evidence (2026-09-13):** the connected project is ACTIVE
+and was created on 2019-05-30. The newer plan-state API returns “Missing data”;
+this is not a new six-month Free-plan project. PricingPlanManager list access
+succeeds, with no existing subscriptions. CloudFormation exposes the subscription
+resource type in Malaysia. Managed CloudFront policies were resolved through
+read-only APIs. Creation eligibility still has to pass AWS validation.
+No `shiftcalendar` stack or local outputs existed at the last read-only check.
+The user selected flat-rate CloudFront and authorized the recommended deployment.
+Local validation passes: 14 script tests (including five Free-subscription
+checks), 11 backend tests, app/backend type checks, template lint/Guard, and a
+fresh web export. These are preparation checks, not live AWS evidence.
 
 ## Completed slice — M1a: Pilot readiness on the AWS address
 
@@ -128,7 +139,9 @@ The profile is configured for Malaysia and authentication succeeded.
 | Check | Observed result | Planning consequence |
 |---|---|---|
 | Free Tier usage | AWS Glue catalog requests: **24 used / 1,000,000 monthly allowance**, reported as Always Free | Only this offer was returned by the usage API. Glue is not needed by the calendar. |
-| Plan status | `GetAccountPlanState` returned `ResourceNotFoundException` / “Missing data” | Remaining credits, expiry, and Free/Paid status are unverified. This error does not establish either plan type. |
+| Project age/state | `GetAccountInformation`: ACTIVE, created 2019-05-30 | Legacy Free Tier applies. Initial first-year offers expired; this project does not have a new six-month Free-plan deadline. |
+| New plan-state API | `GetAccountPlanState` returned `ResourceNotFoundException` / “Missing data” | Do not infer a new Free or Paid signup plan from this error. |
+| CloudFront flat-rate plans | Subscription list succeeded and was empty; CloudFormation subscription type is registered in Malaysia | Prepare a FREE subscription, then verify activation before enabling/publishing. No paid fallback. |
 | Credit activities | `ListAccountActivities` returned an empty list | No activities were returned; this does not prove the credit balance is zero. |
 | Billing console credits | Active credits: **0**, total remaining: **$0.00** | Do not use hypothetical promotional credits to fund deployment. |
 | Current bill | September estimate: **USD 0.00** | Current usage is zero-cost; this does not predict calendar hosting cost. |
@@ -142,65 +155,70 @@ An absent service can simply have no reported usage. Successful resource-list
 calls establish read access, not creation permissions or billing eligibility.
 This check covered the proposed calendar stack, not every AWS service.
 
-Before deployment, resolve the billing gap in **AWS Settings → Billing** and
-confirm the Region under **View all projects → Overview → Additional Info → Region**.
-Keep the user-stated Free plan as the working assumption.
+The user confirmed Malaysia, matching the CLI profile. AWS Settings exposes
+the Region under **View all projects → Overview → Additional Info → Region**.
+Use the verified 2019 project as the billing baseline; do not apply new-signup
+credits or the six-month Free-plan deadline to it.
 
 **Deployment cost checkpoint:** actual console credits are $0.00. The current
-Malaysia price scenario is **US$0.1431/month before tax** for 100,000 HTTP API
+Malaysia price scenario is **US$0.1206/month before tax** for 100,000 HTTP API
 calls, 1 GB-month of combined S3 storage, 1,000 S3 writes/list requests and 10,000
-S3 reads, assuming other services stay within applicable shared free allowances.
+S3 reads, assuming the flat-rate plan's S3 credit offsets storage and other
+services stay within applicable shared free allowances.
 This is not a cap or measured usage. See [DEPLOYMENT.md](DEPLOYMENT.md) for exact
-rates, assumptions, Price List evidence and deployment steps. Obtain a decision
-on this nonzero cost before executing the prepared deployment.
+rates, assumptions, Price List evidence and deployment steps. The user authorized
+the recommended setup on 2026-09-13. Backend requests and setup costs are separate
+from the $0 CloudFront subscription.
 
 ### Applicable service offers
 
-The new AWS experience lists Cognito, DynamoDB, Lambda, API Gateway, S3, and
-CloudFront as supported Free Tier services. Availability and free usage
-allowances are separate questions.
-[Supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html).
+Availability and free usage allowances are separate questions. The connected
+project predates the July 2025 Free Tier change; retain ongoing allowances and
+budget standard usage charges outside them.
+[Legacy Free Tier](https://aws.amazon.com/free/legacy/).
 
 | Service | Purpose | Published allowance / cost consideration |
 |---|---|---|
 | Cognito User Pools, Essentials | Managed login | 10,000 monthly active users for direct/social sign-in, shared across eligible pools rather than per team. Plus has no MAU free tier. Email/SMS have separate terms. [Pricing](https://aws.amazon.com/cognito/pricing/) |
 | DynamoDB Standard, provisioned | Calendars and memberships | 25 GB storage and 25 read / 25 write capacity units. Capacity allowances are shared across eligible tables/indexes; on-demand requests do not use the provisioned allowance. [Pricing](https://aws.amazon.com/dynamodb/pricing/) |
 | Lambda, ordinary on-demand functions | Application operations | 1 million requests and 400,000 GB-seconds monthly. Logs and related services are separate. [Pricing](https://aws.amazon.com/lambda/pricing/) |
-| API Gateway HTTP API | Authenticated API | Credit-backed usage for new customers; legacy time-limited offers depend on eligibility. Do not assume a permanent free million requests for this project. [Pricing](https://aws.amazon.com/api-gateway/pricing/) |
-| CloudFront, standard pay-as-you-go | HTTPS web delivery | Published Always Free allowance: 1 TB outbound data and 10 million HTTP/HTTPS requests monthly. The AWS project's lifetime still applies. [Pricing](https://aws.amazon.com/cloudfront/pricing/pay-as-you-go/) |
-| S3 | Private web-build bucket | Budget storage, requests, and retained build versions against applicable credits/offers. Do not assume permanent free storage. [Pricing](https://aws.amazon.com/s3/pricing/) |
+| API Gateway HTTP API | Authenticated API | Original first-year offer has expired for this project. Requests are billed; CloudFront's plan does not cover API requests. [Pricing](https://aws.amazon.com/api-gateway/pricing/) |
+| CloudFront flat-rate Free | HTTPS web delivery | $0/month, 1 million requests and 100 GB transfer allowance; no CloudFront overage charges. Sustained excess can reduce delivery performance. Includes CloudFront Functions and an associated WAF, subject to Free feature limits. [Pricing](https://aws.amazon.com/cloudfront/pricing/) |
+| S3 | Private web-build and deployment-artifact buckets | The selected CloudFront plan provides 5 GB of S3 Standard storage credits across the project. Requests, excess storage, and other storage classes remain separate. [Plan coverage](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html) |
 | CloudWatch | Logs and monitoring | Bound log volume, retention, and alarms; include these in the deployment estimate. [Pricing](https://aws.amazon.com/cloudwatch/pricing/) |
 
-**Free plan lifetime:** AWS's current new-customer Free plan lasts up to six
-months or until credits run out, whichever happens first. Continued hosting
-requires an eligible active project, usually a Paid upgrade when the Free plan
-ends. Paid can still use eligible service allowances, but excess usage is
-billable. The current Free plan closes when its credits or duration end;
-a zero credit balance alone is not proof that AWS will charge a payment method.
-Verify the actual plan before treating the usage estimate as a cash bill, and
-do not automatically upgrade it. The console shows no active credits for this
-project; its plan end date remains unverified. Do not assume the new-customer
-credit offer applies.
-[AWS Free Tier](https://aws.amazon.com/free/),
-[plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html).
+**Project billing versus CloudFront Free:** the connected 2019 project uses
+legacy billing, with ongoing eligible allowances and standard charges outside
+them. CloudFront's $0 Free subscription is a separate product and does not make
+the entire AWS project free. The restriction on new AWS Free-plan projects does
+not establish ineligibility for this legacy project; AWS must still accept the
+subscription. Never silently switch to pay-as-you-go or a paid plan on failure.
+[Legacy rules](https://aws.amazon.com/free/free-tier-faqs/),
+[subscription eligibility](https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/plans.html).
 
-**CloudFront naming trap:** the separate flat-rate “Free” subscription is not
-available to AWS Free Tier projects. Use the standard distribution with its
-usage allowance, not that subscription.
-[Eligibility](https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/plans.html).
+**Free-plan implementation:** use AWS managed CachingDisabled for HTML/routes,
+CachingOptimized only for immutable `/_expo/*` and `/assets/*`, and
+SecurityHeadersPolicy for all responses. Custom cache/response policies and
+CloudFront/WAF request logging are unavailable on Free. Use three cache
+behaviors, OAC, and the existing CloudFront Function for SPA routing. A dedicated
+CloudFront-scope WAF lives in `us-east-1` as the permitted global dependency.
+Its IP-rate rule starts in Count mode; review metrics before enabling blocking.
+This WAF covers frontend traffic, not the directly accessed Malaysia HTTP API.
 
 ## Recommended architecture
 
 ### Component-to-service map
 
 EC2 is excluded. Deploy one small serverless environment first, with all
-Regional resources in Malaysia (`ap-southeast-5`). Free allowances are usage
+application resources in Malaysia (`ap-southeast-5`), with global WAF in
+`us-east-1` as required by CloudFront. Free allowances are usage
 limits, not a guarantee that the whole application will remain free.
 
 | ShiftCalendar component | AWS service / implementation | Milestone | Cost boundary |
 |---|---|---|---|
-| Browser app: calendar, settings, and teams screens | Expo web build stored in a **private S3 bucket** | M1 | S3 storage and requests use applicable credits/offers; no assumed ongoing free storage. |
-| Public HTTPS address and static asset delivery | **CloudFront**, standard pay-as-you-go distribution, default domain and S3 origin access control | M1 | Ongoing request/transfer allowance; use the standard distribution while Free plan eligibility is unresolved. |
+| Browser app: calendar, settings, and teams screens | Expo web build stored in a **private S3 bucket** | M1 | 5 GB shared S3 Standard storage credit from the CloudFront plan; requests and excess storage billed separately. |
+| Public HTTPS address and static asset delivery | **CloudFront flat-rate Free**, default domain, managed policies, S3 origin access control | M1 | $0 subscription, 1M requests/100 GB monthly allowance, no delivery overage charges; subscription must be ACTIVE before launch. |
+| Required edge security association | **AWS WAF**, dedicated CloudFront-scope web ACL in `us-east-1` | M1, M4 | Included while associated with the active plan; observe IP-rate counts before enforcing. Standalone/pre-activation WAF can incur charges. |
 | Login page, registration, verification, password recovery, and sessions | **Cognito User Pools — Essentials**, managed login and public app clients | M1 | Ongoing direct/social MAU allowance; default verification email has a quota. |
 | Authenticated API entry and token validation | **API Gateway HTTP API**, JWT authorizer, scopes, CORS and throttling | M1 | API requests can cost money after eligible credits/offers; no assumed ongoing request allowance. |
 | Calendar edits, membership permissions, invitations, and roster operations | **Lambda**, TypeScript handlers, on-demand execution without a VPC | M1–M3 | Ongoing request/compute allowance; no provisioned concurrency. |
@@ -477,8 +495,8 @@ production web bundle.
 - [x] Confirm Malaysia from the user and local AWS profile.
 - [x] Query Free Tier usage and inspect existing calendar-stack resources.
 - [x] Identify Amplify Malaysia and CloudFront subscription restrictions.
-- [ ] Verify plan type, credits, and expiry in AWS Settings → Billing; record a
-  deployment estimate using actual Malaysia prices and pilot traffic assumptions.
+- [x] Verify legacy project creation/state and console credits; record Malaysia
+  pricing with the CloudFront storage credit and the user's deployment authorization.
 - [ ] Check relevant quotas/creation permissions without creating billable test
   resources solely to discover eligibility.
 - [x] Install dependencies; run `rtk npx tsc --noEmit` and
@@ -500,6 +518,8 @@ deployment and live login verification after the billing checkpoint. Use the
 default CloudFront address in both. MD is optional and is not an M1 exit condition.
 
 - [x] Define SAM / CloudFormation infrastructure and least-privilege service roles.
+- [ ] Activate and verify the FREE flat-rate subscription, including the
+  dedicated global WAF, before enabling the CloudFront distribution.
 - [ ] Export with explicit Expo `web.output: "single"`; publish `dist/` to private
   S3 using CloudFront origin access control, Block Public Access, HTTPS, and the
   default `*.cloudfront.net` domain.
@@ -568,12 +588,12 @@ usable hosted release for the first teams.
 - [ ] Measure requests, payloads, database capacity, and throttling under the
   pilot workload; improve batching/caching before raising capacity.
 - [ ] Establish billing/credit checks, short log retention, and error/throttle
-  monitoring. For a Paid upgrade, configure a small budget alert and review
-  spend limits in AWS Settings → Billing. Alerts are not hard spending caps.
+  monitoring. Configure a small budget alert and inspect CloudFront plan usage;
+  alerts are not hard spending caps. Review WAF counts before enabling blocking.
 - [ ] Demonstrate backup/restore. Price database backups/PITR before enabling;
   retain user-data resources during infrastructure rollback/deletion.
 - [ ] Document deployment/rollback, session recovery, export/deletion, and the
-  decision date for continued hosting before Free plan/credit expiry.
+  a monthly cost review and the response to approaching service allowances.
 - [ ] Update README for local-only versus cloud storage and supported web features.
 - [ ] Review whether to keep or clean up temporary implementation resources.
 
@@ -641,7 +661,7 @@ SMS, custom SES delivery, constant polling, and permanent preview environments.
 Authenticator-app MFA, social login, richer reporting, public sharing, and
 enterprise SSO remain follow-up decisions after the first release.
 
-The recommendation is **S3 + standard CloudFront + Cognito Essentials + HTTP API
+The recommendation is **S3 + CloudFront flat-rate Free + its WAF + Cognito Essentials + HTTP API
 + Lambda + DynamoDB**, with M0–M4 delivering the hosted multi-user, multi-team
-calendar. Actual zero-cost eligibility and duration must be verified for this
-project; published allowances alone do not establish them.
+calendar. CloudFront's subscription is $0; separately billed backend usage means
+the full application is not guaranteed to cost zero.
