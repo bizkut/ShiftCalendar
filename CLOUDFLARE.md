@@ -65,6 +65,8 @@ static response headers. It then runs a Wrangler dry-run, which does not deploy.
 The committed config is explicitly local: fake database UUID, `remote: false`,
 no `workers.dev`/preview publication and an unconfigured Access audience.
 `cf:dev` uses local D1 and static assets at `http://localhost:8787`.
+With that server running, `rtk npm run cf:smoke:local` checks deep links without
+following redirects, missing assets and unsigned API rejection.
 Do not turn the local placeholder configuration into a production deployment.
 
 The local web page renders the approved-email login screen and rejects unsigned

@@ -14,6 +14,7 @@
     "cf:test": "npm --prefix cloudflare test",
     "cf:typecheck": "npm --prefix cloudflare run typecheck",
     "cf:dev": "npm --prefix cloudflare run dev",
+    "cf:smoke:local": "node scripts/smoke-cloudflare-local.mjs",
     "cf:prepare": "npm run cf:build && npm --prefix cloudflare run dry-run",
     "aws:prepare": "node scripts/deploy-aws.mjs prepare",
     "aws:deploy": "node scripts/deploy-aws.mjs deploy",
