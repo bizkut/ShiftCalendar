@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-14T06:35:09+08:00",
+  "capturedAt": "2026-09-14T07:10:00+08:00",
   "milestone": "M3",
-  "status": "multi-user acceptance deferred; production restricted to one active user",
+  "status": "complete — two-user team access and operation-specific CPU acceptance passed",
   "sourceCommits": ["e0edf10", "338462f", "eca7925", "222eab1", "546d09a"],
   "worker": {
     "name": "shiftcalendar",
@@ -17,7 +17,7 @@
     "migrations": ["0003_team_administration.sql", "0004_expired_invitations.sql"],
     "migrationCommands": 20,
     "migrationExecutionMs": 5.75,
-    "sizeBytesAfterMigration": 245760,
+    "sizeBytesAtFinalCheck": 266240,
     "servedRegion": "APAC",
     "servedColo": "HKG"
   },
@@ -44,22 +44,45 @@
   ],
   "hostedChecks": {
     "firstAdministratorTeamCreate": "passed",
-    "teamName": "ShiftCalendar Pilot",
-    "secondIdentityPrivateIsolationBaseline": "passed before deactivation; only its private calendar was returned and no team or invitation existed",
-    "secondIdentityInvitationAndAcceptance": "not run; operator selected single-user production",
-    "roleAndRevocationMatrix": "automated coverage passed; live multi-user acceptance deferred",
-    "operationSpecificCpuSample": {
-      "sessionTeamAndAdminReadsCpuMs": "1-2",
-      "coldUserDeactivationCpuMs": 13,
-      "deactivationStatus": 200,
-      "gate": "not passed; required below 10 ms"
+    "targetedInvitationAndAcceptance": "passed twice, including restoration after removal",
+    "assignedTeamCalendarVisibility": "passed",
+    "memberWriteDenial": "passed with HTTP 403",
+    "managerWrite": "passed with HTTP 200",
+    "demotionFreshWriteDenial": "passed with HTTP 403",
+    "demotionIdenticalRetryDenial": "passed with HTTP 403; current permission was rechecked",
+    "membershipRemoval": "team list and assigned calendar removed; direct team read/write returned HTTP 403",
+    "privateCalendarAfterRemoval": "unchanged and readable by its owner",
+    "applicationDeactivation": "fresh Access authentication reached the application and was rejected as disabled",
+    "applicationReactivation": "passed",
+    "historicalFailedCpuSample": {
+      "operation": "cold application deactivation",
+      "status": 200,
+      "cpuMs": 13,
+      "result": "retained as historical variance; above the 10 ms gate"
     },
+    "finalOperationSpecificCpuSample": [
+      { "method": "GET", "path": "/v1/session", "status": 200, "cpuMs": 7, "ray": "a3aad0e92e290f58" },
+      { "method": "GET", "path": "/v1/admin/users", "status": 200, "cpuMs": 3, "ray": "a3aad0ec9f4c0f58" },
+      { "method": "GET", "path": "/v1/teams", "status": 200, "cpuMs": 3, "ray": "a3aad0ee8f9a0f58" },
+      { "method": "GET", "path": "/v1/teams/REDACTED/members", "status": 200, "cpuMs": 3, "ray": "a3aad0f06ffb0f58" },
+      { "method": "PATCH", "operation": "promote member", "status": 200, "cpuMs": 6, "ray": "a3aad0f2f8810f58" },
+      { "method": "PATCH", "operation": "team-day write", "status": 200, "cpuMs": 3, "ray": "a3aad0f749110f58" },
+      { "method": "PATCH", "operation": "demote manager", "status": 200, "cpuMs": 4, "ray": "a3aad0f9297f0f58" },
+      { "method": "PATCH", "operation": "deactivate user", "status": 200, "cpuMs": 4, "ray": "a3aad0ff5a870f58" },
+      { "method": "PATCH", "operation": "reactivate user", "status": 200, "cpuMs": 4, "ray": "a3aad102fb3f0f58" }
+    ],
+    "finalCpuGate": "passed; all nine final requests were 3–7 ms and below 10 ms",
     "finalProductionState": {
-      "accessAllowedEmails": ["bizkut.limau@gmail.com"],
+      "accessAllowedEmails": ["bizkut.limau@gmail.com", "hasanuddin.abakar@gmail.com"],
+      "activeUsers": 2,
       "activeApplicationAdministrators": 1,
-      "disabledPreservedUsers": 1,
-      "teamMemberships": [{ "teamName": "ShiftCalendar Pilot", "role": "owner" }],
-      "invitations": 0,
+      "teamMemberships": [
+        { "teamName": "ShiftCalendar Pilot", "role": "owner" },
+        { "teamName": "ShiftCalendar Pilot", "role": "member" }
+      ],
+      "pendingInvitations": 0,
+      "acceptedInvitationHistory": 2,
+      "assignedTeamCalendar": { "name": "Hasanuddin Team Shifts", "date": "2026-09-16", "shiftCode": "A", "dayVersion": 3 },
       "failedTransactionChecks": 0
     }
   },

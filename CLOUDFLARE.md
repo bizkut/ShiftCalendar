@@ -6,7 +6,7 @@ Phase 1 M2b verified on 2026-09-13 in this repository. The earlier plan called t
 
 Custom domain deployed on 2026-09-13. Public DNS resolves it and verified HTTPS reaches Access. The initial NextDNS block cleared on 2026-09-14. Normal DNS/HTTPS smoke, first-user login, persistence, CSRF, foreign-resource denial, deep links and logout now pass. Second-user real-PIN login and reverse privacy checks also passed; the earlier M2b browser evidence below was collected on the former workers.dev address.
 
-This is now an Access-protected single-user production pilot. **M2c is complete.** The M3 team-administration implementation remains deployed, but its multi-user rollout is deferred at the operator's request. The first-user team-creation flow passed; no invitation was created. The second historical pilot identity is disabled in the application and removed from the Access allow policy while its private calendar remains preserved. No paid plan was enabled.
+This is now an Access-protected two-user production pilot. **M2c and M3 are complete.** Both approved addresses are in the reusable Access policy. The first identity is the application administrator and team leader; the second identity is active as a standard member with a read-only assigned team calendar. No paid plan was enabled.
 
 ## Deployed resources
 
@@ -15,7 +15,7 @@ This is now an Access-protected single-user production pilot. **M2c is complete.
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `841deab6-458a-4735-b4cc-6826318980b5` — M3 candidate with client-supplied revisions for every administration update |
+| Current version | `841deab6-458a-4735-b4cc-6826318980b5` — M3 release with client-supplied revisions for every administration update |
 | Previous protected version | `bd159c46-6822-4d72-8cd1-cabdcfce55c2` — same M3 schema before explicit membership/invitation stale-request guards |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
@@ -217,7 +217,7 @@ The first user completed a new real PIN login on the final version. Its Septembe
 All four M2c plan checks are complete: profiling and focused optimization; security/concurrency regression validation (44 Worker/D1 plus six client tests, typechecks, dry run and public smoke); six confirmed cold writes at 6–8 ms plus twenty warm writes at 1–2 ms; and real persistence/privacy checks for both identities on the final candidate. Signature, issuer/audience/expiry verification remain in `jose`; active-user/ownership checks, CSRF, atomic revision/idempotency/audit behavior and native local-only behavior are preserved. Source commit `28bc7ca` and prior evidence commit `cb4c62f` identify the candidate. The documented rollback is `dc7fbb10-7251-43c9-9f7a-e1b60c8eb16a` with the same origin, audience and D1. No service plan or unrelated resource changed. The sample demonstrates observed headroom, not a guarantee against future runtime variance. M3 team access remains a separate milestone, including the manager/team-leader-only edit policy.
 
 
-## M3 candidate — team administration and permissions
+## M3 completion — team administration and permissions
 
 Migration `0003_team_administration.sql` adds user identity/status revisions, team metadata, membership revisions, targeted invitation status and an active team-calendar-per-assignee index. Migration `0004_expired_invitations.sql` replaces only the pending-invitation uniqueness index so expired history stays truthful and does not block a replacement; an atomic mutation guard retains current-pending uniqueness. Rolling back Worker code leaves the new columns/table unused and preserves calendars. Do not reverse it by dropping columns in production. Use D1 Time Travel for data recovery; use Worker version rollback for code recovery.
 
@@ -227,6 +227,10 @@ Local validation passes: 63 Worker/D1 tests plus six browser-client tests, all a
 
 Deployment preflight reconfirmed scoped Wrangler access, Workers **Free** as the current plan, 423 Worker invocations, zero runtime errors and September billable/projected cost of **US$0.00**. The 24-hour aggregate CPU view was P50 3.03 ms, P90 6.52 ms and P99 11.7 ms across several M2c/M3 versions. Remote migration execution took 5.13 ms. D1 remained APAC/HKG and 245,760 bytes after migration; both original private Morning records remained intact at day versions 30 and 113.
 
-The hosted first administrator created `ShiftCalendar Pilot` successfully. The second identity then completed a real-PIN login and received only its own private calendar, with no team or invitation. The operator subsequently selected single-user operation. The first administrator disabled the second application identity (version 2), removed its email from the Access allow policy, and left its private calendar untouched. Final D1 state has one active application administrator, one disabled preserved identity, one owner-only team, no invitations and zero failed transaction guards. A live tail recorded ordinary session/team/admin reads at 1–2 ms CPU. The cold deactivation mutation succeeded with HTTP 200 but used 13 ms CPU, above the defined M3 gate. Multi-user acceptance and further M3 performance work are therefore deferred rather than marked complete.
+The hosted first administrator created `ShiftCalendar Pilot`. The second identity completed real-PIN login, accepted a targeted member invitation and received the assigned `Hasanuddin Team Shifts` calendar alongside its unchanged private calendar. The team leader wrote Morning on 16 September 2026; the member could read it but a direct member write returned 403. Temporary manager promotion allowed the second identity to change it to Afternoon. Demotion then blocked a fresh write and an identical retry of that manager mutation, proving retries recheck current permission.
+
+Removing the member removed the team and assigned calendar from its list; direct team read/write returned 403 while its private 15 September Morning remained version 113. A replacement invitation was accepted and restored the standard member role. Deactivation produced the in-app “This user is disabled” result after a fresh successful Access authentication; reactivation restored the identity. Final D1 state has two active users, one application administrator/team leader, one standard member, two accepted invitation history rows, no pending invitation, both original private Morning records unchanged, the assigned team Afternoon at version 3, and zero transaction-check rows. The Access policy contains exactly the two pilot addresses.
+
+The earlier cold deactivation succeeded at 13 ms CPU and remains retained as a failed historical sample. A final same-version operation-specific tail covered session, administrator, team and membership reads plus promotion, team-day write, demotion, deactivation and reactivation. All nine returned HTTP 200 at **3–7 ms CPU**, below the 10 ms Free-plan limit. This observed sample does not guarantee future runtime variance. Full sanitized results are in [the M3 evidence record](cloudflare/live-evidence/2026-09-14-m3-candidate.json).
 
 M3 rollback target after final acceptance is the immediately preceding protected version recorded for that release. Version `fac6525b-82ae-45be-ae9b-9e9eb3e5438e` restores completed M2c behavior with the same issuer, audience, domain and D1; the additive M3 schema can remain. A rollback hides team APIs, so retain team rows and redeploy the M3 candidate to restore them. Never delete team/private data as part of a Worker rollback.

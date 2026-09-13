@@ -35,11 +35,11 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; the historical two-user M2c login, private persistence and cross-user denial checks passed.
-A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. Production is currently restricted to one active Access identity, `bizkut.limau@gmail.com`. The deployed M3 candidate adds application administration, targeted invitations, team switching, roles and team calendars, but multi-user rollout and final live acceptance are deferred. Team leaders and managers edit team calendars; members and viewers are read-only.
+A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 also passed live two-user invitation, assignment, role, removal, deactivation and operation-specific CPU checks. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit team calendars; members and viewers are read-only.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
-The single-user Cloudflare pilot is deployed. M2c is verified; M3's implementation is deployed and its multi-user acceptance is deferred. Full multi-member roster views remain M4. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+The two-user Cloudflare pilot is deployed, and M2c and M3 are verified. Full multi-member roster views remain M4. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
@@ -168,4 +168,4 @@ MIT
 Made by **Troy**
 
 Cloudflare pilot: https://shifts.amazonian.my (Access-protected,
-one active approved email). Private persistence and isolation are verified; the M3 team implementation remains deployed with multi-user acceptance deferred. See [live evidence and remaining checks](CLOUDFLARE.md).
+two active approved emails). Private persistence, isolation and M3 team permissions are verified. See [live evidence and remaining checks](CLOUDFLARE.md).
