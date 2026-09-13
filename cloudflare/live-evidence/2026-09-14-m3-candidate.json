@@ -2,10 +2,10 @@
   "capturedAt": "2026-09-14T01:35:00+08:00",
   "milestone": "M3",
   "status": "hosted acceptance in progress",
-  "sourceCommits": ["e0edf10", "338462f", "eca7925", "222eab1"],
+  "sourceCommits": ["e0edf10", "338462f", "eca7925", "222eab1", "546d09a"],
   "worker": {
     "name": "shiftcalendar",
-    "version": "bd159c46-6822-4d72-8cd1-cabdcfce55c2",
+    "version": "841deab6-458a-4735-b4cc-6826318980b5",
     "hostname": "shifts.amazonian.my",
     "workersDev": false,
     "previewUrls": false,
@@ -35,6 +35,7 @@
     "browserClientTests": 6,
     "typechecks": "passed",
     "webExport": "passed",
+    "androidLocalOnlyExport": "passed with Cloudflare environment variables removed",
     "wranglerDryRun": "passed"
   },
   "preservedPrivateRecords": [

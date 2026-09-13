@@ -15,8 +15,8 @@ This is an Access-protected two-user pilot. **M2c is complete.** The M3 team-adm
 | Account | `21f5adfe18eb705dbc0fd820ccc88a28` |
 | Worker | `shiftcalendar` |
 | Production config | `cloudflare/wrangler.production.jsonc` |
-| Current version | `bd159c46-6822-4d72-8cd1-cabdcfce55c2` — M3 candidate with truthful expired status, bounded administration pages and read-only steady-state identity admission |
-| Previous protected version | `256d1577-b915-4930-9fed-5a9b469df760` — M3 candidate before expired-invitation handling |
+| Current version | `841deab6-458a-4735-b4cc-6826318980b5` — M3 candidate with client-supplied revisions for every administration update |
+| Previous protected version | `bd159c46-6822-4d72-8cd1-cabdcfce55c2` — same M3 schema before explicit membership/invitation stale-request guards |
 | Initial protected version | `c1da4442-6cad-4906-b52f-0a21d3cf4070` |
 | Initial unpublished version | `4d1eaa46-4f59-42b4-b91d-fc04001ce837` — unconfigured audience; do not use for public rollback |
 | D1 database | `shiftcalendar`, `79c5678c-e084-49da-bfca-fbfbb5c41fdf` |
@@ -223,7 +223,7 @@ Migration `0003_team_administration.sql` adds user identity/status revisions, te
 
 Access admission, application activation and team membership are separate. A verified Access JWT provisions only its own subject/email. Invitations target an existing verified subject through its normalized email and do not send email or modify the Access allow policy. Application administrators create teams and activate/deactivate users. A team's internal `owner` is displayed as team leader; the leader manages invitations/memberships and can transfer leadership. Team leaders and managers create/edit team calendars. Members and viewers remain read-only even for a calendar assigned to them, while private calendars stay owner-only. Every administration mutation has an atomic current-permission/version guard, stable mutation ID and audit record. Concurrent application-admin changes must preserve at least one active administrator.
 
-Local validation passes: 62 Worker/D1 tests plus six browser-client tests, all app/Worker/test/client type checks, Expo web export and Wrangler production dry run. Coverage includes real `/v1` routing, targeted invitation/acceptance, two-team roles, assigned member/viewer denial, administrator non-bypass, removal/deactivation/demotion with retry denial, stale revisions, forged identifiers, idempotency, invitation revocation, bounded cursor pages and concurrent last-admin removal.
+Local validation passes: 63 Worker/D1 tests plus six browser-client tests, all app/Worker/test/client type checks, Expo web export, an Android export with Cloudflare environment variables removed, and Wrangler production dry run. Coverage includes real `/v1` routing, targeted invitation/acceptance, two-team roles, assigned member/viewer denial, administrator non-bypass, removal/deactivation/demotion with retry denial, client-supplied stale revisions, forged identifiers, idempotency, invitation revocation, bounded cursor pages and concurrent last-admin removal.
 
 Deployment preflight reconfirmed scoped Wrangler access, Workers **Free** as the current plan, 423 Worker invocations, zero runtime errors and September billable/projected cost of **US$0.00**. The 24-hour aggregate CPU view was P50 3.03 ms, P90 6.52 ms and P99 11.7 ms across several M2c/M3 versions; it is not the required M3-specific sample. Remote migration execution took 5.13 ms. D1 remained APAC/HKG and 245,760 bytes after migration; both original private Morning records remained intact at versions 30 and 113. The hosted first administrator created `ShiftCalendar Pilot` successfully. Two-user acceptance and operation-specific tail sampling remain pending.
 
