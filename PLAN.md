@@ -175,9 +175,14 @@ allowances are separate questions.
 months or until credits run out, whichever happens first. Continued hosting
 requires an eligible active project, usually a Paid upgrade when the Free plan
 ends. Paid can still use eligible service allowances, but excess usage is
-billable. The console shows no active credits for this project; its plan end
-date remains unverified. Do not assume the new-customer credit offer applies.
-[AWS Free Tier](https://aws.amazon.com/free/).
+billable. The current Free plan closes when its credits or duration end;
+a zero credit balance alone is not proof that AWS will charge a payment method.
+Verify the actual plan before treating the usage estimate as a cash bill, and
+do not automatically upgrade it. The console shows no active credits for this
+project; its plan end date remains unverified. Do not assume the new-customer
+credit offer applies.
+[AWS Free Tier](https://aws.amazon.com/free/),
+[plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html).
 
 **CloudFront naming trap:** the separate flat-rate “Free” subscription is not
 available to AWS Free Tier projects. Use the standard distribution with its

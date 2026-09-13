@@ -52,8 +52,18 @@ on 2026-09-13. September's estimated bill was $0.00. The user described a Free
 plan, but `aws freetier get-account-plan-state` returned “Missing data”.
 The plan type and any time-limited eligibility remain unverified.
 
-The following is a **scenario estimate, not a spending cap**. Prices were read
-from the AWS Price List API for Malaysia on 2026-09-13, using numeric
+**Credit balance and plan type are separate.** A zero credit balance does not
+by itself establish that AWS will charge a payment method. Under the current
+Free plan, the project closes when credits are depleted or the plan expires.
+Under the Paid plan, eligible allowances/credits offset usage and remaining
+usage is billed. Verify the project's actual plan before treating the scenario
+below as an expected cash bill. Do not automatically upgrade the plan.
+[AWS plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html).
+
+The following is a **scenario estimate, not a spending cap**, assuming S3/API
+usage is billable rather than covered by a verified offer. It estimates usage
+charges for the prepared stack. Rates were read from the AWS Price List API
+for Malaysia on 2026-09-13, using numeric
 `pricePerUnit.USD` values rather than the descriptive text.
 
 | Item | Monthly assumption | Rate (USD) | Estimate |
