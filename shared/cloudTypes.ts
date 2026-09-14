@@ -164,6 +164,35 @@ export interface TeamRosterDay extends CloudCalendarDay {
   memberDisplayName: string;
 }
 
+export type CloudChangeRequestStatus = 'pending_counterpart' | 'pending_manager' | 'approved' |
+  'rejected' | 'declined' | 'cancelled';
+
+export interface CloudChangeRequest {
+  id: string;
+  teamId: string;
+  kind: 'direct' | 'swap';
+  requesterSub: string;
+  requesterDisplayName: string;
+  requesterCalendarId: string;
+  requesterDate: string;
+  requesterObservedVersion: number;
+  requesterObservedShiftCode?: string;
+  requestedShiftCode?: string;
+  counterpartSub?: string;
+  counterpartDisplayName?: string;
+  counterpartCalendarId?: string;
+  counterpartDate?: string;
+  counterpartObservedVersion?: number;
+  counterpartObservedShiftCode?: string;
+  status: CloudChangeRequestStatus;
+  reason: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+}
+
 export interface Page<T> {
   items: T[];
   nextCursor?: string;

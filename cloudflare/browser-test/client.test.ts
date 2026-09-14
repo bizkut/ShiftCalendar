@@ -51,3 +51,17 @@ it('sends a bounded schedule preview as one same-origin JSON request', async () 
   expect(init?.cache).toBe('no-store');
   expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
 });
+
+it('sends change requests through the protected same-origin API without exposing the reason in the URL', async () => {
+  const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+    Response.json({ data: { id: 'request-1', status: 'pending_manager' } }));
+  vi.stubGlobal('fetch', fetcher);
+  const body = JSON.stringify({ mutationId: 'stable-request', value: { kind: 'direct', reason: 'Private appointment' } });
+  await client.cloudRequest('/teams/team/change-requests', { method: 'POST', body });
+  const [url, init] = fetcher.mock.calls[0]!;
+  expect(url).toBe('/v1/teams/team/change-requests');
+  expect(url).not.toContain('Private');
+  expect(init?.body).toBe(body);
+  expect(init?.credentials).toBe('same-origin');
+  expect(init?.cache).toBe('no-store');
+});

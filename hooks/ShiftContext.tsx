@@ -14,6 +14,7 @@ export interface CloudDataState {
   teams: CloudTeam[];
   refresh: () => Promise<void>;
   setVisibleMonth: (month: Date | string) => void;
+  getDayVersion: (date: string) => number;
 }
 
 interface ShiftContextType {

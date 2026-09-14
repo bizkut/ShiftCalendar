@@ -7,12 +7,13 @@ import administrators from '../migrations/0002_application_administrators.sql?ra
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
 import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
 import teamScheduling from '../migrations/0005_team_scheduling.sql?raw';
+import changeRequests from '../migrations/0006_shift_change_requests.sql?raw';
 
 const issuer = 'https://api-test.cloudflareaccess.com';
 const configured = { ...env, ACCESS_ISSUER: issuer, ACCESS_AUDIENCE: 'api-audience' };
 let keys: Awaited<ReturnType<typeof generateKeyPair>>;
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling + changeRequests).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
   keys = await generateKeyPair('RS256', { extractable: true });
   const jwk = await exportJWK(keys.publicKey);
   vi.stubGlobal('fetch', async () => Response.json({ keys: [{ ...jwk, kid: 'api-key', alg: 'RS256' }] }));
@@ -93,6 +94,13 @@ it('runs targeted invitation, team switching, and enforced roles through /v1', a
   const memberRosterBody=await memberRoster.json() as {data:{items:Record<string,unknown>[]}};
   expect(memberRosterBody).toMatchObject({data:{items:[{calendarId:calendar.id,memberSub:'bob',date:'2026-09-14',shiftCode:'A'}]}});
   expect(memberRosterBody.data.items[0]).not.toHaveProperty('note');
+  const requestResponse=await call('bob',`/teams/${created.id}/change-requests`,'POST',{mutationId:'api-change-request',value:{kind:'direct',requesterCalendarId:calendar.id,
+    requesterDate:'2026-09-14',requesterObservedVersion:1,requesterObservedShiftCode:'A',requestedShiftCode:'M',reason:'Private appointment'}});
+  expect(requestResponse.status).toBe(201);
+  const {data:changeRequest}=await requestResponse.json() as {data:{id:string}};
+  expect(await (await call('alice',`/teams/${created.id}/change-requests?limit=100`)).json()).toMatchObject({data:{items:[{id:changeRequest.id,reason:'Private appointment'}]}});
+  expect((await call('alice',`/teams/${created.id}/change-requests/${changeRequest.id}/resolve`,'PATCH',{mutationId:'api-change-approve',expectedVersion:1,decision:'approve'})).status).toBe(200);
+  expect(await env.DB.prepare('SELECT shift_code,version FROM calendar_days WHERE calendar_id=? AND date=?').bind(calendar.id,'2026-09-14').first()).toMatchObject({shift_code:'M',version:2});
   expect((await call('bob',`/teams/${created.id}/roster/bob/days/2026-09-15`,'PATCH',{
     mutationId:'api-roster-member-denied',expectedVersion:0,value:{shiftCode:'M'},
   })).status).toBe(403);

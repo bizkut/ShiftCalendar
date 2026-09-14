@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, Touc
 import { useAuth } from '../../hooks/AuthContext';
 import { useAppSettings } from '../../hooks/ThemeContext';
 import { useShifts } from '../../hooks/ShiftContext';
-import type { CloudCalendar, CloudInvitation, CloudMember, CloudTeam, CloudUser, Page, TeamRole } from '../../shared/cloudTypes';
+import type { CloudCalendar, CloudChangeRequest, CloudInvitation, CloudMember, CloudTeam, CloudUser, Page, TeamRole } from '../../shared/cloudTypes';
 import { cloudErrorMessage, cloudRequest, createMutationId } from '../../utils/cloudClient';
 
 const editableRoles: Exclude<TeamRole, 'owner'>[] = ['manager', 'member', 'viewer'];
@@ -31,6 +31,7 @@ export default function TeamsScreen() {
   const [invitations, setInvitations] = useState<CloudInvitation[]>([]);
   const [teamInvitations, setTeamInvitations] = useState<CloudInvitation[]>([]);
   const [users, setUsers] = useState<CloudUser[]>([]);
+  const [changeRequests, setChangeRequests] = useState<CloudChangeRequest[]>([]);
   const [teamName, setTeamName] = useState('');
   const [inviteeEmail, setInviteeEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<Exclude<TeamRole, 'owner'>>('member');
@@ -38,6 +39,7 @@ export default function TeamsScreen() {
   const [busy, setBusy] = useState(false);
   const userSubRef = useRef(user?.sub); userSubRef.current = user?.sub;
   const selectedIdRef = useRef(selectedId); selectedIdRef.current = selectedId;
+  const requestMutations = useRef(new Map<string, string>());
 
   const selected = teams.find(team => team.id === selectedId) ?? teams[0];
   const isLeader = selected?.role === 'owner';
@@ -73,6 +75,15 @@ export default function TeamsScreen() {
     } catch (error) { setMessage(cloudErrorMessage(error)); }
   }, [selectedId, selected?.role]);
 
+  const loadChangeRequests = useCallback(async () => {
+    if (!selectedId) { setChangeRequests([]); return; }
+    const requestedTeam = selectedId;
+    try {
+      const result = await cloudRequest<Page<CloudChangeRequest>>(`/teams/${encodeURIComponent(selectedId)}/change-requests?limit=100`);
+      if (selectedIdRef.current === requestedTeam) setChangeRequests(result.items);
+    } catch (error) { setMessage(cloudErrorMessage(error)); }
+  }, [selectedId]);
+
   const loadAdministration = useCallback(async () => {
     if (!user) return;
     try {
@@ -86,9 +97,10 @@ export default function TeamsScreen() {
   }, [user]);
 
   useEffect(() => { void loadTeams(); void loadAdministration(); }, [loadTeams, loadAdministration]);
-  useEffect(() => { if (!user) { setLoadedForSub(null); setTeams([]); setMembers([]); setInvitations([]); setUsers([]); setSelectedId(''); } }, [user]);
+  useEffect(() => { if (!user) { setLoadedForSub(null); setTeams([]); setMembers([]); setInvitations([]); setUsers([]); setChangeRequests([]); setSelectedId(''); } }, [user]);
   useEffect(() => { void loadMembers(); }, [loadMembers]);
   useEffect(() => { void loadTeamInvitations(); }, [loadTeamInvitations]);
+  useEffect(() => { void loadChangeRequests(); }, [loadChangeRequests]);
 
   const run = async (operation: () => Promise<void>) => {
     setBusy(true); setMessage(null);
@@ -147,6 +159,24 @@ export default function TeamsScreen() {
     await loadAdministration(); setMessage('User status updated.');
   });
 
+  const requestMutation = (requestId: string, action: string) => {
+    const key = `${requestId}:${action}`; const existing = requestMutations.current.get(key);
+    if (existing) return { key, mutationId: existing };
+    const mutationId = createMutationId(); requestMutations.current.set(key, mutationId); return { key, mutationId };
+  };
+  const actOnRequest = (item: CloudChangeRequest, action: 'accept'|'decline'|'cancel'|'approve'|'reject') => run(async () => {
+    const saved = requestMutation(item.id, action);
+    const path = action === 'accept' || action === 'decline' ? `/change-requests/${encodeURIComponent(item.id)}/respond`
+      : action === 'cancel' ? `/change-requests/${encodeURIComponent(item.id)}/cancel`
+      : `/teams/${encodeURIComponent(item.teamId)}/change-requests/${encodeURIComponent(item.id)}/resolve`;
+    const body = action === 'cancel' ? { mutationId: saved.mutationId, expectedVersion: item.version }
+      : { mutationId: saved.mutationId, expectedVersion: item.version, decision: action };
+    await cloudRequest<CloudChangeRequest>(path, { method: 'PATCH', body: JSON.stringify(body) });
+    requestMutations.current.delete(saved.key); await loadChangeRequests();
+    if (action === 'approve') await cloud?.refresh();
+    setMessage(action === 'approve' ? 'Request approved and roster updated.' : `Request ${action === 'cancel' ? 'cancelled' : `${action}ed`}.`);
+  });
+
   const palette = useMemo(() => ({ input:{ color:colors.text,borderColor:colors.border,backgroundColor:colors.surface } }), [colors]);
   if (!cloud?.enabled) return <Redirect href="/" />;
   if (!user || loadedForSub !== user.sub) return <View style={[styles.loading,{backgroundColor:colors.background}]}><ActivityIndicator color={colors.primary}/></View>;
@@ -177,6 +207,20 @@ export default function TeamsScreen() {
           {teamInvitations.map(invite=><View key={invite.id} style={styles.row}><Text style={[styles.flex,{color:colors.textSecondary,fontSize:12}]}>{invite.inviteeUsername} · {invite.role} · {invite.status}</Text>{invite.status==='pending'&&<TouchableOpacity disabled={busy} onPress={()=>revokeInvite(invite)}><Text style={{color:'#EF4444',fontSize:12}}>revoke</Text></TouchableOpacity>}</View>)}
         </>}
       </View>
+      <Text style={[styles.sectionTitle,{color:colors.text}]}>Shift change requests</Text>
+      {changeRequests.length === 0 && <Text style={{color:colors.textSecondary}}>No requests for this team.</Text>}
+      {changeRequests.map(item => <View key={item.id} style={[styles.requestCard,{backgroundColor:colors.surface,borderColor:colors.border}]}>
+        <View style={styles.flex}>
+          <Text style={{color:colors.text,fontWeight:'700'}}>{item.kind === 'swap' ? 'Swap' : 'Shift change'} · {item.requesterDisplayName}</Text>
+          <Text style={{color:colors.textSecondary,fontSize:12}}>{item.requesterDate} · {item.requesterObservedShiftCode ?? 'unassigned'} → {item.kind === 'swap' ? `${item.counterpartDisplayName} on ${item.counterpartDate}` : item.requestedShiftCode} · {item.status.replace(/_/g,' ')}</Text>
+        </View>
+        <TouchableOpacity accessibilityLabel={`View private reason for ${item.requesterDisplayName}`} onPress={()=>Alert.alert('Private reason',item.reason)}><Text style={{color:colors.primary,fontSize:12}}>reason</Text></TouchableOpacity>
+        <View style={styles.requestActions}>
+          {item.status==='pending_counterpart' && item.counterpartSub===user.sub && <><TouchableOpacity disabled={busy} onPress={()=>actOnRequest(item,'accept')}><Text style={{color:colors.primary}}>Accept</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={()=>actOnRequest(item,'decline')}><Text style={{color:'#EF4444'}}>Decline</Text></TouchableOpacity></>}
+          {(item.status==='pending_counterpart'||item.status==='pending_manager') && item.requesterSub===user.sub && <TouchableOpacity disabled={busy} onPress={()=>actOnRequest(item,'cancel')}><Text style={{color:'#EF4444'}}>Cancel</Text></TouchableOpacity>}
+          {canManageSchedules && item.status==='pending_manager' && <><TouchableOpacity disabled={busy} onPress={()=>actOnRequest(item,'approve')}><Text style={{color:colors.primary}}>Approve</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={()=>actOnRequest(item,'reject')}><Text style={{color:'#EF4444'}}>Reject</Text></TouchableOpacity></>}
+        </View>
+      </View>)}
       <Text style={[styles.sectionTitle,{color:colors.text}]}>Members</Text>
       {members.map(member=><View key={member.sub} style={[styles.member,{backgroundColor:colors.surface,borderColor:colors.border}]}>
         <View style={styles.flex}><Text style={{color:colors.text,fontWeight:'700'}}>{member.displayName}{member.sub===user.sub?' (you)':''}</Text><Text style={{color:colors.textSecondary,fontSize:12}}>{capabilityText(member.role)}</Text></View>
@@ -199,5 +243,6 @@ const styles = StyleSheet.create({
   teamList: { gap: 8 }, teamChip: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, minWidth: 100 }, card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 }, cardTitle: { fontSize: 20, fontWeight: '800' }, label: { fontSize: 13, fontWeight: '700' }, roleRow: { flexDirection: 'row', gap: 7 }, role: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 }, wideButton: { minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   inviteLink: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '800', marginTop: 4 }, member: { borderWidth: 1, borderRadius: 12, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 }, actions: { alignItems: 'flex-end', gap: 5 },
+  requestCard: { borderWidth: 1, borderRadius: 12, padding: 13, gap: 9 }, requestActions: { flexDirection: 'row', gap: 14, justifyContent: 'flex-end' },
   rosterDay: { flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth }, rosterDate: { width: 88, fontWeight: '700' },
 });

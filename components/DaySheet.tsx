@@ -29,6 +29,8 @@ interface Props {
   onClearLeave: (date: string) => void;
   teamCalendar?: boolean;
   readOnly?: boolean;
+  canRequestChange?: boolean;
+  onRequestChange?: () => void;
   colors: {
     surface: string;
     surfaceVariant: string;
@@ -62,6 +64,8 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
       onClearLeave,
       teamCalendar = false,
       readOnly = false,
+      canRequestChange = false,
+      onRequestChange,
       colors,
     },
     ref
@@ -234,6 +238,18 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
                   : 'Team roster shifts are shared. Notes, overtime, leave, pay, and swap details stay private.'}
               </Text>
             </View>
+          )}
+
+          {teamCalendar && canRequestChange && onRequestChange && (
+            <TouchableOpacity
+              style={[styles.addNoteBtn, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]}
+              onPress={onRequestChange}
+              accessibilityLabel="Request a shift change"
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name="swap-horizontal" size={20} color={colors.primary} />
+              <Text style={[styles.addNoteBtnText, { color: colors.primary }]}>Request shift change</Text>
+            </TouchableOpacity>
           )}
 
           {!teamCalendar && <>

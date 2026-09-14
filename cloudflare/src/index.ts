@@ -3,6 +3,7 @@ import { ApiError } from './errors';
 import { CalendarRepository } from './calendar';
 import { SchedulingRepository } from './scheduling';
 import { TeamRepository } from './teams';
+import { ChangeRequestRepository } from './change-requests';
 
 async function readBody(request: Request): Promise<unknown> {
   if (!request.body) throw new ApiError(400, 'invalid_request', 'Request body is required.');
@@ -51,6 +52,7 @@ export default {
       const session = await teams.provision(identity.username);
       const repository = new CalendarRepository(env.DB, identity.sub);
       const scheduling = new SchedulingRepository(env.DB, identity.sub, repository);
+      const changeRequests = new ChangeRequestRepository(env.DB, identity.sub, repository);
       const parts = path.split('/').filter(Boolean);
       if (path === '/v1/session' && request.method === 'GET') {
         return Response.json({ data: { sub: session.sub, username: session.username, applicationAdmin: session.applicationAdmin } }, { headers });
@@ -106,6 +108,17 @@ export default {
         data = await scheduling.preview(parts[2], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'schedule-apply' && parts.length === 4 && request.method === 'POST') {
         data = await scheduling.apply(parts[2], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'change-requests' && parts.length === 4 && request.method === 'GET') {
+        data = await changeRequests.list(parts[2], cursor, limit);
+      } else if (parts[1] === 'teams' && parts[3] === 'change-requests' && parts.length === 4 && request.method === 'POST') {
+        data = await changeRequests.create(parts[2], await readBody(request)); status = 201;
+      } else if (parts[1] === 'change-requests' && parts[3] === 'respond' && parts.length === 4 && request.method === 'PATCH') {
+        data = await changeRequests.respond(parts[2], await readBody(request));
+      } else if (parts[1] === 'change-requests' && parts[3] === 'cancel' && parts.length === 4 && request.method === 'PATCH') {
+        data = await changeRequests.cancel(parts[2], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'change-requests' && parts[5] === 'resolve'
+          && parts.length === 6 && request.method === 'PATCH') {
+        data = await changeRequests.resolve(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'PATCH') {
         data = await teams.changeMember(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'DELETE') {

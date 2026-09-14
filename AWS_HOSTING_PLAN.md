@@ -86,7 +86,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 2 — M3: teams and access | Administrator manages teams and current permissions | Complete — two-user role, revocation and CPU acceptance passed |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | Complete — hosted leader/member acceptance passed |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | Complete — hosted scheduling, retry, conflict, privacy and Free-tier acceptance passed |
-| Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | M4, M5 |
+| Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | Local candidate complete; hosted acceptance pending |
 | Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | M6 |
 | Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | M7 |
 
@@ -191,9 +191,14 @@ Rollback to version `841deab6-458a-4735-b4cc-6826318980b5` restores completed M3
 
 ### Phase 3 — M6: change requests
 
-- [ ] Add member submission/history and manager review for assigned teams; restrict private reasons to authorized participants.
-- [ ] Atomically apply a revision-checked roster correction and close the request, or reject without changing the roster.
-- [ ] Make submission/resolution retries safe and refresh affected views.
+- [x] Add member submission/history and manager review for assigned teams; restrict private reasons to authorized participants.
+- [x] Atomically apply a revision-checked roster correction and close the request, or reject without changing the roster.
+- [x] Make submission/resolution retries safe and refresh affected views.
+- [ ] Apply migration `0006_shift_change_requests.sql`, deploy the protected candidate, and complete one grouped two-user acceptance run without unnecessary identity switches.
+
+**Local candidate 2026-09-14:** additive migration `0006_shift_change_requests.sql` stores direct-change and two-member swap requests with observed roster revisions, private reasons, explicit waiting/final states and audit metadata. Direct requests wait for a current team leader or manager. Swaps first require the selected counterpart to accept, then require manager approval. Approval rechecks the current actor role, active users/memberships/calendars, request revision, roster revisions and active shift codes in one D1 batch before changing one or two roster dates and closing the request. Decline, cancellation and rejection close the request without roster writes. Stable mutation IDs make exact retries return the recorded result and reject changed payloads; current permissions are checked before replay.
+
+The browser exposes submission only from the signed-in member/viewer's own assigned shift, previews the counterpart's saved date before a swap request, retains mutation IDs until confirmed actions, and lists only requests relevant to the signed-in participant or current manager. Reasons are omitted from roster/team cards and opened separately for authorized participants. Local validation passes 79 Worker/D1 tests and eight browser-client tests, app/Worker/test typechecks, the Cloudflare web export, local migrations and the production dry run. Hosted D1, UI, privacy, transaction residue and CPU evidence are still required before marking M6 complete.
 
 **Exit evidence:** approval changes a roster exactly once, rejection changes nothing, and simultaneous/stale/foreign-user requests are handled correctly.
 
@@ -226,4 +231,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2c through M5 are complete for the two-user browser pilot. Hosted custom shifts, rotations, bounded scheduling, stale-conflict results, exact retry safety, member read-only behavior and Free-tier CPU checks pass. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version and measurement evidence. Production has two active approved identities, one team leader and one standard member. Change requests, recovery drills and native release checks remain later milestones.
+M2c through M5 are complete for the two-user browser pilot. The M6 change-request candidate passes local validation and awaits a protected deployment plus grouped two-user acceptance. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version and measurement evidence. Production has two active approved identities, one team leader and one standard member. Recovery drills and native release checks remain later milestones.

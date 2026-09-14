@@ -27,6 +27,8 @@ import { WeekView } from '../../components/WeekView';
 import { TemplateSheet } from '../../components/TemplateSheet';
 import { NotesSearchSheet } from '../../components/NotesSearchSheet';
 import { TeamScheduleModal } from '../../components/TeamScheduleModal';
+import { ShiftChangeRequestModal } from '../../components/ShiftChangeRequestModal';
+import { useAuth } from '../../hooks/AuthContext';
 import { ShiftTemplate } from '../../constants/templates';
 import { SwapRequest } from '../../hooks/useShiftData';
 import type { CloudCalendar } from '../../shared/cloudTypes';
@@ -38,6 +40,7 @@ function isSameMonth(a: Date, b: Date) {
 }
 
 export default function CalendarScreen() {
+  const { user } = useAuth();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isLandscape = screenWidth > screenHeight;
   const cellWidth = Math.min(Math.floor((screenWidth - 20) / 7), isLandscape ? 48 : 56);
@@ -84,6 +87,7 @@ export default function CalendarScreen() {
   const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
   const [templateStart, setTemplateStart] = useState<string | null>(null);
   const [teamScheduleVisible, setTeamScheduleVisible] = useState(false);
+  const [changeRequestVisible, setChangeRequestVisible] = useState(false);
   const daySheetRef = useRef<BottomSheet>(null);
   const repeatSheetRef = useRef<BottomSheet>(null);
   const templateSheetRef = useRef<BottomSheet>(null);
@@ -727,8 +731,26 @@ export default function CalendarScreen() {
         onClearLeave={clearLeave}
         teamCalendar={teamCalendar}
         readOnly={readOnlyTeamCalendar}
+        canRequestChange={Boolean(readOnlyTeamCalendar && user && selectedDate && shiftData[selectedDate]
+          && activeCloudCalendar?.assignedMemberSub === user.sub)}
+        onRequestChange={() => { daySheetRef.current?.close(); setChangeRequestVisible(true); }}
         colors={colors}
       />
+
+      {selectedDate && activeCloudCalendar?.teamId && user && <ShiftChangeRequestModal
+        visible={changeRequestVisible}
+        onClose={() => setChangeRequestVisible(false)}
+        onCreated={() => showToast('Shift change request submitted.')}
+        teamId={activeCloudCalendar.teamId}
+        userSub={user.sub}
+        calendar={activeCloudCalendar}
+        date={selectedDate}
+        observedVersion={cloud?.getDayVersion(selectedDate) ?? 0}
+        observedShiftCode={shiftData[selectedDate]}
+        calendars={calendars as CloudCalendar[]}
+        shifts={allShifts}
+        colors={colors}
+      />}
 
       <RepeatSheet
         ref={repeatSheetRef}
