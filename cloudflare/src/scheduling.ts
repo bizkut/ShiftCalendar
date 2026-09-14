@@ -324,9 +324,18 @@ export class SchedulingRepository {
     if (!run || run.team_id !== teamId || run.fingerprint !== requestHash)
       throw new ApiError(409, 'conflict', 'This mutation ID was used for a different schedule.');
     if (run.result) return JSON.parse(run.result) as { results: Array<Record<string, unknown>>; applied: number; conflicts: number };
+    const predicates = supplied.map(() => '(calendar_id=? AND date=?)').join(' OR ');
+    const currentRows = await this.db.prepare(`SELECT calendar_id,date,version FROM calendar_days WHERE ${predicates}`)
+      .bind(...supplied.flatMap(item => [item.calendarId, item.date]))
+      .all<{ calendar_id: string; date: string; version: number }>();
+    const currentVersions = new Map((currentRows.results ?? []).map(item => [`${item.calendar_id}:${item.date}`, item.version]));
     const results: Array<Record<string, unknown>> = [];
     for (let index = 0; index < supplied.length; index += 1) {
       const assignment = supplied[index];
+      if ((currentVersions.get(`${assignment.calendarId}:${assignment.date}`) ?? 0) !== assignment.expectedVersion) {
+        results.push({ ...assignment, status: 'conflict', error: 'This day changed. Refresh before retrying.' });
+        continue;
+      }
       try {
         const day = await this.calendars.writeScheduledRosterDay(teamId, assignment.memberSub, assignment.calendarId, assignment.date, {
           mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion,
