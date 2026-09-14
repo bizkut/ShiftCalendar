@@ -1,0 +1,81 @@
+{
+  "capturedAt": "2026-09-14T08:45:02+08:00",
+  "milestone": "M4",
+  "status": "complete — hosted leader edit, member refresh, read-only enforcement and privacy passed",
+  "sourceCommit": "9ca1f49",
+  "worker": {
+    "name": "shiftcalendar",
+    "version": "84062431-643f-4014-9ea8-9d2ddbf772e7",
+    "hostname": "shifts.amazonian.my",
+    "workersDev": false,
+    "previewUrls": false,
+    "startupMs": 4,
+    "rollbackVersion": "841deab6-458a-4735-b4cc-6826318980b5"
+  },
+  "architecture": {
+    "schemaMigration": "none; roster reads existing team calendars and calendar_days",
+    "readBounds": { "inclusiveDays": 31, "pageRows": 100, "cursor": "calendar and date" },
+    "sharedFields": ["calendarId", "memberSub", "memberDisplayName", "date", "shiftCode", "version", "updatedAt", "updatedBy"],
+    "excludedPrivateFields": ["note", "overtimeHours", "leaveTypeId", "leaveReason", "payRate", "swap"],
+    "writeRoles": ["owner", "manager"],
+    "readOnlyRoles": ["member", "viewer"]
+  },
+  "localValidation": {
+    "workerAndD1Tests": 69,
+    "browserClientTests": 6,
+    "typechecks": "app, Worker, Worker tests and browser client passed",
+    "webExport": "passed",
+    "androidExport": "passed to a temporary output directory",
+    "wranglerProductionDryRun": "passed with 78 assets and the existing D1/Access/origin bindings"
+  },
+  "hostedChecks": {
+    "leaderSessionReusedWithoutPin": true,
+    "leaderWrite": { "date": "2026-09-17", "shiftCode": "N", "version": 1, "status": 200, "auditRows": 1 },
+    "overnightShift": "Night 23:00–07:00 displayed in the roster UI",
+    "memberRefresh": "passed; assigned Night shift visible",
+    "memberWrite": { "status": 403, "date": "2026-09-18", "calendarRowsCreated": 0 },
+    "memberUi": {
+      "readOnlyNotice": true,
+      "shiftControls": false,
+      "clearControl": false,
+      "privateDetailControls": false
+    },
+    "rosterPrivateFieldsFound": [],
+    "forgedAndCrossTeamChecks": "focused local repository and real-handler tests passed",
+    "identitySwitches": 1,
+    "pinRequests": 1,
+    "finalBrowserIdentity": "second pilot member"
+  },
+  "livePerformance": {
+    "boundedRosterReadCpuMs": [1, 1, 3],
+    "memberDeniedWriteCpuMs": 5,
+    "allCapturedRequestsBelowFreeCpuGate": true,
+    "successfulLeaderWriteTailCaptured": false,
+    "successfulLeaderWriteEvidence": "HTTP 200 result, member refresh, audit row and final D1 row",
+    "d1FinalReadSqlMs": 0.3173,
+    "databaseSizeBytes": 266240,
+    "servedRegion": "APAC",
+    "servedColo": "HKG"
+  },
+  "finalProductionState": {
+    "activeUsers": 2,
+    "activeApplicationAdministrators": 1,
+    "teamRoles": ["owner", "member"],
+    "pendingInvitations": 0,
+    "failedTransactionChecks": 0,
+    "privateRecords": [
+      { "identity": "first pilot", "date": "2026-09-14", "shiftCode": "M", "version": 30 },
+      { "identity": "second pilot", "date": "2026-09-15", "shiftCode": "M", "version": 113 }
+    ],
+    "teamRecords": [
+      { "date": "2026-09-16", "shiftCode": "A", "version": 3 },
+      { "date": "2026-09-17", "shiftCode": "N", "version": 1 }
+    ]
+  },
+  "freeTier": {
+    "newPaidServices": [],
+    "servicesUsed": ["Workers Free", "D1 Free", "Cloudflare Access Free"],
+    "planChanged": false
+  },
+  "secretsRetained": false
+}

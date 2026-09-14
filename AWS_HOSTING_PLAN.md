@@ -84,7 +84,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 1 — M2b: two-user hosted pilot | Real PIN login and persistent private edits with cross-user isolation | Verified two-user pilot; CPU gate before expansion |
 | Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | Complete — CPU and two-user correctness checks passed |
 | Phase 2 — M3: teams and access | Administrator manages teams and current permissions | Complete — two-user role, revocation and CPU acceptance passed |
-| Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | M3 |
+| Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | Complete — hosted leader/member acceptance passed |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | M4, M5 |
 | Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | M6 |
@@ -164,12 +164,18 @@ Live acceptance used both approved identities. The second user accepted a target
 
 ### Phase 2 — M4: shared roster
 
-- [ ] Add bounded monthly roster reads and authorized single-date edits for team/member/date records.
-- [ ] Implement My shifts, Team roster and member selection; separate shared fields from owner-only notes/pay data.
-- [ ] Apply revisions, retry protection and audit writes; refresh views after edits and reject offline writes safely.
-- [ ] Use Kuala Lumpur calendar dates consistently, including overnight shifts and month/year boundaries.
+- [x] Add bounded monthly roster reads and authorized single-date edits for team/member/date records.
+- [x] Implement My shifts, Team roster and member selection; separate shared fields from owner-only notes/pay data.
+- [x] Apply revisions, retry protection and audit writes; refresh views after edits and reject offline writes safely.
+- [x] Use Kuala Lumpur calendar dates consistently, including overnight shifts and month/year boundaries.
 
-**Exit evidence:** a manager or team leader edits and the member sees the result; members cannot edit team rosters directly, including their own assigned dates. The member UI is read-only with a change-request path, and forged API writes are denied. Cover concurrent writes, cross-team attempts, private-field exclusion and native local compatibility.
+**Completed 2026-09-14:** Worker version `84062431-643f-4014-9ea8-9d2ddbf772e7` adds a bounded, cursor-paged team roster over the existing team-calendar rows. No schema migration was needed. Reads accept at most 31 inclusive dates and 100 rows per page. Responses contain only member identity, calendar/date, shift, revision and update fields. Team leaders and current managers can edit one assigned date; members/viewers remain read-only, including their own assignment. The same active-user, current-role, assigned-membership, revision, retry and audit predicates are rechecked inside the D1 write transaction.
+
+Local validation passed 69 Worker/D1 tests, six browser-client tests, all app/Worker/test typechecks, Expo web and Android exports, and the production Wrangler dry run. Coverage includes real `/v1` routing, page cursors, cross-year 31-day windows, invalid dates/cursors, forged and cross-team targets, private-field exclusion, leader/manager permission, application-admin non-bypass through the existing role matrix, stale/concurrent writes, demotion retry denial, target removal/deactivation and mutation-boundary membership revocation.
+
+Hosted acceptance used one existing first-user session and one final second-user PIN. The team leader assigned the overnight Night shift (23:00–07:00) for 17 September 2026; the member saw it after refresh. The member API write returned 403 and the member day sheet displayed the read-only notice without shift, clear, note, overtime, leave, pay or swap controls. Final roster rows exposed no private fields. Live bounded reads used 1–3 ms CPU and the denied member write path used 5 ms; all sampled M4 requests stayed below the 10 ms Free-plan gate. Both original private Morning records remain unchanged, the two users end active as owner/member, no invitations are pending and no transaction guard residue remains. See [the M4 evidence record](cloudflare/live-evidence/2026-09-14-m4-roster.json).
+
+Rollback to version `841deab6-458a-4735-b4cc-6826318980b5` restores completed M3 code. Since M4 added no tables or columns, code rollback needs no database reversal; retain the new roster day as ordinary schedule data. Member change requests remain M6, while custom shifts, rotations and bounded bulk scheduling remain M5.
 
 ### Phase 3 — M5: scheduling tools
 
