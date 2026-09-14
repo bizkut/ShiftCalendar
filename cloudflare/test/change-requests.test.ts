@@ -114,6 +114,7 @@ describe('team shift change requests', () => {
       .bind(firstCalendar, '2026-10-01').run();
     await expect(repo(ownerSub).resolve(teamId, stale.id, { mutationId: mutation(), expectedVersion: 1, decision: 'approve' }))
       .rejects.toMatchObject({ status: 409 });
+    await repo(ownerSub).resolve(teamId, stale.id, { mutationId: mutation(), expectedVersion: 1, decision: 'reject' });
     await env.DB.prepare("UPDATE calendar_days SET shift_code='M',version=1 WHERE calendar_id=? AND date=?")
       .bind(firstCalendar, '2026-10-01').run();
     await expect(repo(firstSub).create(teamId, { ...direct(), value: { ...direct().value, requestedShiftCode: 'ARCHIVED' } }))
@@ -137,5 +138,17 @@ describe('team shift change requests', () => {
       .bind(firstCalendar, '2026-10-01').first()).toMatchObject({ shift_code: 'A', version: 2 });
     expect(await env.DB.prepare("SELECT COUNT(*) count FROM team_change_requests WHERE id=? AND status='approved'")
       .bind(created.id).first()).toMatchObject({ count: 1 });
+  });
+
+  it('bounds request input and prevents overlapping pending targets', async () => {
+    await expect(repo(firstSub).create(teamId, { ...direct(), value: { ...direct().value, reason: 'x'.repeat(501) } }))
+      .rejects.toMatchObject({ status: 400 });
+    await expect(repo(firstSub).create(teamId, { ...direct(), value: { ...direct().value, requesterDate: '2026-02-30' } }))
+      .rejects.toMatchObject({ status: 400 });
+    await expect(repo(firstSub).create(teamId, { ...swap(), value: { ...swap().value, counterpartSub: firstSub } }))
+      .rejects.toMatchObject({ status: 400 });
+    await expect(repo(firstSub).list(teamId, '', 101)).rejects.toMatchObject({ status: 400 });
+    await repo(firstSub).create(teamId, direct());
+    await expect(repo(firstSub).create(teamId, direct())).rejects.toMatchObject({ status: 409 });
   });
 });

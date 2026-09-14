@@ -200,6 +200,15 @@ export class ChangeRequestRepository {
       await this.db.batch([
         this.memberGuard(teamId),
         this.guard(`EXISTS(SELECT 1 FROM memberships WHERE team_id=? AND user_sub=? AND role IN ('member','viewer'))`, [teamId, this.sub]),
+        this.guard(`NOT EXISTS(SELECT 1 FROM team_change_requests r WHERE r.team_id=?
+          AND r.status IN ('pending_counterpart','pending_manager') AND (
+            (r.requester_calendar_id=? AND r.requester_date=?) OR (r.counterpart_calendar_id=? AND r.counterpart_date=?)
+            ${kind === 'swap' ? `OR (r.requester_calendar_id=? AND r.requester_date=?)
+              OR (r.counterpart_calendar_id=? AND r.counterpart_date=?)` : ''}
+          ))`, kind === 'swap'
+          ? [teamId, requesterCalendarId, requesterDate, requesterCalendarId, requesterDate,
+              counterpartCalendarId!, counterpartDate!, counterpartCalendarId!, counterpartDate!]
+          : [teamId, requesterCalendarId, requesterDate, requesterCalendarId, requesterDate]),
         this.guard(`EXISTS(SELECT 1 FROM calendars c JOIN calendar_days d ON d.calendar_id=c.id AND d.date=?
           WHERE c.id=? AND c.team_id=? AND c.assigned_sub=? AND c.deleted=0 AND d.deleted=0 AND d.version=? AND d.shift_code=?)`,
         [requesterDate, requesterCalendarId, teamId, this.sub, requesterObservedVersion, requesterObservedShiftCode]),
