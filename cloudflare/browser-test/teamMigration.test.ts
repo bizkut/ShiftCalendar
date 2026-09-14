@@ -14,6 +14,7 @@ describe('team migration files', () => {
   it('rejects unknown fields and oversized batches', () => {
     expect(() => parseTeamImport('[{"memberSub":"m","calendarId":"c","date":"2026-09-17","shiftCode":"M","admin":true}]')).toThrow('unknown field');
     expect(() => parseTeamImport('memberSub,calendarId,date,shiftCode\nm,c,2026-09-17,M\nm,c,2026-09-18,A\nm,c,2026-09-19,N')).toThrow('at most 2');
+    expect(() => parseTeamImport('memberSub,calendarId,date,shiftCode\nm,c,2026-09-17,M,ignored')).toThrow('exactly 4');
   });
 
   it('neutralizes spreadsheet formulas and creates safe filenames', () => {

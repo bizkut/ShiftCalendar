@@ -1,0 +1,71 @@
+{
+  "milestone": "M7 migration, export and recovery",
+  "date": "2026-09-14",
+  "production": {
+    "url": "https://shifts.amazonian.my",
+    "worker_version": "e0dc8e5d-35bb-459a-b662-b8d12d59a46a",
+    "hosted_acceptance_version": "52e09446-df05-4a89-91cc-dab4658089b9",
+    "rollback_version": "1b19b8cb-e57d-4502-81d7-68e38b68cac9",
+    "migration": "0007_team_import_runs.sql",
+    "workers_dev_enabled": false,
+    "preview_urls_enabled": false
+  },
+  "hosted_acceptance": {
+    "leader": {
+      "import_preview": "passed",
+      "import_apply": { "date": "2026-09-22", "shift": "M", "version": 1 },
+      "roster_export": "downloaded",
+      "request_export": "downloaded without reasons",
+      "audit_export": "downloaded"
+    },
+    "member": {
+      "imported_team_shift_visible": true,
+      "schedule_import_export_controls": 0,
+      "team_day_sheet": "read-only"
+    }
+  },
+  "recovery_rehearsal": {
+    "production_targeted": false,
+    "fixtures": "sanitized .invalid identities",
+    "time_travel": { "before": "M/version 1", "mutated": "N/version 2", "restored": "M/version 1" },
+    "sql_copy_verified": { "users": 2, "teams": 1, "memberships": 2, "roster_days": 1, "requests": 1, "request_status": "approved" },
+    "temporary_databases_deleted": true,
+    "temporary_export_deleted": true
+  },
+  "worker_rollback": {
+    "prior_version_deployed_percent": 100,
+    "access_protection_verified": ["application", "api", "asset"],
+    "restored_candidate_version": "52e09446-df05-4a89-91cc-dab4658089b9",
+    "candidate_restored_percent": 100,
+    "database_rewound": false
+  },
+  "live_cpu_ms": { "bootstrap": 10, "roster": 3, "shift_types": 5 },
+  "production_d1": {
+    "served_by_region": "APAC",
+    "served_by_colo": "HKG",
+    "size_after_bytes": 409600,
+    "active_users": 2,
+    "teams": 1,
+    "memberships": 2,
+    "completed_import_runs": 1,
+    "pending_requests": 0,
+    "transaction_check_rows": 0,
+    "private_baselines": [
+      { "date": "2026-09-14", "shift": "M", "version": 30 },
+      { "date": "2026-09-15", "shift": "M", "version": 113 }
+    ]
+  },
+  "local_validation": {
+    "worker_d1_tests": 83,
+    "browser_client_tests": 11,
+    "pilot_tests": 14,
+    "typechecks": "passed",
+    "web_export": "passed",
+    "production_dry_run": "passed"
+  },
+  "privacy": {
+    "login_pins_recorded": false,
+    "request_reasons_recorded": false,
+    "private_calendar_payloads_recorded": false
+  }
+}

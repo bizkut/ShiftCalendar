@@ -87,8 +87,8 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | Complete — hosted leader/member acceptance passed |
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | Complete — hosted scheduling, retry, conflict, privacy and Free-tier acceptance passed |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | Complete — hosted direct-request approval, persistence and privacy acceptance passed |
-| Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | M6 |
-| Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | M7 |
+| Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | Complete — hosted import/export, Time Travel, SQL copy and Worker rollback passed |
+| Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | Next milestone |
 
 ### Phase 0 — M0: migration readiness
 
@@ -206,10 +206,18 @@ The browser exposes submission only from the signed-in member/viewer's own assig
 
 ### Phase 4 — M7: migration and recovery
 
-- [ ] Preview imports with team/member mapping, date/shift-code validation and conflict reporting. Preserve source backups and exclude private notes/pay settings from team imports.
-- [ ] Add bounded, retry-safe imports, authorized exports and audit views.
-- [ ] Demonstrate D1 Time Travel on a rehearsal database and export/import recovery; protect exported user data and document the chosen backup frequency and retention.
-- [ ] Demonstrate Worker code/assets rollback using a retained version and compatible schema. Code rollback does not restore D1 data; use forward-compatible migrations and a separate data-recovery procedure.
+- [x] Preview imports with team/member mapping, date/shift-code validation and conflict reporting. Preserve source backups and exclude private notes/pay settings from team imports.
+- [x] Add bounded, retry-safe imports, authorized exports and audit views.
+- [x] Demonstrate D1 Time Travel on a rehearsal database and export/import recovery; protect exported user data and document the chosen backup frequency and retention.
+- [x] Demonstrate Worker code/assets rollback using a retained version and compatible schema. Code rollback does not restore D1 data; use forward-compatible migrations and a separate data-recovery procedure.
+
+**Completed 2026-09-14:** additive migration `0007_team_import_runs.sql` and Worker version `e0dc8e5d-35bb-459a-b662-b8d12d59a46a` are live. A current team leader or manager can load or paste strict CSV/JSON, preview up to two explicitly mapped assignments, and apply with stable retry IDs. Server checks cover current role, member/calendar assignment, active shifts, valid Malaysia dates, duplicate targets, stale revisions, changed payloads and revoked access. Exact retries return the recorded result. Roster, request and audit exports are manager-only, paginated and available as stable JSON or formula-neutralized CSV; request reasons and all private-calendar details are omitted.
+
+Hosted acceptance imported the leader's 22 September Morning shift, then the member saw it after refresh with no scheduling/import/export control and an explicitly read-only day sheet. Roster, request and audit downloads completed in the leader session. The private Morning baselines remain unchanged at versions 30 and 113. Candidate reads used 3–10 ms CPU in the retained live sample.
+
+Recovery was rehearsed only on disposable APAC databases with sanitized `.invalid` identities. Time Travel restored a changed roster row from Night/version 2 to Morning/version 1. A separate SQL export/import copy reproduced two users, one team, two memberships, one roster row and one approved request. All rehearsal databases and the temporary local SQL file were deleted after verification. For the pilot, export roster/request/audit JSON before every structural import and weekly while the team is active; store it in encrypted operator storage, retain 30 days, and delete expired copies. D1 Free Time Travel supplies a separate rolling seven-day recovery window.
+
+The Worker rollback drill routed 100% to retained version `1b19b8cb-e57d-4502-81d7-68e38b68cac9`, verified that the custom domain, Access protection, application route, API route and asset route remained protected, then restored hosted candidate version `52e09446-df05-4a89-91cc-dab4658089b9` at 100%. Final version `e0dc8e5d-35bb-459a-b662-b8d12d59a46a` adds the locally verified strict CSV column-count check. The additive table remains during code rollback. Data recovery requires the independent Time Travel/export procedure.
 
 **Exit evidence:** malformed imports and retries cannot corrupt schedules; recovery verifies users, memberships, rosters and requests; rollback and backup handling are documented.
 
@@ -233,4 +241,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2c through M6 are complete for the two-user browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version and measurement evidence. Production has two active approved identities, one team leader and one standard member. Recovery drills and native release checks remain later milestones.
+M2c through M7 are complete for the two-user browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version, migration and recovery evidence. Production has two active approved identities, one team leader and one standard member. M8 team rollout and native release checks remain later milestones.

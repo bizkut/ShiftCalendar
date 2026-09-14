@@ -51,6 +51,7 @@ export function parseTeamImport(source: string): CloudImportRow[] {
   const records = parseCsvRecords(trimmed);
   if (!records.length || records[0].map(value => value.trim()).join(',') !== headers.join(','))
     throw new Error(`CSV headers must be ${headers.join(',')}.`);
+  if (records.slice(1).some(record => record.length !== headers.length)) throw new Error('Every CSV row must contain exactly 4 fields.');
   return validateRows(records.slice(1).map(record => Object.fromEntries(headers.map((key, index) => [key, record[index] ?? '']))));
 }
 
