@@ -97,6 +97,11 @@ export class CalendarRepository {
       WHERE c.id=? AND t.id=? AND c.assigned_sub=? AND c.deleted=0)`,
     [this.sub, calendarId, context.teamId, context.memberSub]);
   }
+
+  private rosterShiftPermission(context: RosterWriteContext, code: string) {
+    return this.guard(`? IN ('M','A','N','O') OR EXISTS (SELECT 1 FROM team_shift_types
+      WHERE team_id=? AND code=? AND archived=0)`, [code, context.teamId, code]);
+  }
   private record(mutationId: string, operation: string, hash: string, result: unknown) {
     return [
       this.db.prepare('INSERT INTO mutations(user_sub,id,operation,fingerprint,result) VALUES(?,?,?,?,?)')
@@ -274,7 +279,10 @@ export class CalendarRepository {
     try {
       await this.db.batch([
         this.permission(calendarId, true),
-        ...(rosterContext ? [this.rosterWritePermission(calendarId, rosterContext)] : []),
+        ...(rosterContext ? [
+          this.rosterWritePermission(calendarId, rosterContext),
+          ...(value ? [this.rosterShiftPermission(rosterContext, value.shiftCode as string)] : []),
+        ] : []),
         this.guard('COALESCE((SELECT version FROM calendar_days WHERE calendar_id = ? AND date = ?), 0) = ?', [calendarId, dayDate, version as number]),
         this.db.prepare(`INSERT INTO calendar_days(calendar_id,date,shift_code,version,deleted,updated_at,updated_by)
           VALUES(?,?,?,?,?,?,?) ON CONFLICT(calendar_id,date) DO UPDATE SET shift_code=excluded.shift_code,
@@ -304,7 +312,7 @@ export class CalendarRepository {
       this.db.prepare('SELECT * FROM calendar_days WHERE calendar_id = ? AND date = ?').bind(calendarId, dayDate),
       this.db.prepare('DELETE FROM transaction_checks'),
     ]).catch(() => { throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.'); });
-    const row = results[1].results[0] as DayRow | undefined;
+    const row = results[rosterContext ? 2 : 1].results[0] as DayRow | undefined;
     if (!row) throw new ApiError(409, 'conflict', 'The day is no longer available.');
     return day(row);
   }

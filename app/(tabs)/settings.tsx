@@ -29,6 +29,7 @@ import { NotificationsSection } from '../../components/settings/NotificationsSec
 import { ImportExportSection } from '../../components/settings/ImportExportSection';
 import { ShiftsSection } from '../../components/settings/ShiftsSection';
 import { AboutSection } from '../../components/settings/AboutSection';
+import type { CloudCalendar } from '../../shared/cloudTypes';
 
 export default function SettingsScreen() {
   const { cloudMode } = useAuth();
@@ -63,7 +64,9 @@ export default function SettingsScreen() {
     addCalendar,
     deleteCalendar,
     switchCalendar,
+    cloud,
   } = useShifts();
+  const teamCloudCalendar = cloudMode && (activeCalendar as CloudCalendar).scope === 'team';
 
   const [editorVisible, setEditorVisible] = useState(false);
   const [editingShift, setEditingShift] = useState<ShiftType | null>(null);
@@ -313,6 +316,8 @@ export default function SettingsScreen() {
           onEditShift={openEditShift}
           onDeleteShift={handleDeleteShift}
           onMoveShift={moveShift}
+          readOnly={cloudMode && (!teamCloudCalendar || !cloud?.canEdit)}
+          cloudManaged={cloudMode}
         />
 
         <CalendarsSection

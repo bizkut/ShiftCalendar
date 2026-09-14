@@ -118,8 +118,44 @@ export interface CloudShiftType {
   endTime: string;
   icon: string;
   isDefault: boolean;
+  archived: boolean;
+  position: number;
   version: number;
   updatedAt: string;
+}
+
+export interface CloudRotationTemplate {
+  id: string;
+  teamId: string;
+  name: string;
+  description: string;
+  pattern: string[];
+  archived: boolean;
+  version: number;
+  updatedAt: string;
+}
+
+export interface CloudScheduleAssignment {
+  memberSub: string;
+  memberName: string;
+  calendarId: string;
+  date: string;
+  shiftCode: string;
+  expectedVersion: number;
+  currentShiftCode: string | null;
+}
+
+export interface CloudSchedulePreview {
+  teamId: string;
+  templateId: string;
+  templateName: string;
+  expectedTemplateVersion: number;
+  memberSubs: string[];
+  from: string;
+  to: string;
+  assignments: CloudScheduleAssignment[];
+  previewToken: string;
+  limits: { maxAssignments: number; maxDays: number; maxMembers: number };
 }
 
 export interface TeamRosterDay extends CloudCalendarDay {

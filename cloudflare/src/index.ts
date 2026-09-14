@@ -1,6 +1,7 @@
 import { verifyIdentity, requireSameOrigin } from './auth';
 import { ApiError } from './errors';
 import { CalendarRepository } from './calendar';
+import { SchedulingRepository } from './scheduling';
 import { TeamRepository } from './teams';
 
 async function readBody(request: Request): Promise<unknown> {
@@ -49,6 +50,7 @@ export default {
       const teams = new TeamRepository(env.DB, identity.sub);
       const session = await teams.provision(identity.username);
       const repository = new CalendarRepository(env.DB, identity.sub);
+      const scheduling = new SchedulingRepository(env.DB, identity.sub, repository);
       const parts = path.split('/').filter(Boolean);
       if (path === '/v1/session' && request.method === 'GET') {
         return Response.json({ data: { sub: session.sub, username: session.username, applicationAdmin: session.applicationAdmin } }, { headers });
@@ -73,7 +75,11 @@ export default {
       } else if (parts[1] === 'calendars' && parts[3] === 'days' && parts.length === 4 && request.method === 'GET') {
         data = await repository.days(parts[2], query.get('from') ?? '', query.get('to') ?? '');
       } else if (parts[1] === 'calendars' && parts.length === 4 && request.method === 'GET' && parts[3] === 'shift-types') {
-        await repository.get(parts[2]); data = { items: [] };
+        data = await scheduling.listShiftTypes(parts[2]);
+      } else if (parts[1] === 'calendars' && parts[3] === 'shift-types' && parts.length === 5 && request.method === 'PUT') {
+        data = await scheduling.putShiftType(parts[2], parts[4], await readBody(request));
+      } else if (parts[1] === 'calendars' && parts[3] === 'shift-types' && parts.length === 5 && request.method === 'DELETE') {
+        data = await scheduling.archiveShiftType(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'calendars' && parts.length === 4 && request.method === 'GET' && parts[3] === 'private-details') {
         const selected = await repository.get(parts[2]);
         if (selected.scope !== 'private') throw new ApiError(403, 'forbidden', 'Personal details are private.');
@@ -90,6 +96,16 @@ export default {
       } else if (parts[1] === 'teams' && parts[3] === 'roster' && parts[5] === 'days'
           && parts.length === 7 && request.method === 'PATCH') {
         data = await repository.writeRosterDay(parts[2], parts[4], parts[6], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'rotation-templates' && parts.length === 4 && request.method === 'GET') {
+        data = await scheduling.listTemplates(parts[2]);
+      } else if (parts[1] === 'teams' && parts[3] === 'rotation-templates' && parts.length === 5 && request.method === 'PUT') {
+        data = await scheduling.putTemplate(parts[2], parts[4], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'rotation-templates' && parts.length === 5 && request.method === 'DELETE') {
+        data = await scheduling.archiveTemplate(parts[2], parts[4], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'schedule-preview' && parts.length === 4 && request.method === 'POST') {
+        data = await scheduling.preview(parts[2], await readBody(request));
+      } else if (parts[1] === 'teams' && parts[3] === 'schedule-apply' && parts.length === 4 && request.method === 'POST') {
+        data = await scheduling.apply(parts[2], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'PATCH') {
         data = await teams.changeMember(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'DELETE') {

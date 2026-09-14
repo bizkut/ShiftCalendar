@@ -11,17 +11,19 @@ type Props = {
   onEditShift: (shift: ShiftType) => void;
   onDeleteShift: (code: string) => void;
   onMoveShift: (code: string, direction: 'up' | 'down') => void;
+  readOnly?: boolean;
+  cloudManaged?: boolean;
 };
 
-export function ShiftsSection({ colors, allShifts, onNewShift, onEditShift, onDeleteShift, onMoveShift }: Props) {
+export function ShiftsSection({ colors, allShifts, onNewShift, onEditShift, onDeleteShift, onMoveShift, readOnly = false, cloudManaged = false }: Props) {
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SHIFTS</Text>
-        <TouchableOpacity onPress={onNewShift} style={[styles.addButton, { backgroundColor: colors.primary }]}>
+        {!readOnly && <TouchableOpacity onPress={onNewShift} style={[styles.addButton, { backgroundColor: colors.primary }]}>
           <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
           <Text style={styles.addButtonText}>New</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {allShifts.map((shift, i) => (
@@ -33,12 +35,13 @@ export function ShiftsSection({ colors, allShifts, onNewShift, onEditShift, onDe
               </View>
               <MaterialCommunityIcons name={shift.icon as any} size={20} color={shift.color} />
               <View style={styles.shiftInfo}>
-                <Text style={[styles.shiftLabel, { color: colors.text }]}>{shift.label}</Text>
+                <Text style={[styles.shiftLabel, { color: colors.text }]}>{shift.label}{shift.archived ? ' (Archived)' : ''}</Text>
                 <Text style={[styles.shiftTime, { color: colors.textSecondary }]}>
                   {shift.startTime ? `${shift.startTime} – ${shift.endTime}` : 'Day Off'}
                 </Text>
               </View>
-              <View style={styles.shiftActions}>
+              {!readOnly && !shift.archived && (!cloudManaged || !shift.isDefault) && <View style={styles.shiftActions}>
+                {!cloudManaged && <>
                 <TouchableOpacity
                   style={[styles.shiftActionBtn, { opacity: i === 0 ? 0.25 : 1 }]}
                   onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onMoveShift(shift.code, 'up'); }}
@@ -55,6 +58,7 @@ export function ShiftsSection({ colors, allShifts, onNewShift, onEditShift, onDe
                 >
                   <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+                </>}
                 <TouchableOpacity
                   style={styles.shiftActionBtn}
                   onPress={() => onEditShift(shift)}
@@ -70,7 +74,7 @@ export function ShiftsSection({ colors, allShifts, onNewShift, onEditShift, onDe
                 >
                   <MaterialCommunityIcons name="delete-outline" size={18} color="#EF4444" />
                 </TouchableOpacity>
-              </View>
+              </View>}
             </View>
           </React.Fragment>
         ))}

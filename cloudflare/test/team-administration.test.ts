@@ -4,6 +4,7 @@ import schema from '../migrations/0001_calendar.sql?raw';
 import administrators from '../migrations/0002_application_administrators.sql?raw';
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
 import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
+import teamScheduling from '../migrations/0005_team_scheduling.sql?raw';
 import { CalendarRepository } from '../src/calendar';
 import { TeamRepository } from '../src/teams';
 
@@ -12,7 +13,7 @@ const bob = new TeamRepository(env.DB, 'bob');
 const mutation = (value: Record<string, unknown> = {}) => ({ mutationId: crypto.randomUUID(), expectedVersion: 1, value });
 
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration + expiredInvitations).split(';').map(value => value.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling).split(';').map(value => value.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
 });
 beforeEach(async () => {
   for (const table of ['team_invitations','audit','mutations','calendar_days','calendars','memberships','teams','application_administrators','users','transaction_checks']) await env.DB.prepare(`DELETE FROM ${table}`).run();

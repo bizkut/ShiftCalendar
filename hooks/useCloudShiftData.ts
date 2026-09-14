@@ -40,6 +40,8 @@ function toShiftType(value: CloudShiftType): ShiftType {
     endTime: value.endTime,
     icon: value.icon,
     isDefault: value.isDefault,
+    archived: value.archived,
+    position: value.position,
   };
 }
 
@@ -359,13 +361,16 @@ export function useCloudShiftData() {
     setSyncStatus('saving');
     try {
       const saved = await cloudRequest<CloudShiftType>(`/calendars/${encodeURIComponent(activeIdRef.current)}/shift-types/${encodeURIComponent(shift.code)}`, {
-        method: 'PUT', body: JSON.stringify({ mutationId: createMutationId(), expectedVersion, value: shift }),
+        method: 'PUT', body: JSON.stringify({ mutationId: createMutationId(), expectedVersion, value: {
+          label: shift.label, color: shift.color, icon: shift.icon, startTime: shift.startTime,
+          endTime: shift.endTime, position: shift.position ?? Math.max(4, allShifts.findIndex((item) => item.code === shift.code)),
+        } }),
       });
       shiftTypeVersions.current[saved.code] = saved.version;
       setAllShifts((previous) => [...previous.filter((item) => item.code !== saved.code), toShiftType(saved)]);
       setSyncStatus('saved');
     } catch (error) { fail(error); }
-  }, [fail, requireEdit]);
+  }, [allShifts, fail, requireEdit]);
   const addCustomShift = useCallback((shift: ShiftType) => { void saveShiftType(shift); }, [saveShiftType]);
   const updateCustomShift = useCallback((code: string, shift: ShiftType) => {
     if (code !== shift.code) { fail(new Error('Cloud shift codes cannot be renamed. Create a new shift type instead.')); return; }
@@ -376,8 +381,7 @@ export function useCloudShiftData() {
     setSyncStatus('saving');
     try {
       await cloudRequest<{ code: string; deleted: true }>(`/calendars/${encodeURIComponent(activeIdRef.current)}/shift-types/${encodeURIComponent(code)}`, { method: 'DELETE', body: JSON.stringify({ mutationId: createMutationId(), expectedVersion: shiftTypeVersions.current[code] ?? 0 }) });
-      delete shiftTypeVersions.current[code];
-      setAllShifts((previous) => previous.filter((shift) => shift.code !== code)); setSyncStatus('saved');
+      setAllShifts((previous) => previous.map((shift) => shift.code === code ? { ...shift, archived: true } : shift)); setSyncStatus('saved');
     } catch (error) { fail(error); }
   }, [fail, requireEdit]);
 

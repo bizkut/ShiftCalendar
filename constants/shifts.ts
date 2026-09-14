@@ -6,6 +6,8 @@ export interface ShiftType {
   endTime: string;
   icon: string;
   isDefault: boolean;
+  archived?: boolean;
+  position?: number;
 }
 
 export const DEFAULT_SHIFTS: ShiftType[] = [

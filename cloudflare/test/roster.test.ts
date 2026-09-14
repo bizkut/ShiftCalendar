@@ -4,6 +4,7 @@ import schema from '../migrations/0001_calendar.sql?raw';
 import administrators from '../migrations/0002_application_administrators.sql?raw';
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
 import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
+import teamScheduling from '../migrations/0005_team_scheduling.sql?raw';
 import { CalendarRepository } from '../src/calendar';
 
 const ownerSub = '10000000-0000-4000-8000-000000000001';
@@ -24,7 +25,7 @@ const write = (expectedVersion = 0, shiftCode = 'M', mutationId = crypto.randomU
 });
 
 beforeAll(async () => {
-  const migrations = schema + administrators + teamAdministration + expiredInvitations;
+  const migrations = schema + administrators + teamAdministration + expiredInvitations + teamScheduling;
   for (const sql of migrations.split(';').map(value => value.trim()).filter(Boolean)) {
     await env.DB.prepare(sql).run();
   }
@@ -32,7 +33,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   for (const table of [
-    'audit', 'mutations', 'calendar_days', 'calendars', 'team_invitations', 'memberships',
+    'audit', 'mutations', 'calendar_days', 'schedule_runs', 'team_rotation_templates', 'team_shift_types', 'calendars', 'team_invitations', 'memberships',
     'teams', 'application_administrators', 'users', 'transaction_checks',
   ]) await env.DB.prepare(`DELETE FROM ${table}`).run();
 

@@ -6,12 +6,13 @@ import schema from '../migrations/0001_calendar.sql?raw';
 import administrators from '../migrations/0002_application_administrators.sql?raw';
 import teamAdministration from '../migrations/0003_team_administration.sql?raw';
 import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
+import teamScheduling from '../migrations/0005_team_scheduling.sql?raw';
 
 const issuer = 'https://api-test.cloudflareaccess.com';
 const configured = { ...env, ACCESS_ISSUER: issuer, ACCESS_AUDIENCE: 'api-audience' };
 let keys: Awaited<ReturnType<typeof generateKeyPair>>;
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration + expiredInvitations).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
   keys = await generateKeyPair('RS256', { extractable: true });
   const jwk = await exportJWK(keys.publicKey);
   vi.stubGlobal('fetch', async () => Response.json({ keys: [{ ...jwk, kid: 'api-key', alg: 'RS256' }] }));
@@ -103,4 +104,16 @@ it('runs targeted invitation, team switching, and enforced roles through /v1', a
   })).status).toBe(200);
   expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-16`,'PATCH',edit)).status).toBe(200);
   expect(await (await call('bob','/bootstrap')).json()).toMatchObject({data:{teams:[{id:created.id,role:'manager'}],calendars:[{id:calendar.id,role:'manager'}]}});
+  expect((await call('bob',`/calendars/${calendar.id}/shift-types/L`,'PUT',{mutationId:'api-shift',expectedVersion:0,
+    value:{label:'Late',color:'#3344AA',icon:'moon',startTime:'22:00',endTime:'06:00',position:4}})).status).toBe(200);
+  expect((await call('bob',`/teams/${created.id}/rotation-templates/api-rotation`,'PUT',{mutationId:'api-template',expectedVersion:0,
+    value:{name:'Late rest',description:'',pattern:['L','O']}})).status).toBe(200);
+  const previewResponse=await call('bob',`/teams/${created.id}/schedule-preview`,'POST',{templateId:'api-rotation',expectedTemplateVersion:1,
+    memberSubs:['bob'],from:'2026-12-31',to:'2027-01-01'});
+  expect(previewResponse.status).toBe(200);
+  const {data:preview}=await previewResponse.json() as { data: any };
+  expect(preview.assignments.map((item:any)=>item.shiftCode)).toEqual(['L','O']);
+  const applyResponse=await call('bob',`/teams/${created.id}/schedule-apply`,'POST',{mutationId:'api-apply',...preview});
+  expect(applyResponse.status).toBe(200);
+  expect(await applyResponse.json()).toMatchObject({data:{applied:2,conflicts:0}});
 });

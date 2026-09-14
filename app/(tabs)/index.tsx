@@ -26,6 +26,7 @@ import { CalendarSwitcher } from '../../components/CalendarSwitcher';
 import { WeekView } from '../../components/WeekView';
 import { TemplateSheet } from '../../components/TemplateSheet';
 import { NotesSearchSheet } from '../../components/NotesSearchSheet';
+import { TeamScheduleModal } from '../../components/TeamScheduleModal';
 import { ShiftTemplate } from '../../constants/templates';
 import { SwapRequest } from '../../hooks/useShiftData';
 import type { CloudCalendar } from '../../shared/cloudTypes';
@@ -82,6 +83,7 @@ export default function CalendarScreen() {
   const [templateMode, setTemplateMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
   const [templateStart, setTemplateStart] = useState<string | null>(null);
+  const [teamScheduleVisible, setTeamScheduleVisible] = useState(false);
   const daySheetRef = useRef<BottomSheet>(null);
   const repeatSheetRef = useRef<BottomSheet>(null);
   const templateSheetRef = useRef<BottomSheet>(null);
@@ -421,7 +423,7 @@ export default function CalendarScreen() {
   }, []);
 
   const allShiftCodes = useMemo(
-    () => allShifts.map((s) => ({ code: s.code, label: s.label })),
+    () => allShifts.filter((s) => !s.archived).map((s) => ({ code: s.code, label: s.label })),
     [allShifts]
   );
 
@@ -537,6 +539,15 @@ export default function CalendarScreen() {
         ) : <View />}
 
         <View style={styles.topRowRight}>
+        {teamCalendar && !readOnlyTeamCalendar && <TouchableOpacity
+          accessibilityLabel="Open team scheduling"
+          style={[styles.repeatPill, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+          onPress={() => setTeamScheduleVisible(true)}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="calendar-multiple" size={14} color="#FFF" />
+          <Text style={[styles.repeatPillText, { color: '#FFF' }]}>Schedule</Text>
+        </TouchableOpacity>}
         {!teamCalendar && <TouchableOpacity
           style={[styles.templatePill, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={openNotesSearch}
@@ -701,7 +712,7 @@ export default function CalendarScreen() {
         }
         currentNote={selectedDate ? notesData[selectedDate] || '' : ''}
         currentOvertime={selectedDate ? overtimeData[selectedDate] || 0 : 0}
-        allShifts={allShifts}
+        allShifts={allShifts.filter((shift) => !shift.archived)}
         onSelectShift={handleSelectShift}
         onClear={handleClear}
         onSaveNote={handleSaveNote}
@@ -758,6 +769,14 @@ export default function CalendarScreen() {
         onHide={handleToastHide}
         onUndo={toastUndo}
       />
+      {teamCalendar && activeCloudCalendar?.teamId && <TeamScheduleModal
+        visible={teamScheduleVisible}
+        teamId={activeCloudCalendar.teamId}
+        defaultMemberSub={activeCloudCalendar.assignedMemberSub}
+        colors={colors}
+        onClose={() => setTeamScheduleVisible(false)}
+        onApplied={() => cloud?.refresh()}
+      />}
     </SafeAreaView>
   );
 }
