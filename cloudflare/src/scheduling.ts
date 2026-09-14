@@ -343,30 +343,46 @@ export class SchedulingRepository {
       .bind(...supplied.flatMap(item => [item.calendarId, item.date]))
       .all<{ calendar_id: string; date: string; version: number }>();
     const currentVersions = new Map((currentRows.results ?? []).map(item => [`${item.calendar_id}:${item.date}`, item.version]));
-    const results: Array<Record<string, unknown>> = [];
+    const results: Array<Record<string, unknown> | undefined> = new Array(supplied.length);
+    const writable: Array<{ assignment: PreviewAssignment; index: number }> = [];
     for (let index = 0; index < supplied.length; index += 1) {
       const assignment = supplied[index];
-      if ((currentVersions.get(`${assignment.calendarId}:${assignment.date}`) ?? 0) !== assignment.expectedVersion) {
-        results.push({ ...assignment, status: 'conflict', error: 'This day changed. Refresh before retrying.' });
-        continue;
-      }
-      try {
-        const day = await this.calendars.writeScheduledRosterDay(teamId, assignment.memberSub, assignment.calendarId, assignment.date, {
-          mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion,
-          value: { shiftCode: assignment.shiftCode },
-        });
-        results.push({ ...assignment, status: 'applied', day });
-      } catch (error) {
-        if (error instanceof ApiError && (error.status === 409 || error.status === 403)) {
-          results.push({ ...assignment, status: error.status === 409 ? 'conflict' : 'forbidden', error: error.message });
-          if (error.status === 403) for (let rest = index + 1; rest < supplied.length; rest += 1)
-            results.push({ ...supplied[rest], status: 'forbidden', error: 'Scheduling permission was revoked.' });
-          if (error.status === 403) break;
-        } else throw error;
-      }
+      if ((currentVersions.get(`${assignment.calendarId}:${assignment.date}`) ?? 0) !== assignment.expectedVersion)
+        results[index] = { ...assignment, status: 'conflict', error: 'This day changed. Refresh before retrying.' };
+      else writable.push({ assignment, index });
     }
-    const response = { results, applied: results.filter(item => item.status === 'applied').length,
-      conflicts: results.filter(item => item.status !== 'applied').length };
+    const writeIndividually = async () => {
+      for (let cursor = 0; cursor < writable.length; cursor += 1) {
+        const { assignment, index } = writable[cursor];
+        try {
+          const day = await this.calendars.writeScheduledRosterDay(teamId, assignment.memberSub, assignment.calendarId, assignment.date, {
+            mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion,
+            value: { shiftCode: assignment.shiftCode },
+          });
+          results[index] = { ...assignment, status: 'applied', day };
+        } catch (error) {
+          if (!(error instanceof ApiError) || (error.status !== 409 && error.status !== 403)) throw error;
+          results[index] = { ...assignment, status: error.status === 409 ? 'conflict' : 'forbidden', error: error.message };
+          if (error.status === 403) {
+            for (let rest = cursor + 1; rest < writable.length; rest += 1)
+              results[writable[rest].index] = { ...writable[rest].assignment, status: 'forbidden', error: 'Scheduling permission was revoked.' };
+            break;
+          }
+        }
+      }
+    };
+    if (writable.length > 1) {
+      try {
+        const days = await this.calendars.writeScheduledRosterDays(teamId, writable.map(({ assignment, index }) => ({
+          memberSub: assignment.memberSub, calendarId: assignment.calendarId, date: assignment.date,
+          mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion, shiftCode: assignment.shiftCode,
+        })));
+        writable.forEach(({ assignment, index }, cursor) => { results[index] = { ...assignment, status: 'applied', day: days[cursor] }; });
+      } catch { await writeIndividually(); }
+    } else await writeIndividually();
+    const orderedResults = results.filter((item): item is Record<string, unknown> => Boolean(item));
+    const response = { results: orderedResults, applied: orderedResults.filter(item => item.status === 'applied').length,
+      conflicts: orderedResults.filter(item => item.status !== 'applied').length };
     const completedAt = new Date().toISOString();
     await this.db.batch([
       this.db.prepare(`UPDATE schedule_runs SET result=?,completed_at=? WHERE actor_sub=? AND mutation_id=?

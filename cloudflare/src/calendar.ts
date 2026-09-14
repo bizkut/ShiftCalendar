@@ -264,6 +264,35 @@ export class CalendarRepository {
     return this.writeDay(calendarId, dayDate, input, { teamId, memberSub }, true);
   }
 
+  async writeScheduledRosterDays(teamId: string, assignments: Array<{ memberSub: string; calendarId: string; date: string;
+    mutationId: string; expectedVersion: number; shiftCode: string }>) {
+    if (assignments.length < 1 || assignments.length > 2) throw new ApiError(400, 'invalid_request', 'Select 1 to 2 assignments.');
+    const prepared = await Promise.all(assignments.map(async item => {
+      id(teamId); id(item.memberSub); id(item.calendarId); date(item.date); id(item.mutationId);
+      if (!Number.isSafeInteger(item.expectedVersion) || item.expectedVersion < 0 || item.expectedVersion >= Number.MAX_SAFE_INTEGER)
+        throw new ApiError(400, 'invalid_request', 'Invalid version.');
+      if (!/^[A-Za-z0-9_-]{1,32}$/.test(item.shiftCode)) throw new ApiError(400, 'invalid_request', 'Invalid shift.');
+      const operation = `day:${item.calendarId}:${item.date}`;
+      const hash = await fingerprint({ version: item.expectedVersion, shiftCode: item.shiftCode });
+      const now = new Date().toISOString(); const nextVersion = item.expectedVersion + 1;
+      const result = day({ date: item.date, shift_code: item.shiftCode, version: nextVersion, deleted: 0,
+        updated_at: now, updated_by: this.sub });
+      return { item, operation, hash, now, nextVersion, result };
+    }));
+    await this.db.batch(prepared.flatMap(({ item, operation, hash, now, nextVersion, result }) => [
+      this.rosterWritePermission(item.calendarId, { teamId, memberSub: item.memberSub }),
+      this.rosterShiftPermission({ teamId, memberSub: item.memberSub }, item.shiftCode),
+      this.guard('COALESCE((SELECT version FROM calendar_days WHERE calendar_id = ? AND date = ?), 0) = ?',
+        [item.calendarId, item.date, item.expectedVersion]),
+      this.db.prepare(`INSERT INTO calendar_days(calendar_id,date,shift_code,version,deleted,updated_at,updated_by)
+        VALUES(?,?,?,?,?, ?,?) ON CONFLICT(calendar_id,date) DO UPDATE SET shift_code=excluded.shift_code,
+        version=excluded.version,deleted=excluded.deleted,updated_at=excluded.updated_at,updated_by=excluded.updated_by`)
+        .bind(item.calendarId, item.date, item.shiftCode, nextVersion, 0, now, this.sub),
+      ...this.record(item.mutationId, operation, hash, result),
+    ]));
+    return prepared.map(item => item.result);
+  }
+
   async writeDay(calendarId: string, dayDate: string, input: unknown, rosterContext?: RosterWriteContext,
     scheduledRosterTarget = false) {
     id(calendarId); date(dayDate);
