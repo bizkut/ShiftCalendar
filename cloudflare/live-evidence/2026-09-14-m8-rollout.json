@@ -1,0 +1,166 @@
+{
+  "milestone": "M8 one-team rollout and expansion gate",
+  "date": "2026-09-14",
+  "production": {
+    "url": "https://shifts.amazonian.my",
+    "worker_version": "8a123067-5a59-4579-bf80-69eac08cba9b",
+    "source_commit": "8089e2e",
+    "tested_rollback_version": "e0dc8e5d-35bb-459a-b662-b8d12d59a46a",
+    "rollback_restored_candidate": "641a0696-a20d-45e9-9a06-a561c1903439",
+    "workers_dev_enabled": false,
+    "preview_urls_enabled": false,
+    "custom_domain": "shifts.amazonian.my",
+    "migration_state": "no migrations to apply"
+  },
+  "normal_team_cycle": {
+    "status": "pending_owner_final_cycle",
+    "fixture_dates": [
+      "2026-09-23",
+      "2026-09-24"
+    ]
+  },
+  "hosted_acceptance": {
+    "member": {
+      "desktop_direct_teams_route": "passed after reload",
+      "phone_sized_viewport": "492x760",
+      "phone_horizontal_overflow": false,
+      "manager_import_export_controls": 0,
+      "team_calendar": "read-only",
+      "import_preview_api": 403,
+      "roster_export_api": 403,
+      "foreign_private_calendar_api": 403
+    },
+    "leader": {
+      "status": "pending_single_owner_identity_switch"
+    }
+  },
+  "security": {
+    "unauthenticated_app_status": 302,
+    "unauthenticated_nested_route_status": 302,
+    "unauthenticated_api_status": 302,
+    "unauthenticated_asset_status": 302,
+    "workers_dev_status": 404,
+    "focused_worker_d1_checks": 46,
+    "focused_checks_result": "passed",
+    "request_reasons_recorded": false,
+    "private_calendar_payloads_recorded": false,
+    "login_pins_recorded": false
+  },
+  "rollback_rehearsal": {
+    "prior_version_deployed_percent": 100,
+    "access_protection_verified": [
+      "application",
+      "api",
+      "asset"
+    ],
+    "candidate_restored_percent": 100,
+    "database_rewound": false,
+    "final_config_redeploy": "8a123067-5a59-4579-bf80-69eac08cba9b"
+  },
+  "free_plan_snapshot": {
+    "access_seats_used": 2,
+    "access_seat_limit": 50,
+    "access_applications": 1,
+    "d1_databases_used": 4,
+    "d1_database_limit": 10,
+    "shiftcalendar_d1_bytes": 409600,
+    "worker_versions_retained": 48,
+    "logs_sampling_rate": 0.1,
+    "traces_sampling_rate": 0.01,
+    "invocation_logs": false,
+    "workers_daily_request_limit": 100000,
+    "workers_cpu_limit_ms": 10,
+    "d1_rows_read_daily_limit": 5000000,
+    "d1_rows_written_daily_limit": 100000,
+    "d1_database_size_limit_bytes": 500000000,
+    "d1_account_storage_limit_bytes": 5000000000
+  },
+  "precycle_daily_analytics": {
+    "worker_requests": 450,
+    "worker_errors": 0,
+    "worker_subrequests": 85,
+    "worker_cpu_ms": {
+      "p50": 3.339,
+      "p90": 8.023,
+      "p99": 13.592
+    },
+    "worker_wall_seconds": {
+      "p50": 0.04063875,
+      "p90": 0.08866075,
+      "p99": 0.25429925
+    },
+    "d1_read_queries": 1488,
+    "d1_write_queries": 657,
+    "d1_rows_read": 8724,
+    "d1_rows_written": 1002,
+    "d1_response_bytes": 1055970,
+    "d1_query_latency_ms": {
+      "p50": 0.22,
+      "p90": 0.68
+    }
+  },
+  "final_version_member_route_sample": {
+    "worker_version": "8a123067-5a59-4579-bf80-69eac08cba9b",
+    "statuses": [200],
+    "cpu_ms_range": [1, 6],
+    "representative_wall_ms_range": [16, 398],
+    "routes": [
+      "/teams",
+      "/v1/session",
+      "/v1/bootstrap",
+      "/v1/teams/:teamId/members",
+      "/v1/teams/:teamId/change-requests"
+    ],
+    "outcomes": ["ok"]
+  },
+  "production_d1_before_final_cycle": {
+    "served_by_region": "APAC",
+    "served_by_colo": "HKG",
+    "active_users": 2,
+    "teams": 1,
+    "memberships": 2,
+    "completed_import_runs": 1,
+    "pending_requests": 0,
+    "incomplete_schedule_runs": 0,
+    "incomplete_import_runs": 0,
+    "transaction_check_rows": 0,
+    "fixture_dates_unused": true,
+    "private_baselines": [
+      {
+        "date": "2026-09-14",
+        "shift": "M",
+        "version": 30
+      },
+      {
+        "date": "2026-09-15",
+        "shift": "M",
+        "version": 113
+      }
+    ],
+    "time_travel_bookmark_available": true
+  },
+  "local_validation": {
+    "worker_d1_tests": 83,
+    "browser_client_tests": 11,
+    "pilot_tests": 14,
+    "typechecks": "passed",
+    "cloudflare_web_files": 78,
+    "android_local_only_export": "passed with no Cloudflare host, Access cookie or cloud-session marker in bundle",
+    "local_migrations": "passed through 0007",
+    "production_deploy_dry_run": "passed"
+  },
+  "expansion_gate": {
+    "decision": "pending final normal-cycle sample",
+    "maximum_access_users": 50,
+    "maximum_d1_databases_account_wide": 10,
+    "proposed_rollout": "one additional team at a time after a seven-day observation window",
+    "stop_conditions": [
+      "any authorization or privacy failure",
+      "any incomplete or duplicate mutation",
+      "Worker error 1102 or repeated CPU termination",
+      "normal-cycle CPU p90 at or above 10 ms",
+      "50 percent of any shared daily Free quota",
+      "fewer than five unused Access seats"
+    ]
+  }
+}
