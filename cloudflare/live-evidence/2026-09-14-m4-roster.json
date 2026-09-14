@@ -33,6 +33,7 @@
     "leaderWrite": { "date": "2026-09-17", "shiftCode": "N", "version": 1, "status": 200, "auditRows": 1 },
     "overnightShift": "Night 23:00–07:00 displayed in the roster UI",
     "memberRefresh": "passed; assigned Night shift visible",
+    "rosterResponseHeaders": { "cacheControl": "no-store", "corsAllowOrigin": null, "contentType": "application/json" },
     "memberWrite": { "status": 403, "date": "2026-09-18", "calendarRowsCreated": 0 },
     "memberUi": {
       "readOnlyNotice": true,
