@@ -22,8 +22,8 @@ export const CalendarSwitcher = React.memo(function CalendarSwitcher({ calendars
   const cloudCalendars = calendars as Array<CalendarInfo & Partial<CloudCalendar>>;
   const groups = cloud?.enabled
     ? [
-        { id: 'personal', label: 'Personal', items: cloudCalendars.filter((calendar) => calendar.scope !== 'team') },
-        ...cloud.teams.map((team) => ({ id: team.id, label: team.name, items: cloudCalendars.filter((calendar) => calendar.teamId === team.id) })),
+        { id: 'personal', label: 'My shifts', items: cloudCalendars.filter((calendar) => calendar.scope !== 'team') },
+        ...cloud.teams.map((team) => ({ id: team.id, label: `Team roster · ${team.name}`, items: cloudCalendars.filter((calendar) => calendar.teamId === team.id) })),
       ].filter((group) => group.items.length)
     : [{ id: 'local', label: '', items: cloudCalendars }];
 
@@ -38,6 +38,7 @@ export const CalendarSwitcher = React.memo(function CalendarSwitcher({ calendars
         {!!group.label && <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>{group.label}</Text>}
         <View style={styles.groupRow}>{group.items.map((cal) => {
         const isActive = cal.id === activeCalendarId;
+        const label = cal.scope === 'team' ? cal.assignedMemberDisplayName || cal.name : cal.name;
         return (
           <TouchableOpacity
             key={cal.id}
@@ -49,12 +50,12 @@ export const CalendarSwitcher = React.memo(function CalendarSwitcher({ calendars
               },
             ]}
             onPress={() => onSwitch(cal.id)}
-            accessibilityLabel={`${cal.name} calendar${isActive ? ', active' : ''}`}
+            accessibilityLabel={`${cal.scope === 'team' ? `${label} in ${group.label}` : `${label} calendar`}${isActive ? ', active' : ''}`}
             accessibilityRole="button"
           >
             <View style={[styles.dot, { backgroundColor: isActive ? '#FFF' : cal.color }]} />
             <Text style={[styles.text, { color: isActive ? '#FFF' : colors.textSecondary }]}>
-              {cal.name}
+              {label}
             </Text>
           </TouchableOpacity>
         );

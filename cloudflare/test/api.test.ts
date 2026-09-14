@@ -85,9 +85,22 @@ it('runs targeted invitation, team switching, and enforced roles through /v1', a
   const calendarResponse=await call('alice','/calendars','POST',{mutationId:'api-team-calendar',value:{name:'Bob shifts',color:'#3B82F6',timezone:'Asia/Kuala_Lumpur',teamId:created.id,assignedMemberSub:'bob'}});
   expect(calendarResponse.status).toBe(201);
   const {data:calendar}=await calendarResponse.json() as {data:{id:string}};
+  const leaderRosterEdit={mutationId:'api-roster-leader',expectedVersion:0,value:{shiftCode:'A'}};
+  expect((await call('alice',`/teams/${created.id}/roster/bob/days/2026-09-14`,'PATCH',leaderRosterEdit)).status).toBe(200);
+  const memberRoster=await call('bob',`/teams/${created.id}/roster?from=2026-09-01&to=2026-09-30&memberSub=bob`);
+  expect(memberRoster.status).toBe(200);
+  const memberRosterBody=await memberRoster.json() as {data:{items:Record<string,unknown>[]}};
+  expect(memberRosterBody).toMatchObject({data:{items:[{calendarId:calendar.id,memberSub:'bob',date:'2026-09-14',shiftCode:'A'}]}});
+  expect(memberRosterBody.data.items[0]).not.toHaveProperty('note');
+  expect((await call('bob',`/teams/${created.id}/roster/bob/days/2026-09-15`,'PATCH',{
+    mutationId:'api-roster-member-denied',expectedVersion:0,value:{shiftCode:'M'},
+  })).status).toBe(403);
   const edit={mutationId:'api-member-edit',expectedVersion:0,value:{shiftCode:'M'}};
-  expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-14`,'PATCH',edit)).status).toBe(403);
+  expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-16`,'PATCH',edit)).status).toBe(403);
   expect((await call('alice',`/teams/${created.id}/members/bob`,'PATCH',{mutationId:'api-manager',expectedVersion:1,value:{role:'manager'}})).status).toBe(200);
-  expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-14`,'PATCH',edit)).status).toBe(200);
+  expect((await call('bob',`/teams/${created.id}/roster/bob/days/2026-09-15`,'PATCH',{
+    mutationId:'api-roster-manager',expectedVersion:0,value:{shiftCode:'M'},
+  })).status).toBe(200);
+  expect((await call('bob',`/calendars/${calendar.id}/days/2026-09-16`,'PATCH',edit)).status).toBe(200);
   expect(await (await call('bob','/bootstrap')).json()).toMatchObject({data:{teams:[{id:created.id,role:'manager'}],calendars:[{id:calendar.id,role:'manager'}]}});
 });

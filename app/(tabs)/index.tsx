@@ -28,6 +28,7 @@ import { TemplateSheet } from '../../components/TemplateSheet';
 import { NotesSearchSheet } from '../../components/NotesSearchSheet';
 import { ShiftTemplate } from '../../constants/templates';
 import { SwapRequest } from '../../hooks/useShiftData';
+import type { CloudCalendar } from '../../shared/cloudTypes';
 
 const SWIPE_THRESHOLD = 50;
 
@@ -64,6 +65,11 @@ export default function CalendarScreen() {
     switchCalendar,
     cloud,
   } = useShifts();
+  const activeCloudCalendar = cloud ? activeCalendar as CloudCalendar : undefined;
+  const teamCalendar = activeCloudCalendar?.scope === 'team';
+  const readOnlyTeamCalendar = teamCalendar
+    && activeCloudCalendar?.role !== 'owner'
+    && activeCloudCalendar?.role !== 'manager';
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [repeatMode, setRepeatMode] = useState(false);
@@ -88,6 +94,19 @@ export default function CalendarScreen() {
   useEffect(() => {
     cloud?.setVisibleMonth(currentMonth);
   }, [cloud?.setVisibleMonth, monthKey]);
+
+  useEffect(() => {
+    if (!teamCalendar) return;
+    setRepeatMode(false);
+    setPatternStart(null);
+    setPatternEnd(null);
+    setTemplateMode(false);
+    setSelectedTemplate(null);
+    setTemplateStart(null);
+    repeatSheetRef.current?.close();
+    templateSheetRef.current?.close();
+    notesSearchRef.current?.close();
+  }, [teamCalendar, activeCalendar.id]);
 
   // Refresh todayStr across midnight
   useEffect(() => {
@@ -232,7 +251,7 @@ export default function CalendarScreen() {
   // Long-press quick-assign
   const handleDayLongPress = useCallback(
     (dateString: string) => {
-      if (repeatMode || templateMode) return;
+      if (teamCalendar || repeatMode || templateMode) return;
       if (!lastUsedShift) {
         showToast('No recent shift. Tap a day to assign one first.');
         return;
@@ -251,7 +270,7 @@ export default function CalendarScreen() {
         }
       });
     },
-    [repeatMode, templateMode, lastUsedShift, shiftData, setShift, clearShift, getShiftByCode, showToast]
+    [teamCalendar, repeatMode, templateMode, lastUsedShift, shiftData, setShift, clearShift, getShiftByCode, showToast]
   );
 
   const handleSelectShift = useCallback(
@@ -518,14 +537,14 @@ export default function CalendarScreen() {
         ) : <View />}
 
         <View style={styles.topRowRight}>
-        <TouchableOpacity
+        {!teamCalendar && <TouchableOpacity
           style={[styles.templatePill, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={openNotesSearch}
           activeOpacity={0.7}
         >
           <MaterialCommunityIcons name="note-search-outline" size={14} color={colors.textSecondary} />
-        </TouchableOpacity>
-        {viewMode === 'month' && (
+        </TouchableOpacity>}
+        {!teamCalendar && viewMode === 'month' && (
           <TouchableOpacity
             style={[
               styles.templatePill,
@@ -544,7 +563,7 @@ export default function CalendarScreen() {
             />
           </TouchableOpacity>
         )}
-        {viewMode === 'month' && (
+        {!teamCalendar && viewMode === 'month' && (
           <TouchableOpacity
             style={[
               styles.repeatPill,
@@ -695,6 +714,8 @@ export default function CalendarScreen() {
         leaveTypes={leaveTypes}
         onSetLeave={handleSetLeave}
         onClearLeave={clearLeave}
+        teamCalendar={teamCalendar}
+        readOnly={readOnlyTeamCalendar}
         colors={colors}
       />
 

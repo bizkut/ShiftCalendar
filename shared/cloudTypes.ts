@@ -68,6 +68,7 @@ export interface CloudCalendar {
   scope: CalendarScope;
   teamId?: string;
   assignedMemberSub?: string;
+  assignedMemberDisplayName?: string;
   role?: TeamRole;
   version: number;
   updatedAt: string;

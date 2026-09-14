@@ -1,15 +1,22 @@
-import type { CloudCalendar, CloudCalendarDay, CloudCalendarDayTombstone } from '../../shared/cloudTypes';
+import type { CloudCalendar, CloudCalendarDay, CloudCalendarDayTombstone, Page, TeamRosterDay } from '../../shared/cloudTypes';
 import { ApiError } from './errors';
 
 type CalendarRow = {
   id: string; owner_sub: string; team_id: string | null; assigned_sub: string | null;
   name: string; color: string; timezone: string; version: number; updated_at: string;
+  assigned_display_name?: string | null;
   role?: 'owner' | 'manager' | 'member' | 'viewer' | null;
 };
 type DayRow = {
   date: string; shift_code: string | null; version: number; deleted: number;
   updated_at: string; updated_by: string;
 };
+type RosterRow = DayRow & {
+  calendar_id: string;
+  member_sub: string;
+  member_display_name: string;
+};
+type RosterWriteContext = { teamId: string; memberSub: string };
 
 const access = `c.deleted = 0 AND EXISTS (SELECT 1 FROM users u WHERE u.sub = ? AND u.disabled = 0)
   AND ((c.team_id IS NULL AND c.owner_sub = ?) OR
@@ -22,6 +29,7 @@ function calendar(row: CalendarRow): CloudCalendar {
   return { id: row.id, name: row.name, color: row.color, timezone: row.timezone,
     scope: row.team_id ? 'team' : 'private', ...(row.team_id ? { teamId: row.team_id } : {}),
     ...(row.assigned_sub ? { assignedMemberSub: row.assigned_sub } : {}),
+    ...(row.assigned_display_name ? { assignedMemberDisplayName: row.assigned_display_name } : {}),
     ...(row.role ? { role: row.role } : {}),
     version: row.version, updatedAt: row.updated_at };
 }
@@ -45,6 +53,25 @@ async function fingerprint(value: unknown) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value)));
   return Array.from(new Uint8Array(hash), n => n.toString(16).padStart(2, '0')).join('');
 }
+function rosterCursor(value: string) {
+  if (!value) return { calendarId: '', date: '' };
+  if (value.length > 512) throw new ApiError(400, 'invalid_request', 'Invalid roster cursor.');
+  try {
+    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+    const parsed = object(JSON.parse(atob(padded)));
+    const calendarId = id(parsed.calendarId);
+    if (typeof parsed.date !== 'string') throw new Error();
+    date(parsed.date);
+    return { calendarId, date: parsed.date };
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(400, 'invalid_request', 'Invalid roster cursor.');
+  }
+}
+function encodeRosterCursor(row: RosterRow) {
+  return btoa(JSON.stringify({ calendarId: row.calendar_id, date: row.date }))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export class CalendarRepository {
   constructor(private readonly db: D1Database, private readonly sub: string) {}
@@ -59,6 +86,16 @@ export class CalendarRepository {
     const args = [calendarId, this.sub, this.sub, this.sub];
     if (writing) args.push(this.sub);
     return this.guard(`EXISTS (SELECT 1 FROM calendars c WHERE c.id = ? AND ${writing ? edit : access})`, args);
+  }
+  private rosterWritePermission(calendarId: string, context: RosterWriteContext) {
+    return this.guard(`EXISTS (SELECT 1 FROM calendars c
+      JOIN teams t ON t.id=c.team_id AND t.deleted=0
+      JOIN memberships actor ON actor.team_id=t.id AND actor.user_sub=? AND actor.role IN ('owner','manager')
+      JOIN users actor_user ON actor_user.sub=actor.user_sub AND actor_user.disabled=0
+      JOIN memberships target ON target.team_id=t.id AND target.user_sub=c.assigned_sub
+      JOIN users target_user ON target_user.sub=target.user_sub AND target_user.disabled=0
+      WHERE c.id=? AND t.id=? AND c.assigned_sub=? AND c.deleted=0)`,
+    [this.sub, calendarId, context.teamId, context.memberSub]);
   }
   private record(mutationId: string, operation: string, hash: string, result: unknown) {
     return [
@@ -165,7 +202,59 @@ export class CalendarRepository {
     return { items: (result[1].results as DayRow[]).map(day) };
   }
 
-  async writeDay(calendarId: string, dayDate: string, input: unknown) {
+  async roster(teamId: string, from: string, to: string, cursor = '', limit = 100, memberSub = ''): Promise<Page<TeamRosterDay>> {
+    id(teamId); date(from); date(to);
+    if (memberSub) id(memberSub);
+    const fromTime = Date.parse(`${from}T00:00:00Z`);
+    const toTime = Date.parse(`${to}T00:00:00Z`);
+    if (to < from || toTime - fromTime > 30 * 86400000) throw new ApiError(400, 'invalid_request', 'Request at most 31 roster days.');
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new ApiError(400, 'invalid_request', 'Invalid page size.');
+    const start = rosterCursor(cursor);
+    const result = await this.db.batch([
+      this.guard(`EXISTS (SELECT 1 FROM users u JOIN memberships actor ON actor.user_sub=u.sub
+        JOIN teams t ON t.id=actor.team_id WHERE u.sub=? AND u.disabled=0 AND t.id=?
+        AND t.deleted=0)`, [this.sub, teamId]),
+      this.db.prepare(`SELECT c.id calendar_id,c.assigned_sub member_sub,
+        COALESCE(NULLIF(u.display_name,''),u.username,u.sub) member_display_name,
+        d.date,d.shift_code,d.version,d.deleted,d.updated_at,d.updated_by
+        FROM calendars c
+        JOIN memberships target ON target.team_id=c.team_id AND target.user_sub=c.assigned_sub
+        JOIN users u ON u.sub=target.user_sub AND u.disabled=0
+        JOIN calendar_days d ON d.calendar_id=c.id AND d.deleted=0
+        WHERE c.team_id=? AND c.deleted=0
+        AND (c.id>? OR (c.id=? AND d.date>?))
+        AND d.date BETWEEN ? AND ?
+        AND (?='' OR c.assigned_sub=?)
+        ORDER BY c.id,d.date LIMIT ?`)
+        .bind(teamId, start.calendarId, start.calendarId, start.date, from, to, memberSub, memberSub, limit + 1),
+      this.db.prepare('DELETE FROM transaction_checks'),
+    ]).catch(() => { throw new ApiError(403, 'forbidden', 'Team roster access is not allowed.'); });
+    const rows = result[1].results as RosterRow[];
+    const visible = rows.slice(0, limit);
+    const items = visible.map(row => ({
+      ...day(row),
+      calendarId: row.calendar_id,
+      memberSub: row.member_sub,
+      memberDisplayName: row.member_display_name,
+    } as TeamRosterDay));
+    return { items, ...(rows.length > limit ? { nextCursor: encodeRosterCursor(visible.at(-1)!) } : {}) };
+  }
+
+  async writeRosterDay(teamId: string, memberSub: string, dayDate: string, input: unknown) {
+    id(teamId); id(memberSub); date(dayDate);
+    const row = await this.db.prepare(`SELECT c.id FROM calendars c
+      JOIN teams t ON t.id=c.team_id AND t.deleted=0
+      JOIN memberships actor ON actor.team_id=t.id AND actor.user_sub=?
+      JOIN users actor_user ON actor_user.sub=actor.user_sub AND actor_user.disabled=0
+      JOIN memberships target ON target.team_id=t.id AND target.user_sub=c.assigned_sub
+      JOIN users target_user ON target_user.sub=target.user_sub AND target_user.disabled=0
+      WHERE t.id=? AND c.assigned_sub=? AND c.deleted=0
+      AND actor.role IN ('owner','manager')`).bind(this.sub, teamId, memberSub).first<{ id: string }>();
+    if (!row) throw new ApiError(403, 'forbidden', 'Team roster editing is not allowed.');
+    return this.writeDay(row.id, dayDate, input, { teamId, memberSub });
+  }
+
+  async writeDay(calendarId: string, dayDate: string, input: unknown, rosterContext?: RosterWriteContext) {
     id(calendarId); date(dayDate);
     const body = object(input); const mutationId = id(body.mutationId);
     const version = body.expectedVersion;
@@ -185,6 +274,7 @@ export class CalendarRepository {
     try {
       await this.db.batch([
         this.permission(calendarId, true),
+        ...(rosterContext ? [this.rosterWritePermission(calendarId, rosterContext)] : []),
         this.guard('COALESCE((SELECT version FROM calendar_days WHERE calendar_id = ? AND date = ?), 0) = ?', [calendarId, dayDate, version as number]),
         this.db.prepare(`INSERT INTO calendar_days(calendar_id,date,shift_code,version,deleted,updated_at,updated_by)
           VALUES(?,?,?,?,?,?,?) ON CONFLICT(calendar_id,date) DO UPDATE SET shift_code=excluded.shift_code,
@@ -194,16 +284,23 @@ export class CalendarRepository {
       ]);
     } catch {
       await this.get(calendarId, true);
+      if (rosterContext) {
+        await this.db.batch([
+          this.rosterWritePermission(calendarId, rosterContext),
+          this.db.prepare('DELETE FROM transaction_checks'),
+        ]).catch(() => { throw new ApiError(403, 'forbidden', 'Team roster editing is not allowed.'); });
+      }
       const retried = await this.previous<CloudCalendarDay | CloudCalendarDayTombstone>(mutationId, operation, hash);
-      if (retried) return this.currentDay(calendarId, dayDate, true);
+      if (retried) return this.currentDay(calendarId, dayDate, true, rosterContext);
       throw new ApiError(409, 'conflict', 'This day changed. Refresh before retrying.');
     }
     return result;
   }
 
-  private async currentDay(calendarId: string, dayDate: string, writing: boolean) {
+  private async currentDay(calendarId: string, dayDate: string, writing: boolean, rosterContext?: RosterWriteContext) {
     const results = await this.db.batch([
       this.permission(calendarId, writing),
+      ...(rosterContext ? [this.rosterWritePermission(calendarId, rosterContext)] : []),
       this.db.prepare('SELECT * FROM calendar_days WHERE calendar_id = ? AND date = ?').bind(calendarId, dayDate),
       this.db.prepare('DELETE FROM transaction_checks'),
     ]).catch(() => { throw new ApiError(403, 'forbidden', 'Calendar access is not allowed.'); });

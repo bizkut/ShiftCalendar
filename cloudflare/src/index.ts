@@ -84,6 +84,12 @@ export default {
         data = await teams.createTeam(await readBody(request)); status = 201;
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 4 && request.method === 'GET') {
         data = await teams.listMembers(parts[2], cursor, limit);
+      } else if (parts[1] === 'teams' && parts[3] === 'roster' && parts.length === 4 && request.method === 'GET') {
+        data = await repository.roster(parts[2], query.get('from') ?? '', query.get('to') ?? '',
+          cursor, limit, query.get('memberSub') ?? '');
+      } else if (parts[1] === 'teams' && parts[3] === 'roster' && parts[5] === 'days'
+          && parts.length === 7 && request.method === 'PATCH') {
+        data = await repository.writeRosterDay(parts[2], parts[4], parts[6], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'PATCH') {
         data = await teams.changeMember(parts[2], parts[4], await readBody(request));
       } else if (parts[1] === 'teams' && parts[3] === 'members' && parts.length === 5 && request.method === 'DELETE') {

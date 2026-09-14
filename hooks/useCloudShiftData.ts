@@ -12,6 +12,7 @@ import type {
   CloudShiftType,
   CloudTeam,
   Page,
+  TeamRosterDay,
 } from '../shared/cloudTypes';
 import { CloudApiError, cloudErrorMessage, cloudRequest, createMutationId } from '../utils/cloudClient';
 import { useAuth } from './AuthContext';
@@ -124,8 +125,11 @@ export function useCloudShiftData() {
     const { from, to } = visibleRangeRef.current;
     const requestedRange = `${from}:${to}`;
     try {
+      const dayPath = calendar.scope === 'team'
+        ? `/teams/${encodeURIComponent(calendar.teamId!)}/roster?from=${from}&to=${to}&memberSub=${encodeURIComponent(calendar.assignedMemberSub!)}&limit=100`
+        : `/calendars/${encodeURIComponent(calendar.id)}/days?from=${from}&to=${to}&limit=100`;
       const [dayPage, typePage, details] = await Promise.all([
-        cloudRequest<Page<CloudCalendarDay | CloudCalendarDayTombstone> | Array<CloudCalendarDay | CloudCalendarDayTombstone>>(`/calendars/${encodeURIComponent(calendar.id)}/days?from=${from}&to=${to}&limit=100`),
+        cloudRequest<Page<CloudCalendarDay | CloudCalendarDayTombstone | TeamRosterDay> | Array<CloudCalendarDay | CloudCalendarDayTombstone | TeamRosterDay>>(dayPath),
         cloudRequest<Page<CloudShiftType> | CloudShiftType[]>(`/calendars/${encodeURIComponent(calendar.id)}/shift-types?limit=100`),
         calendar.scope === 'private'
           ? cloudRequest<CloudPrivateDetails>(`/calendars/${encodeURIComponent(calendar.id)}/private-details`)
@@ -244,8 +248,12 @@ export function useCloudShiftData() {
     });
     if (shiftCode) setLastUsedShift(shiftCode);
     const calendarId = activeIdRef.current;
+    const calendar = calendars.find((item) => item.id === calendarId);
     try {
-      const saved = await cloudRequest<CloudCalendarDay | CloudCalendarDayTombstone>(`/calendars/${encodeURIComponent(calendarId)}/days/${date}`, {
+      const dayPath = calendar?.scope === 'team'
+        ? `/teams/${encodeURIComponent(calendar.teamId!)}/roster/${encodeURIComponent(calendar.assignedMemberSub!)}/days/${date}`
+        : `/calendars/${encodeURIComponent(calendarId)}/days/${date}`;
+      const saved = await cloudRequest<CloudCalendarDay | CloudCalendarDayTombstone>(dayPath, {
         method: 'PATCH',
         body: JSON.stringify({ mutationId: createMutationId(), expectedVersion: dayVersions.current[date] ?? 0, value: shiftCode ? { shiftCode } : null }),
       });
@@ -258,12 +266,17 @@ export function useCloudShiftData() {
       });
       setSyncStatus('saved');
     } catch (error) { if (activeIdRef.current === calendarId) fail(error); }
-  }, [fail, requireEdit]);
+  }, [calendars, fail, requireEdit]);
 
   const setShift = useCallback((date: string, code: string) => { void saveDay(date, code); }, [saveDay]);
   const clearShift = useCallback((date: string) => { void saveDay(date); }, [saveDay]);
   const setShiftsBulk = useCallback(async (entries: Record<string, string>) => {
     if (!requireEdit()) return;
+    const calendar = calendars.find((item) => item.id === activeIdRef.current);
+    if (calendar?.scope === 'team') {
+      fail(new Error('Team roster bulk scheduling is planned for the next milestone. Edit one date at a time.'));
+      return;
+    }
     const edits = Object.entries(entries);
     if (!edits.length) return;
     setSyncStatus('saving'); setSyncError(null);
@@ -289,7 +302,7 @@ export function useCloudShiftData() {
       const detail = cloudErrorMessage(error);
       fail(new Error(savedCount ? `${savedCount} of ${edits.length} days were saved. The remaining changes are unsaved: ${detail}` : detail));
     }
-  }, [fail, requireEdit]);
+  }, [calendars, fail, requireEdit]);
 
   const updatePrivate = useCallback(async (update: (current: CloudPrivateDetails) => CloudPrivateDetails) => {
     if (activeCalendar.scope !== 'private') { fail(new Error('Notes, overtime, pay, and leave details are private and unavailable on team calendars.')); return; }

@@ -27,6 +27,8 @@ interface Props {
   leaveTypes: LeaveType[];
   onSetLeave: (leaveTypeId: string) => void;
   onClearLeave: (date: string) => void;
+  teamCalendar?: boolean;
+  readOnly?: boolean;
   colors: {
     surface: string;
     surfaceVariant: string;
@@ -58,6 +60,8 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
       leaveTypes,
       onSetLeave,
       onClearLeave,
+      teamCalendar = false,
+      readOnly = false,
       colors,
     },
     ref
@@ -217,6 +221,22 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
             </View>
           )}
 
+          {teamCalendar && (
+            <View style={[styles.rosterNotice, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+              <MaterialCommunityIcons
+                name={readOnly ? 'eye-outline' : 'account-group-outline'}
+                size={18}
+                color={colors.primary}
+              />
+              <Text style={[styles.rosterNoticeText, { color: colors.textSecondary }]}>
+                {readOnly
+                  ? 'Read-only team schedule. A team leader or manager must make changes.'
+                  : 'Team roster shifts are shared. Notes, overtime, leave, pay, and swap details stay private.'}
+              </Text>
+            </View>
+          )}
+
+          {!teamCalendar && <>
           {/* Add Note button (above overtime, only when note section is hidden) */}
           {!showNote && !currentNote && (
             <TouchableOpacity
@@ -480,9 +500,10 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
               </TouchableOpacity>
             )
           )}
+          </>}
 
           {/* Shift selector */}
-          <View style={styles.shiftGrid}>
+          {!readOnly && <View style={styles.shiftGrid}>
             {allShifts.map((shift) => (
               <ShiftButton
                 key={shift.code}
@@ -491,10 +512,10 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
                 onPress={() => handleShiftPress(shift.code)}
               />
             ))}
-          </View>
+          </View>}
 
           {/* Bottom actions */}
-          {currentShift && (
+          {!readOnly && currentShift && (
             <View style={styles.actionsRow}>
               <TouchableOpacity
                 style={[styles.actionPill, { backgroundColor: colors.surfaceVariant }]}
@@ -522,6 +543,16 @@ export const DaySheet = forwardRef<BottomSheet, Props>(
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20 },
   dateText: { fontSize: 19, fontWeight: '800', marginBottom: 14 },
+  rosterNotice: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+    padding: 12,
+  },
+  rosterNoticeText: { flex: 1, fontSize: 13, lineHeight: 18 },
   shiftCard: {
     flexDirection: 'row',
     alignItems: 'center',
