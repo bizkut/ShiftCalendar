@@ -1,0 +1,109 @@
+{
+  "capturedAt": "2026-09-14T09:34:00+08:00",
+  "milestone": "M5",
+  "status": "hosted scheduling and member-permission acceptance passed; final team-leader session recheck pending",
+  "sourceCommits": ["352b42d", "288f3df", "4015dba"],
+  "worker": {
+    "name": "shiftcalendar",
+    "version": "d0ff73c7-8c88-4468-84d4-c40aecd7d981",
+    "hostname": "shifts.amazonian.my",
+    "workersDev": false,
+    "previewUrls": false,
+    "rollbackVersion": "2ac69103-787d-4e5e-a2b9-25491bcc4e71"
+  },
+  "architecture": {
+    "migration": "0005_team_scheduling.sql",
+    "tables": ["team_shift_types", "team_rotation_templates", "schedule_runs"],
+    "writeRoles": ["owner", "manager"],
+    "readOnlyRoles": ["member", "viewer"],
+    "maximumAssignmentsPerApply": 4,
+    "maximumMembersPerPreview": 10,
+    "maximumInclusiveDaysPerPreview": 31,
+    "maximumD1QueriesIncludingHandlerWorstConflictPath": 50,
+    "previewCurrentRowsQueries": 1,
+    "stableScheduleRetryIdentity": true,
+    "perEntryResults": ["applied", "conflict", "forbidden"]
+  },
+  "localValidation": {
+    "workerAndD1Tests": 73,
+    "browserClientTests": 7,
+    "typechecks": "app, Worker, Worker tests and browser client passed",
+    "webCloudflareBuild": "passed with 78 static assets",
+    "androidLocalOnlyExport": "passed to a temporary output directory",
+    "wranglerProductionDryRun": "passed with production D1, Access audience and shifts.amazonian.my origin"
+  },
+  "hostedChecks": {
+    "identitySwitchesBeforeFinalLeaderCheck": 0,
+    "pinRequestsBeforeFinalLeaderCheck": 0,
+    "customShift": {
+      "code": "L",
+      "label": "Late",
+      "start": "22:00",
+      "end": "06:00",
+      "overnight": true,
+      "version": 1
+    },
+    "rotationTemplate": {
+      "name": "M5 Late / Rest",
+      "codes": ["L", "O"],
+      "version": 1
+    },
+    "successfulApply": {
+      "range": ["2026-09-18", "2026-09-20"],
+      "assignments": ["L", "O", "L"],
+      "applied": 3,
+      "conflicts": 0,
+      "visibleAfterReload": true
+    },
+    "concurrentConflict": {
+      "previewRange": ["2026-12-30", "2026-12-31"],
+      "parallelEdit": { "date": "2026-12-31", "shiftCode": "M", "version": 1 },
+      "staleApply": { "applied": 1, "conflicts": 1 },
+      "conflictMessage": "This day changed. Refresh before retrying."
+    },
+    "memberRoleRestored": { "role": "member", "version": 5 },
+    "memberUi": {
+      "pilotRotationVisible": true,
+      "scheduleControl": false,
+      "readOnlyNotice": true,
+      "mutationControls": false
+    },
+    "dateFnsHardenedBrowserFix": "date-fns 2.30.0 avoids the v4 constructFrom dependency on Date.prototype.constructor; hosted reload passed with that property unavailable"
+  },
+  "livePerformance": {
+    "previousCandidate": {
+      "version": "2ac69103-787d-4e5e-a2b9-25491bcc4e71",
+      "staleScheduleApplyCpuMs": 12,
+      "staleScheduleApplyWallMs": 2034,
+      "status": 200,
+      "outcome": "ok"
+    },
+    "currentCandidate": {
+      "version": "d0ff73c7-8c88-4468-84d4-c40aecd7d981",
+      "measurement": "pending final team-leader session",
+      "changes": "four-entry cap, one preview current-row query, no duplicate apply membership/calendar lookup"
+    },
+    "note": "The retained 12 ms result failed the planning gate and revealed that 14 entries could exceed Free D1 query limits. The bounded candidate requires a new live sample before M5 completion."
+  },
+  "finalProductionState": {
+    "activeUsers": 2,
+    "activeApplicationAdministrators": 1,
+    "teamRoles": ["owner", "member"],
+    "pendingInvitations": 0,
+    "transactionChecks": 0,
+    "customShiftTypes": 1,
+    "rotationTemplates": 1,
+    "scheduleRuns": 2,
+    "databaseSizeBytes": 303104,
+    "privateRecordsPreserved": [
+      { "identity": "first pilot", "date": "2026-09-14", "shiftCode": "M", "version": 30 },
+      { "identity": "second pilot", "date": "2026-09-15", "shiftCode": "M", "version": 113 }
+    ]
+  },
+  "freeTier": {
+    "newPaidServices": [],
+    "servicesUsed": ["Workers Free", "D1 Free", "Cloudflare Access Free"],
+    "planChanged": false
+  },
+  "secretsRetained": false
+}

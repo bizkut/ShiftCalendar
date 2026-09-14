@@ -85,7 +85,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 1 — M2c: CPU headroom | Cold private writes fit the Free CPU allowance with measured headroom | Complete — CPU and two-user correctness checks passed |
 | Phase 2 — M3: teams and access | Administrator manages teams and current permissions | Complete — two-user role, revocation and CPU acceptance passed |
 | Phase 2 — M4: shared roster | Manager edit becomes visible to authorized team members | Complete — hosted leader/member acceptance passed |
-| Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | M4 |
+| Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | Candidate deployed; final CPU/retry acceptance pending |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | M4, M5 |
 | Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | M6 |
 | Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | M7 |
@@ -179,9 +179,13 @@ Rollback to version `841deab6-458a-4735-b4cc-6826318980b5` restores completed M3
 
 ### Phase 3 — M5: scheduling tools
 
-- [ ] Add authorized custom shift types, rotation templates and repeat patterns backed by D1.
-- [ ] Preview affected dates/members, bound each batch within runtime/SQL limits and return per-entry conflict results.
-- [ ] Ensure retries do not duplicate changes/audit records or overwrite newer edits.
+- [x] Add authorized custom shift types, rotation templates and repeat patterns backed by D1.
+- [x] Preview affected dates/members, bound each batch within runtime/SQL limits and return per-entry conflict results.
+- [x] Ensure retries do not duplicate changes/audit records or overwrite newer edits.
+
+**Candidate 2026-09-14:** additive migration `0005_team_scheduling.sql` and Worker version `d0ff73c7-8c88-4468-84d4-c40aecd7d981` provide active/archived custom shifts, ordered rotation templates, preview and partial bulk apply. The browser exposes these controls only to a current team leader/manager. A hosted manager created the overnight `L` shift and `M5 Late / Rest` rotation, applied `L/O/L` on 18–20 September, and the restored member saw it with no scheduling controls. A two-tab stale preview applied one entry and returned one truthful conflict while preserving the concurrent edit. Remote D1 retains both results and the member role.
+
+The first candidate allowed 14 assignments. Live conflict apply succeeded but used 12 ms CPU, and static query accounting showed its worst path could exceed the Workers Free limit of 50 D1 queries per invocation. The current candidate therefore caps a request at four assignments, reads all previewed day revisions in one query, reuses the preview-resolved calendar ID, and removes duplicate apply lookups. Including the handler user check, its all-conflict path is bounded at 50 D1 queries and its successful four-entry path is lower. Local validation now passes 73 Worker/D1 tests, seven browser-client tests, all typechecks, Cloudflare web export, Android local-only export and the production dry run. The retained 12 ms sample is a failed performance result; remeasure preview, four-entry success, partial conflict and exact retry on the current version before marking M5 complete.
 
 **Exit evidence:** month/year boundary scenarios, duplicate requests, partial failures, stale revisions and unauthorized targets pass; representative bulk work fits measured Free limits.
 
@@ -222,4 +226,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2c and M3 are verified for the two-user browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version and measurement evidence. Production now has two active approved identities, one team leader and one standard member. Full roster views, scheduling tools, change requests, recovery drills and native release checks remain later milestones.
+M2c through M4 are complete for the two-user browser pilot. The bounded M5 candidate is deployed and its hosted scheduling, stale-conflict and member read-only behavior pass; final current-version CPU and exact-retry measurements remain before M5 completion. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version and measurement evidence. Production has two active approved identities, one team leader and one standard member. Change requests, recovery drills and native release checks remain later milestones.

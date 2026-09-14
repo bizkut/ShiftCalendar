@@ -35,11 +35,11 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; the historical two-user M2c login, private persistence and cross-user denial checks passed.
-A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, and M4 passed the shared-roster leader-edit/member-refresh flow. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit single roster dates; members and viewers see read-only team schedules. Personal notes, overtime, leave, pay and swap details are excluded from shared roster responses.
+A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, and M4 passed the shared-roster leader-edit/member-refresh flow. The M5 candidate adds manager-controlled custom shifts, rotation templates, previews and per-entry bulk results; hosted scheduling and member read-only checks pass, while current-version bulk CPU/retry measurements remain open. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit single roster dates and use bounded scheduling tools; members and viewers see read-only team schedules. Personal notes, overtime, leave, pay and swap details are excluded from shared roster responses.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
-The two-user Cloudflare pilot is deployed, and M2c through M4 are verified. Custom shifts, rotations and bounded bulk scheduling remain M5; member change requests remain M6. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+The two-user Cloudflare pilot is deployed, and M2c through M4 are verified. M5 is deployed as a four-assignment Free-limit candidate pending its final live performance gate; member change requests remain M6. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
@@ -168,4 +168,4 @@ MIT
 Made by **Troy**
 
 Cloudflare pilot: https://shifts.amazonian.my (Access-protected,
-two active approved emails). Private persistence, M3 team permissions and the M4 shared roster are verified. See [live evidence and remaining checks](CLOUDFLARE.md).
+two active approved emails). Private persistence, M3 team permissions and the M4 shared roster are verified; the M5 scheduling candidate awaits its final live performance gate. See [live evidence and remaining checks](CLOUDFLARE.md).
