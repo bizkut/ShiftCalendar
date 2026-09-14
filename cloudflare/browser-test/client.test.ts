@@ -39,14 +39,15 @@ it('rejects malformed responses instead of reporting a successful save', async (
 });
 
 it('sends a bounded schedule preview as one same-origin JSON request', async () => {
-  const fetcher = vi.fn(async () => Response.json({ data: { assignments: [], previewToken: 'abc' } }));
+  const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+    Response.json({ data: { assignments: [], previewToken: 'abc' } }));
   vi.stubGlobal('fetch', fetcher);
   const body = JSON.stringify({ templateId: 'rotation', expectedTemplateVersion: 2,
     memberSubs: ['member'], from: '2026-12-31', to: '2027-01-01' });
   await client.cloudRequest('/teams/team/schedule-preview', { method: 'POST', body });
-  const [url, init] = fetcher.mock.calls[0];
+  const [url, init] = fetcher.mock.calls[0]!;
   expect(url).toBe('/v1/teams/team/schedule-preview');
-  expect(init.body).toBe(body);
-  expect(init.cache).toBe('no-store');
-  expect(new Headers(init.headers).get('Content-Type')).toBe('application/json');
+  expect(init?.body).toBe(body);
+  expect(init?.cache).toBe('no-store');
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
 });
