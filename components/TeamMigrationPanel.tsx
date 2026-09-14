@@ -75,7 +75,7 @@ export function TeamMigrationPanel({ teamId, colors, onApplied }: Props) {
     <TouchableOpacity accessibilityLabel="Preview roster import" onPress={previewImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Preview import</Text></TouchableOpacity>
     {preview && <View style={{ gap: 6 }}>{preview.rows.map(row => <Text key={`${row.calendarId}-${row.date}`} style={{ color: colors.text }}>
       {row.memberName} · {row.date} · {row.currentShiftCode ?? 'Empty'} → {row.shiftCode}
-    </Text>)}{!result && <TouchableOpacity accessibilityLabel="Apply roster import" onPress={applyImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Apply previewed import</Text></TouchableOpacity>}</View>}
+    </Text>)}{!result ? <TouchableOpacity accessibilityLabel="Apply roster import" onPress={applyImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Apply previewed import</Text></TouchableOpacity> : <TouchableOpacity accessibilityLabel="Check saved import result" onPress={applyImport} disabled={busy} style={[styles.outline, { borderColor: colors.border }]}><Text style={{ color: colors.text }}>Check saved import result</Text></TouchableOpacity>}</View>}
     {!!message && <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>{message}</Text>}
     <Text style={[styles.heading, { color: colors.text }]}>Recovery exports</Text>
     <View style={styles.row}><TextInput accessibilityLabel="Export start date" value={from} onChangeText={setFrom} style={[styles.date, { color: colors.text, borderColor: colors.border }]} />
