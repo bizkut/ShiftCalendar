@@ -371,25 +371,35 @@ export class SchedulingRepository {
         }
       }
     };
-    if (writable.length > 1) {
-      try {
-        const days = await this.calendars.writeScheduledRosterDays(teamId, writable.map(({ assignment, index }) => ({
-          memberSub: assignment.memberSub, calendarId: assignment.calendarId, date: assignment.date,
-          mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion, shiftCode: assignment.shiftCode,
-        })));
-        writable.forEach(({ assignment, index }, cursor) => { results[index] = { ...assignment, status: 'applied', day: days[cursor] }; });
-      } catch { await writeIndividually(); }
-    } else await writeIndividually();
-    const orderedResults = results.filter((item): item is Record<string, unknown> => Boolean(item));
-    const response = { results: orderedResults, applied: orderedResults.filter(item => item.status === 'applied').length,
-      conflicts: orderedResults.filter(item => item.status !== 'applied').length };
-    const completedAt = new Date().toISOString();
-    await this.db.batch([
+    const responseFromResults = () => {
+      const ordered = results.filter((item): item is Record<string, unknown> => Boolean(item));
+      return { results: ordered, applied: ordered.filter(item => item.status === 'applied').length,
+        conflicts: ordered.filter(item => item.status !== 'applied').length };
+    };
+    const completionStatements = (response: ReturnType<typeof responseFromResults>, completedAt: string) => [
       this.db.prepare(`UPDATE schedule_runs SET result=?,completed_at=? WHERE actor_sub=? AND mutation_id=?
         AND fingerprint=? AND result IS NULL`).bind(JSON.stringify(response), completedAt, this.sub, mutationId, requestHash),
       this.db.prepare(`INSERT OR IGNORE INTO audit(actor_sub,mutation_id,operation,created_at)
         VALUES(?,?,?,?)`).bind(this.sub, mutationId, `schedule-apply:${teamId}`, completedAt),
-    ]);
+    ];
+    let response: ReturnType<typeof responseFromResults> | undefined; let finalized = false;
+    if (writable.length) {
+      try {
+        const prepared = await Promise.all(writable.map(({ assignment, index }) => this.calendars.prepareScheduledRosterDay(teamId, {
+          memberSub: assignment.memberSub, calendarId: assignment.calendarId, date: assignment.date,
+          mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion, shiftCode: assignment.shiftCode,
+        })));
+        writable.forEach(({ assignment, index }, cursor) => { results[index] = { ...assignment, status: 'applied', day: prepared[cursor].result }; });
+        response = responseFromResults(); const completedAt = new Date().toISOString();
+        await this.db.batch([...prepared.flatMap(item => item.statements), ...completionStatements(response, completedAt)]);
+        finalized = true;
+      } catch {
+        writable.forEach(({ index }) => { results[index] = undefined; });
+        response = undefined; await writeIndividually();
+      }
+    }
+    response ??= responseFromResults();
+    if (!finalized) await this.db.batch(completionStatements(response, new Date().toISOString()));
     return response;
   }
 }
