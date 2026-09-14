@@ -90,7 +90,7 @@ export function TeamScheduleModal({ visible, teamId, defaultMemberSub, colors, o
   return <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
     <View style={styles.backdrop}><View style={[styles.panel, { backgroundColor: colors.background }]}>
       <View style={styles.header}><View><Text style={[styles.title, { color: colors.text }]}>Team scheduling</Text>
-        <Text style={[styles.caption, { color: colors.textSecondary }]}>Up to 14 assignments per preview</Text></View>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>Up to 4 assignments per preview</Text></View>
         <TouchableOpacity accessibilityLabel="Close team scheduling" onPress={onClose}><MaterialCommunityIcons name="close" size={26} color={colors.text} /></TouchableOpacity></View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {busy && <ActivityIndicator color={colors.primary} />}

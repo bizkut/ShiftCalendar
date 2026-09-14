@@ -10,6 +10,7 @@ import { SchedulingRepository } from '../src/scheduling';
 
 const ownerSub = 'm5-owner'; const managerSub = 'm5-manager'; const memberSub = 'm5-member'; const outsiderSub = 'm5-outsider';
 const teamId = 'm5-team'; const otherTeamId = 'm5-other'; const memberCalendarId = 'm5-member-calendar';
+const managerCalendarId = 'm5-manager-calendar';
 const owner = new SchedulingRepository(env.DB, ownerSub);
 const manager = new SchedulingRepository(env.DB, managerSub);
 const member = new SchedulingRepository(env.DB, memberSub);
@@ -43,6 +44,8 @@ beforeEach(async () => {
     env.DB.prepare("INSERT INTO memberships(team_id,user_sub,role) VALUES(?,?,'owner')").bind(otherTeamId, outsiderSub),
     env.DB.prepare(`INSERT INTO calendars(id,owner_sub,team_id,assigned_sub,name,color,timezone,updated_at)
       VALUES(?,?,?,?,?,?,?,?)`).bind(memberCalendarId, ownerSub, teamId, memberSub, 'Member', '#3366FF', 'Asia/Kuala_Lumpur', now),
+    env.DB.prepare(`INSERT INTO calendars(id,owner_sub,team_id,assigned_sub,name,color,timezone,updated_at)
+      VALUES(?,?,?,?,?,?,?,?)`).bind(managerCalendarId, ownerSub, teamId, managerSub, 'Manager', '#6633FF', 'Asia/Kuala_Lumpur', now),
   ]);
 });
 
@@ -69,6 +72,19 @@ describe('team scheduling tools', () => {
       memberSubs: [memberSub], from: '2027-01-03', to: '2027-01-03' })).rejects.toMatchObject({ code: 'shift_unavailable' });
   });
 
+  it('previews and applies the Free-plan maximum across multiple members', async () => {
+    const saved = await owner.putTemplate(teamId, 'two-members', rotation(0, ['M', 'A']));
+    const preview = await owner.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
+      memberSubs: [memberSub, managerSub], from: '2026-10-01', to: '2026-10-02' });
+    expect(preview.assignments.map(item => [item.memberSub, item.date, item.shiftCode])).toEqual([
+      [memberSub, '2026-10-01', 'M'], [memberSub, '2026-10-02', 'A'],
+      [managerSub, '2026-10-01', 'M'], [managerSub, '2026-10-02', 'A'],
+    ]);
+    const result = await owner.apply(teamId, { mutationId: mutation(), ...preview });
+    expect(result).toMatchObject({ applied: 4, conflicts: 0 });
+    expect((await env.DB.prepare('SELECT COUNT(*) count FROM calendar_days').first<{ count: number }>())?.count).toBe(4);
+  });
+
   it('returns truthful partial conflicts and makes successful retries idempotent', async () => {
     const saved = await owner.putTemplate(teamId, 'days', rotation(0, ['M', 'A']));
     const preview = await owner.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
@@ -91,10 +107,11 @@ describe('team scheduling tools', () => {
     await expect(outsider.listTemplates(teamId)).rejects.toMatchObject({ status: 403 });
     const saved = await manager.putTemplate(teamId, 'manager-template', rotation(0, ['M']));
     const preview = await manager.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-14' });
-    expect(preview.assignments).toHaveLength(14);
+      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-04' });
+    expect(preview.assignments).toHaveLength(4);
+    expect(preview.limits.maxAssignments).toBe(4);
     await expect(manager.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-15' })).rejects.toMatchObject({ status: 413 });
+      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-05' })).rejects.toMatchObject({ status: 413 });
     await env.DB.prepare("UPDATE memberships SET role='member' WHERE team_id=? AND user_sub=?").bind(teamId, managerSub).run();
     await expect(manager.apply(teamId, { mutationId: mutation(), ...preview })).rejects.toMatchObject({ status: 403 });
     await env.DB.prepare('DELETE FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId, memberSub).run();

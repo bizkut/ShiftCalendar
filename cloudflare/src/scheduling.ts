@@ -3,7 +3,7 @@ import { CalendarRepository } from './calendar';
 import { ApiError } from './errors';
 
 const BUILT_INS = new Set(['M', 'A', 'N', 'O']);
-const MAX_ASSIGNMENTS = 14;
+const MAX_ASSIGNMENTS = 4;
 
 type ShiftRow = { code: string; label: string; color: string; icon: string; start_time: string;
   end_time: string; position: number; archived: number; version: number; updated_at: string };
@@ -271,22 +271,29 @@ export class SchedulingRepository {
       AND c.assigned_sub IN (${placeholders}) ORDER BY c.assigned_sub`).bind(teamId, ...memberSubs)
       .all<{ id: string; assigned_sub: string; member_name: string }>();
     if ((calendars.results ?? []).length !== memberSubs.length) throw new ApiError(409, 'member_unavailable', 'A selected member is no longer active in this team.');
-    const byMember = new Map((calendars.results ?? []).map(row => [row.assigned_sub, row])); const assignments: PreviewAssignment[] = [];
-    for (const memberSub of memberSubs) for (let index = 0; index < days.length; index += 1) {
-      const calendar = byMember.get(memberSub)!; const date = days[index];
-      const current = await this.db.prepare('SELECT shift_code,version FROM calendar_days WHERE calendar_id=? AND date=?')
-        .bind(calendar.id, date).first<{ shift_code: string | null; version: number }>();
-      assignments.push({ memberSub, memberName: calendar.member_name, calendarId: calendar.id, date,
-        shiftCode: selected.pattern[index % selected.pattern.length], expectedVersion: current?.version ?? 0,
-        currentShiftCode: current?.shift_code ?? null });
-    }
+    const byMember = new Map((calendars.results ?? []).map(item => [item.assigned_sub, item]));
+    const targets = memberSubs.flatMap(memberSub => days.map(date => {
+      const calendar = byMember.get(memberSub)!;
+      return { memberSub, memberName: calendar.member_name, calendarId: calendar.id, date };
+    }));
+    const predicates = targets.map(() => '(calendar_id=? AND date=?)').join(' OR ');
+    const bindings = targets.flatMap(target => [target.calendarId, target.date]);
+    const currentRows = await this.db.prepare(`SELECT calendar_id,date,shift_code,version FROM calendar_days
+      WHERE ${predicates}`).bind(...bindings)
+      .all<{ calendar_id: string; date: string; shift_code: string | null; version: number }>();
+    const currentByTarget = new Map((currentRows.results ?? []).map(item => [`${item.calendar_id}:${item.date}`, item]));
+    const assignments = targets.map((target, index): PreviewAssignment => {
+      const current = currentByTarget.get(`${target.calendarId}:${target.date}`);
+      return { ...target, shiftCode: selected.pattern[index % days.length % selected.pattern.length],
+        expectedVersion: current?.version ?? 0, currentShiftCode: current?.shift_code ?? null };
+    });
     const previewToken = await fingerprint({ teamId, templateId, expectedTemplateVersion, memberSubs, from, to, assignments });
     return { teamId, templateId, templateName: selected.name, expectedTemplateVersion, memberSubs, from, to,
       assignments, previewToken, limits: { maxAssignments: MAX_ASSIGNMENTS, maxDays: 31, maxMembers: 10 } };
   }
   async preview(teamId: string, input: unknown) { return this.buildPreview(teamId, input); }
   async apply(teamId: string, input: unknown) {
-    await this.requireMembership(teamId, true); const body = object(input); const mutationId = identifier(body.mutationId, 96);
+    const body = object(input); const mutationId = identifier(body.mutationId, 96);
     if (!Array.isArray(body.assignments) || body.assignments.length < 1 || body.assignments.length > MAX_ASSIGNMENTS)
       throw new ApiError(413, 'batch_too_large', `A schedule may contain at most ${MAX_ASSIGNMENTS} assignments.`);
     const preview = await this.buildPreview(teamId, body);
@@ -319,7 +326,7 @@ export class SchedulingRepository {
     for (let index = 0; index < supplied.length; index += 1) {
       const assignment = supplied[index];
       try {
-        const day = await this.calendars.writeRosterDay(teamId, assignment.memberSub, assignment.date, {
+        const day = await this.calendars.writeScheduledRosterDay(teamId, assignment.memberSub, assignment.calendarId, assignment.date, {
           mutationId: `${mutationId}_${index}`, expectedVersion: assignment.expectedVersion,
           value: { shiftCode: assignment.shiftCode },
         });

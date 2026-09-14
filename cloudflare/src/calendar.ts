@@ -259,7 +259,13 @@ export class CalendarRepository {
     return this.writeDay(row.id, dayDate, input, { teamId, memberSub });
   }
 
-  async writeDay(calendarId: string, dayDate: string, input: unknown, rosterContext?: RosterWriteContext) {
+  async writeScheduledRosterDay(teamId: string, memberSub: string, calendarId: string, dayDate: string, input: unknown) {
+    id(teamId); id(memberSub); id(calendarId); date(dayDate);
+    return this.writeDay(calendarId, dayDate, input, { teamId, memberSub }, true);
+  }
+
+  async writeDay(calendarId: string, dayDate: string, input: unknown, rosterContext?: RosterWriteContext,
+    scheduledRosterTarget = false) {
     id(calendarId); date(dayDate);
     const body = object(input); const mutationId = id(body.mutationId);
     const version = body.expectedVersion;
@@ -269,16 +275,16 @@ export class CalendarRepository {
       || !/^[A-Za-z0-9_-]{1,32}$/.test(value.shiftCode))) throw new ApiError(400, 'invalid_request', 'Invalid shift.');
     const operation = `day:${calendarId}:${dayDate}`;
     const hash = await fingerprint({ version, shiftCode: value?.shiftCode ?? null });
-    // The batch checks current permissions and revision atomically. Its unique
-    // mutation insert also rolls back duplicate IDs. Read retry state only after
-    // a failed batch, avoiding two D1 round trips on a successful new edit.
+    // A schedule preview already resolves the target calendar. Its apply path
+    // omits the duplicate lookup but still checks current actor/target roles,
+    // active shifts, revision and retry identity atomically in this batch.
     const now = new Date().toISOString();
     const nextVersion = (version as number) + 1;
     const result = day({ date: dayDate, shift_code: value?.shiftCode as string ?? null,
       version: nextVersion, deleted: value ? 0 : 1, updated_at: now, updated_by: this.sub });
     try {
       await this.db.batch([
-        this.permission(calendarId, true),
+        ...(!scheduledRosterTarget ? [this.permission(calendarId, true)] : []),
         ...(rosterContext ? [
           this.rosterWritePermission(calendarId, rosterContext),
           ...(value ? [this.rosterShiftPermission(rosterContext, value.shiftCode as string)] : []),
@@ -291,6 +297,27 @@ export class CalendarRepository {
         ...this.record(mutationId, operation, hash, result),
       ]);
     } catch {
+      if (scheduledRosterTarget && rosterContext) {
+        const checks = await this.db.batch([
+          this.rosterWritePermission(calendarId, rosterContext),
+          this.db.prepare(`SELECT m.operation,m.fingerprint,m.result,d.calendar_id,d.date,d.shift_code,d.version,
+            d.deleted,d.updated_at,d.updated_by FROM (SELECT 1) seed
+            LEFT JOIN mutations m ON m.user_sub=? AND m.id=?
+            LEFT JOIN calendar_days d ON d.calendar_id=? AND d.date=?`)
+            .bind(this.sub, mutationId, calendarId, dayDate),
+          this.db.prepare('DELETE FROM transaction_checks'),
+        ]).catch(() => { throw new ApiError(403, 'forbidden', 'Team roster editing is not allowed.'); });
+        const diagnostic = checks[1].results[0] as (DayRow & {
+          operation: string | null; fingerprint: string | null; result: string | null;
+        }) | undefined;
+        if (diagnostic?.operation) {
+          if (diagnostic.operation !== operation || diagnostic.fingerprint !== hash)
+            throw new ApiError(409, 'conflict', 'This mutation ID was used for a different edit.');
+          if (!diagnostic.date) throw new ApiError(409, 'conflict', 'The day is no longer available.');
+          return day(diagnostic);
+        }
+        throw new ApiError(409, 'conflict', 'This day changed. Refresh before retrying.');
+      }
       await this.get(calendarId, true);
       if (rosterContext) {
         await this.db.batch([
