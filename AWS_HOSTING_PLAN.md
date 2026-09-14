@@ -1,6 +1,6 @@
 # Cloudflare Hosting and Multi-Team Calendar Plan
 
-Updated: 13 September 2026. This file is the authoritative deployment plan for this ShiftCalendar repository, copied from the revised ShiftCalendar-aws plan. Its original filename is retained. See [CLOUDFLARE.md](CLOUDFLARE.md) for implementation evidence and deployment records. The previous plan called the local slice M1a and the hosted pilot M1b; these correspond to M2a and M2b below.
+Updated: 14 September 2026. This file is the authoritative deployment plan for this ShiftCalendar repository, copied from the revised ShiftCalendar-aws plan. Its original filename is retained. See [CLOUDFLARE.md](CLOUDFLARE.md) for implementation evidence and deployment records. The previous plan called the local slice M1a and the hosted pilot M1b; these correspond to M2a and M2b below.
 
 ## Scope and decisions
 
@@ -88,7 +88,7 @@ Check a task only after implementation and verification in the intended checkout
 | Phase 3 — M5: scheduling tools | Custom shifts, rotations and bounded bulk changes | Complete — hosted scheduling, retry, conflict, privacy and Free-tier acceptance passed |
 | Phase 3 — M6: change requests | Members request changes and managers resolve them atomically | Complete — hosted direct-request approval, persistence and privacy acceptance passed |
 | Phase 4 — M7: migration and recovery | Safe schedule imports, exports and recovery drill | Complete — hosted import/export, Time Travel, SQL copy and Worker rollback passed |
-| Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | Next milestone |
+| Phase 4 — M8: team rollout | One team completes a normal scheduling cycle within Free limits | In progress; final owner cycle pending |
 
 ### Phase 0 — M0: migration readiness
 
@@ -223,11 +223,17 @@ The Worker rollback drill routed 100% to retained version `1b19b8cb-e57d-4502-81
 
 ### Phase 4 — M8: one-team rollout and expansion gate
 
-- [ ] Run typechecks, focused Worker/D1/client tests, browser end-to-end checks, Expo export and Wrangler deployment validation.
+- [x] Run typechecks, focused Worker/D1/client tests, browser end-to-end checks, Expo export and Wrangler deployment validation.
 - [ ] Verify phone/desktop login, session changes, nested routes, roster editing, requests and exports with one real team.
 - [ ] Measure a normal scheduling cycle, review shared quotas and logs, and resolve authorization/data-integrity failures before expansion.
 - [ ] Expand toward 2–10 teams only within available Access seats and measured capacity. Revisit authentication before exceeding 50 total Access users; do not quietly upgrade or promise 100 users for free.
-- [ ] Attach the custom domain only when ready; revalidate Access coverage, origin/CSRF settings, logout and deep links before switching users.
+- [x] Attach the custom domain only when ready; revalidate Access coverage, origin/CSRF settings, logout and deep links before switching users.
+
+**Checkpoint 2026-09-14:** final-version local validation passes 83 Worker/D1 tests, 11 browser-client tests, 14 pilot checks, all typechecks, the 78-file Cloudflare web build, an Android local-only export, local migrations through `0007`, and the production deployment dry run. The Android bundle contains no production hostname, Access-cookie name or cloud-session marker. Desktop and phone-sized member checks pass direct/reloaded routes with no horizontal overflow, a read-only assigned team calendar, no manager migration/export controls, and 403 denial for import, export and a foreign private calendar.
+
+Worker `8a123067-5a59-4579-bf80-69eac08cba9b` is deployed through the production config with 10% log and 1% trace sampling. App, nested route, API and asset requests redirect to Access without a session; the disabled `workers.dev` address returns 404. Production has no pending migration, a current Time Travel bookmark, two Access seats in use, four of ten account-wide D1 databases, a 409,600-byte ShiftCalendar database and 48 retained Worker versions. A rollback rehearsal sent 100% traffic to M7 version `e0dc8e5d-35bb-459a-b662-b8d12d59a46a`, confirmed Access coverage, restored the candidate and then deployed the final configured version without rewinding D1.
+
+The one-team owner/member scheduling cycle remains the open gate. Do not add another team yet. The pre-cycle daily aggregate had zero Worker errors and low quota use, but CPU P99 was 13.592 ms while P90 was 8.023 ms. Complete the bounded owner workflow and its operation-specific tail sample before changing this decision. See [the sanitized M8 checkpoint](cloudflare/live-evidence/2026-09-14-m8-rollout.json).
 
 **Exit evidence:** accepted team workflow, recorded performance/usage and recovery results, remaining limitations, and an onboarding ceiling supported by available seats and quotas.
 
@@ -241,4 +247,4 @@ This revision changes the deployment plan only. Cloudflare provisioning, code mi
 
 ## Current repository progress
 
-M2c through M7 are complete for the two-user browser pilot. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version, migration and recovery evidence. Production has two active approved identities, one team leader and one standard member. M8 team rollout and native release checks remain later milestones.
+M2c through M7 are complete for the two-user browser pilot. M8 validation, member acceptance, quota inventory and rollback checks are complete; its final owner/member scheduling cycle and expansion decision remain open. See [CLOUDFLARE.md](CLOUDFLARE.md) for identity, persistence, privacy, permissions, CPU, D1, resource/version, migration and recovery evidence. Production has two active approved identities, one team leader and one standard member.
