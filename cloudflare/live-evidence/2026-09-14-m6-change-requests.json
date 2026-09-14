@@ -31,28 +31,55 @@
         "shift": "M",
         "version": 2
       }
+    },
+    "swap": {
+      "requester_date": "2026-09-18",
+      "requester_shift_before": "L",
+      "requester_shift_after": "M",
+      "counterpart_date": "2026-09-21",
+      "counterpart_shift_before": "M",
+      "counterpart_shift_after": "L",
+      "counterpart_accepted": true,
+      "manager_approved": true,
+      "final_status": "approved",
+      "final_version": 3
     }
   },
   "cpu_ms": {
+    "submit": 10,
     "request_list": 3,
-    "approval": null,
-    "approval_note": "The live approval completed successfully under Workers Free and was present in the active tail stream, but the exact event was lost when the first terminal output was truncated. No numeric value is claimed."
+    "counterpart_respond": 5,
+    "manager_resolve": 7
   },
   "d1": {
     "served_by_region": "APAC",
     "served_by_colo": "HKG",
-    "size_after_bytes": 389120,
-    "request": {
-      "id": "e1ff09d5-1716-4747-9a66-e6ad348b343f",
-      "kind": "direct",
-      "status": "approved",
-      "version": 2
-    },
+    "size_after_bytes": 397312,
+    "requests": [
+      {
+        "id": "e1ff09d5-1716-4747-9a66-e6ad348b343f",
+        "kind": "direct",
+        "status": "approved",
+        "version": 2
+      },
+      {
+        "id": "fe3b8efb-2223-4f8e-9102-63c1e1570749",
+        "kind": "swap",
+        "status": "approved",
+        "version": 3
+      }
+    ],
     "pending_requests": 0,
     "transaction_check_rows": 0,
     "incomplete_schedule_runs": 0,
-    "request_create_audits": 1,
-    "request_resolution_audits": 1,
+    "request_create_audits": 2,
+    "request_response_audits": 1,
+    "request_resolution_audits": 2,
+    "documented_roster_fixtures": [
+      { "calendar": "member team calendar", "date": "2026-09-17", "shift": "M", "version": 2 },
+      { "calendar": "member team calendar", "date": "2026-09-18", "shift": "M", "version": 2 },
+      { "calendar": "leader team calendar", "date": "2026-09-21", "shift": "L", "version": 2 }
+    ],
     "private_baselines": [
       { "date": "2026-09-14", "shift": "M", "version": 30 },
       { "date": "2026-09-15", "shift": "M", "version": 113 }
@@ -70,5 +97,9 @@
     "login_pins_recorded": false,
     "request_reason_recorded": false,
     "private_calendar_payloads_recorded": false
+  },
+  "final_roles": {
+    "first_user": "active application administrator and team leader",
+    "second_user": "active standard member"
   }
 }
