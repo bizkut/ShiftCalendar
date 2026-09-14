@@ -1,10 +1,11 @@
 {
   "milestone": "M8 one-team rollout and expansion gate",
   "date": "2026-09-14",
+  "status": "complete",
   "production": {
     "url": "https://shifts.amazonian.my",
-    "worker_version": "8a123067-5a59-4579-bf80-69eac08cba9b",
-    "source_commit": "8089e2e",
+    "worker_version": "ea4a78a5-0157-4326-af76-5de7ac9843c4",
+    "source_commit": "94d6cdf",
     "tested_rollback_version": "e0dc8e5d-35bb-459a-b662-b8d12d59a46a",
     "rollback_restored_candidate": "641a0696-a20d-45e9-9a06-a561c1903439",
     "workers_dev_enabled": false,
@@ -13,10 +14,20 @@
     "migration_state": "no migrations to apply"
   },
   "normal_team_cycle": {
-    "status": "pending_owner_final_cycle",
-    "fixture_dates": [
-      "2026-09-23",
-      "2026-09-24"
+    "status": "passed",
+    "fixture_dates": ["2026-09-23", "2026-09-24"],
+    "csv_import": "strict preview and apply passed",
+    "json_import": "shiftcalendar.team-import.v1 preview and apply passed",
+    "exact_import_retry": "returned the stored result without another run or roster write",
+    "changed_payload_retry": "409 preview_conflict without a roster write",
+    "stale_preview": "0 applied and 1 conflict; concurrent manager edit preserved",
+    "member_refresh": "imported September 23 Afternoon shift visible",
+    "member_request": "direct request from Afternoon to Night submitted from read-only roster",
+    "leader_resolution": "approved once",
+    "member_final_refresh": "Night shift and approved history visible",
+    "final_roster": [
+      {"date": "2026-09-23", "shift": "N", "version": 3},
+      {"date": "2026-09-24", "shift": "A", "version": 2}
     ]
   },
   "hosted_acceptance": {
@@ -31,8 +42,23 @@
       "foreign_private_calendar_api": 403
     },
     "leader": {
-      "status": "pending_single_owner_identity_switch"
+      "nested_routes": "passed after reload",
+      "strict_csv_import": "passed",
+      "versioned_json_import": "passed",
+      "exact_retry": "passed",
+      "changed_payload_conflict": "passed",
+      "stale_preview_conflict": "passed",
+      "single_request_resolution": "passed"
     }
+  },
+  "exports": {
+    "roster_csv_download": "passed",
+    "roster_json_download": "passed",
+    "requests_json_download": "passed",
+    "audit_json_download": "passed",
+    "request_reason_present": false,
+    "private_calendar_fields_present": false,
+    "roster_sensitive_field_markers_present": false
   },
   "security": {
     "unauthenticated_app_status": 302,
@@ -48,14 +74,10 @@
   },
   "rollback_rehearsal": {
     "prior_version_deployed_percent": 100,
-    "access_protection_verified": [
-      "application",
-      "api",
-      "asset"
-    ],
+    "access_protection_verified": ["application", "api", "asset"],
     "candidate_restored_percent": 100,
     "database_rewound": false,
-    "final_config_redeploy": "8a123067-5a59-4579-bf80-69eac08cba9b"
+    "final_config_redeploy": "ea4a78a5-0157-4326-af76-5de7ac9843c4"
   },
   "free_plan_snapshot": {
     "access_seats_used": 2,
@@ -63,8 +85,8 @@
     "access_applications": 1,
     "d1_databases_used": 4,
     "d1_database_limit": 10,
-    "shiftcalendar_d1_bytes": 409600,
-    "worker_versions_retained": 48,
+    "shiftcalendar_d1_bytes": 417792,
+    "worker_versions_retained": 49,
     "logs_sampling_rate": 0.1,
     "traces_sampling_rate": 0.01,
     "invocation_logs": false,
@@ -79,64 +101,46 @@
     "worker_requests": 450,
     "worker_errors": 0,
     "worker_subrequests": 85,
-    "worker_cpu_ms": {
-      "p50": 3.339,
-      "p90": 8.023,
-      "p99": 13.592
-    },
-    "worker_wall_seconds": {
-      "p50": 0.04063875,
-      "p90": 0.08866075,
-      "p99": 0.25429925
-    },
+    "worker_cpu_ms": {"p50": 3.339, "p90": 8.023, "p99": 13.592},
+    "worker_wall_seconds": {"p50": 0.04063875, "p90": 0.08866075, "p99": 0.25429925},
     "d1_read_queries": 1488,
     "d1_write_queries": 657,
     "d1_rows_read": 8724,
     "d1_rows_written": 1002,
     "d1_response_bytes": 1055970,
-    "d1_query_latency_ms": {
-      "p50": 0.22,
-      "p90": 0.68
-    }
+    "d1_query_latency_ms": {"p50": 0.22, "p90": 0.68}
   },
-  "final_version_member_route_sample": {
-    "worker_version": "8a123067-5a59-4579-bf80-69eac08cba9b",
+  "final_version_runtime_sample": {
+    "worker_version": "ea4a78a5-0157-4326-af76-5de7ac9843c4",
     "statuses": [200],
-    "cpu_ms_range": [1, 6],
-    "representative_wall_ms_range": [16, 398],
-    "routes": [
-      "/teams",
-      "/v1/session",
-      "/v1/bootstrap",
-      "/v1/teams/:teamId/members",
-      "/v1/teams/:teamId/change-requests"
-    ],
-    "outcomes": ["ok"]
+    "outcomes": ["ok"],
+    "exact_import_retry_cpu_ms": 9,
+    "exact_import_retry_wall_ms": 329,
+    "exact_resolution_retry_cpu_ms": 9,
+    "exact_resolution_retry_wall_ms": 839,
+    "get_cpu_ms_range": [0, 4],
+    "get_wall_ms_range": [23, 540]
   },
-  "production_d1_before_final_cycle": {
+  "production_d1_after_cycle": {
     "served_by_region": "APAC",
     "served_by_colo": "HKG",
+    "database_bytes": 417792,
     "active_users": 2,
     "teams": 1,
     "memberships": 2,
-    "completed_import_runs": 1,
+    "completed_import_runs": 5,
     "pending_requests": 0,
     "incomplete_schedule_runs": 0,
     "incomplete_import_runs": 0,
     "transaction_check_rows": 0,
-    "fixture_dates_unused": true,
+    "direct_request_status": "approved",
+    "direct_request_version": 2,
+    "exact_retries_created_duplicate_audits": false,
     "private_baselines": [
-      {
-        "date": "2026-09-14",
-        "shift": "M",
-        "version": 30
-      },
-      {
-        "date": "2026-09-15",
-        "shift": "M",
-        "version": 113
-      }
+      {"date": "2026-09-14", "shift": "M", "version": 30},
+      {"date": "2026-09-15", "shift": "M", "version": 113}
     ],
+    "private_baselines_unchanged": true,
     "time_travel_bookmark_available": true
   },
   "local_validation": {
@@ -147,13 +151,15 @@
     "cloudflare_web_files": 78,
     "android_local_only_export": "passed with no Cloudflare host, Access cookie or cloud-session marker in bundle",
     "local_migrations": "passed through 0007",
+    "production_migrations": "no migrations to apply",
     "production_deploy_dry_run": "passed"
   },
   "expansion_gate": {
-    "decision": "pending final normal-cycle sample",
+    "decision": "one-team production accepted; no immediate second-team admission",
+    "observation_window_days": 7,
+    "next_step_after_stable_window": "admit at most one additional team, then reassess",
     "maximum_access_users": 50,
     "maximum_d1_databases_account_wide": 10,
-    "proposed_rollout": "one additional team at a time after a seven-day observation window",
     "stop_conditions": [
       "any authorization or privacy failure",
       "any incomplete or duplicate mutation",
@@ -161,6 +167,7 @@
       "normal-cycle CPU p90 at or above 10 ms",
       "50 percent of any shared daily Free quota",
       "fewer than five unused Access seats"
-    ]
+    ],
+    "reason_for_observation": "the one-day acceptance cycle passed, but pre-cycle CPU p99 was 13.592 ms"
   }
 }
