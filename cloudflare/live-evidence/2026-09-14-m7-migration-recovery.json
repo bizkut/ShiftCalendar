@@ -28,7 +28,7 @@
     "production_targeted": false,
     "fixtures": "sanitized .invalid identities",
     "time_travel": { "before": "M/version 1", "mutated": "N/version 2", "restored": "M/version 1" },
-    "sql_copy_verified": { "users": 2, "teams": 1, "memberships": 2, "roster_days": 1, "requests": 1, "request_status": "approved" },
+    "sql_copy_verified": { "users": 2, "teams": 1, "memberships": 2, "roster_days": 1, "requests": 1, "request_status": "approved", "mutations": 1, "audits": 1, "completed_imports": 1 },
     "temporary_databases_deleted": true,
     "temporary_export_deleted": true
   },
@@ -61,6 +61,8 @@
     "pilot_tests": 14,
     "typechecks": "passed",
     "web_export": "passed",
+    "android_local_only_export": "passed",
+    "local_migrations": "passed through 0007",
     "production_dry_run": "passed"
   },
   "privacy": {

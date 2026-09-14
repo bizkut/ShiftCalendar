@@ -35,17 +35,17 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; the historical two-user M2c login, private persistence and cross-user denial checks passed.
-A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, M4 passed the shared-roster leader-edit/member-refresh flow, and M5 passed hosted scheduling, member read-only, retry, conflict and Free-tier CPU checks. M6 adds member direct-change requests and two-party swaps with counterpart consent and manager approval; its protected direct-request workflow, persistence and privacy checks passed. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit single roster dates, use bounded scheduling tools and resolve change requests; members and viewers see read-only team schedules and can request changes to their own assigned shifts. Personal notes, overtime, leave and pay details are excluded from shared roster responses, while request reasons are shown only to authorized participants.
+A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, M4 passed the shared-roster leader-edit/member-refresh flow, M5 passed hosted scheduling, and M6 passed direct-change and swap acceptance. M7 adds manager-only, previewed two-row roster imports plus paginated roster/request/audit CSV or JSON exports. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit roster dates, use bounded scheduling and migration tools, and resolve change requests; members and viewers see read-only team schedules and can request changes to their own assigned shifts. Personal notes, overtime, leave, pay details and request reasons are excluded from general team exports.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
-The two-user Cloudflare pilot is deployed, and M2c through M6 are verified. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+The two-user Cloudflare pilot is deployed, and M2c through M7 are verified. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
 The browser supports CSV and JSON file flows and PDF through the browser print
 dialog. Android widgets and native reminders remain device features. Local JSON
-backups exclude sessions and cloud caches; they are not database backups.
+backups exclude sessions and cloud caches; they are not database backups. See the [recovery runbook](cloudflare/RECOVERY.md) before imports or restore work.
 
 ## Screenshots
 
