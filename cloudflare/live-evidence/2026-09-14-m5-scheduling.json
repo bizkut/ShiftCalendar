@@ -1,28 +1,57 @@
 {
-  "capturedAt": "2026-09-14T09:34:00+08:00",
+  "capturedAt": "2026-09-14T10:24:00+08:00",
   "milestone": "M5",
-  "status": "hosted scheduling and member-permission acceptance passed; final team-leader session recheck pending",
-  "sourceCommits": ["352b42d", "288f3df", "4015dba"],
+  "status": "complete \u2014 hosted scheduling, permissions, conflicts, exact retry, privacy, integrity and Free-tier performance passed",
+  "sourceCommits": [
+    "352b42d",
+    "288f3df",
+    "4015dba",
+    "ad3f65d",
+    "8a6695e",
+    "efc454d",
+    "d4c1a06",
+    "ae8c725",
+    "bc42b39"
+  ],
   "worker": {
     "name": "shiftcalendar",
-    "version": "d0ff73c7-8c88-4468-84d4-c40aecd7d981",
+    "version": "43ab8a40-bc72-4fd1-92c7-2b60b780b42e",
     "hostname": "shifts.amazonian.my",
     "workersDev": false,
     "previewUrls": false,
-    "rollbackVersion": "2ac69103-787d-4e5e-a2b9-25491bcc4e71"
+    "rollbackVersion": "2d494c0b-eb79-420b-8b10-a9b348821c28"
   },
   "architecture": {
     "migration": "0005_team_scheduling.sql",
-    "tables": ["team_shift_types", "team_rotation_templates", "schedule_runs"],
-    "writeRoles": ["owner", "manager"],
-    "readOnlyRoles": ["member", "viewer"],
-    "maximumAssignmentsPerApply": 4,
+    "tables": [
+      "team_shift_types",
+      "team_rotation_templates",
+      "schedule_runs"
+    ],
+    "writeRoles": [
+      "owner",
+      "manager"
+    ],
+    "readOnlyRoles": [
+      "member",
+      "viewer"
+    ],
+    "maximumAssignmentsPerApply": 2,
     "maximumMembersPerPreview": 10,
     "maximumInclusiveDaysPerPreview": 31,
-    "maximumD1QueriesIncludingHandlerWorstConflictPath": 50,
+    "maximumD1QueriesIncludingHandlerWorstConflictPath": 20,
     "previewCurrentRowsQueries": 1,
     "stableScheduleRetryIdentity": true,
-    "perEntryResults": ["applied", "conflict", "forbidden"]
+    "perEntryResults": [
+      "applied",
+      "conflict",
+      "forbidden"
+    ],
+    "combinedAuthorizationTemplateCalendarRead": true,
+    "knownStaleRevisionPrecheck": true,
+    "atomicDayAndRunFinalization": true,
+    "perEntryRaceFallback": true,
+    "browserReusesMutationIdForExactRetry": true
   },
   "localValidation": {
     "workerAndD1Tests": 73,
@@ -45,64 +74,170 @@
     },
     "rotationTemplate": {
       "name": "M5 Late / Rest",
-      "codes": ["L", "O"],
+      "codes": [
+        "L",
+        "O"
+      ],
       "version": 1
     },
     "successfulApply": {
-      "range": ["2026-09-18", "2026-09-20"],
-      "assignments": ["L", "O", "L"],
+      "range": [
+        "2026-09-18",
+        "2026-09-20"
+      ],
+      "assignments": [
+        "L",
+        "O",
+        "L"
+      ],
       "applied": 3,
       "conflicts": 0,
       "visibleAfterReload": true
     },
     "concurrentConflict": {
-      "previewRange": ["2026-12-30", "2026-12-31"],
-      "parallelEdit": { "date": "2026-12-31", "shiftCode": "M", "version": 1 },
-      "staleApply": { "applied": 1, "conflicts": 1 },
+      "previewRange": [
+        "2026-12-30",
+        "2026-12-31"
+      ],
+      "parallelEdit": {
+        "date": "2026-12-31",
+        "shiftCode": "M",
+        "version": 1
+      },
+      "staleApply": {
+        "applied": 1,
+        "conflicts": 1
+      },
       "conflictMessage": "This day changed. Refresh before retrying."
     },
-    "memberRoleRestored": { "role": "member", "version": 5 },
+    "memberRoleRestored": {
+      "role": "member",
+      "version": 5
+    },
     "memberUi": {
       "pilotRotationVisible": true,
       "scheduleControl": false,
       "readOnlyNotice": true,
       "mutationControls": false
     },
-    "dateFnsHardenedBrowserFix": "date-fns 2.30.0 avoids the v4 constructFrom dependency on Date.prototype.constructor; hosted reload passed with that property unavailable"
+    "dateFnsHardenedBrowserFix": "date-fns 2.30.0 avoids the v4 constructFrom dependency on Date.prototype.constructor; hosted reload passed with that property unavailable",
+    "finalLeaderUi": {
+      "maximumAssignmentsCaption": 2,
+      "perEntryOutcomesRemainVisible": true,
+      "savedResultCheck": true,
+      "refreshAfterDone": true
+    },
+    "finalSuccessfulApply": {
+      "range": [
+        "2026-12-05",
+        "2026-12-06"
+      ],
+      "assignments": [
+        "L",
+        "O"
+      ],
+      "applied": 2,
+      "conflicts": 0,
+      "visibleBeforeRefresh": true
+    },
+    "finalConcurrentConflict": {
+      "range": [
+        "2026-11-01",
+        "2026-11-02"
+      ],
+      "applied": 1,
+      "conflicts": 1,
+      "newerEditPreserved": true,
+      "conflictMessage": "This day changed. Refresh before retrying."
+    },
+    "finalExactRetry": {
+      "sameMutationId": true,
+      "sameStoredResult": true,
+      "duplicateScheduleAudits": 0,
+      "duplicateDayAudits": 0
+    },
+    "identitySwitchesDuringFinalPass": 0,
+    "pinRequestsDuringFinalPass": 0
   },
   "livePerformance": {
-    "previousCandidate": {
-      "version": "2ac69103-787d-4e5e-a2b9-25491bcc4e71",
-      "staleScheduleApplyCpuMs": 12,
-      "staleScheduleApplyWallMs": 2034,
-      "status": 200,
-      "outcome": "ok"
+    "retainedFailedCandidates": [
+      {
+        "cpuMs": 12,
+        "reason": "initial stale apply exceeded the 10 ms gate"
+      },
+      {
+        "cpuMs": 16,
+        "reason": "four-success apply exceeded the gate"
+      },
+      {
+        "cpuMs": 11,
+        "reason": "two-entry partial conflict still used separate finalization"
+      },
+      {
+        "cpuMs": 18,
+        "reason": "two-success apply used serial D1 write transactions"
+      }
+    ],
+    "finalVersion": {
+      "version": "43ab8a40-bc72-4fd1-92c7-2b60b780b42e",
+      "previewCpuMs": 4,
+      "twoSuccessApplyCpuMs": 6,
+      "partialConflictApplyCpuMs": 4,
+      "exactRetryCpuMs": 4,
+      "statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "outcomes": [
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "gateCpuMs": 10,
+      "passed": true
     },
-    "currentCandidate": {
-      "version": "d0ff73c7-8c88-4468-84d4-c40aecd7d981",
-      "measurement": "pending final team-leader session",
-      "changes": "four-entry cap, one preview current-row query, no duplicate apply membership/calendar lookup"
-    },
-    "note": "The retained 12 ms result failed the planning gate and revealed that 14 entries could exceed Free D1 query limits. The bounded candidate requires a new live sample before M5 completion."
+    "note": "Final representative scheduling paths remained at or below the Workers Free 10 ms CPU limit; meaningful earlier failures are retained."
   },
   "finalProductionState": {
     "activeUsers": 2,
     "activeApplicationAdministrators": 1,
-    "teamRoles": ["owner", "member"],
+    "teamRoles": [
+      "owner",
+      "member"
+    ],
     "pendingInvitations": 0,
     "transactionChecks": 0,
     "customShiftTypes": 1,
     "rotationTemplates": 1,
-    "scheduleRuns": 2,
-    "databaseSizeBytes": 303104,
+    "scheduleRuns": 16,
+    "databaseSizeBytes": 356352,
     "privateRecordsPreserved": [
-      { "identity": "first pilot", "date": "2026-09-14", "shiftCode": "M", "version": 30 },
-      { "identity": "second pilot", "date": "2026-09-15", "shiftCode": "M", "version": 113 }
-    ]
+      {
+        "identity": "first pilot",
+        "date": "2026-09-14",
+        "shiftCode": "M",
+        "version": 30
+      },
+      {
+        "identity": "second pilot",
+        "date": "2026-09-15",
+        "shiftCode": "M",
+        "version": 113
+      }
+    ],
+    "incompleteScheduleRuns": 0,
+    "firstUserActiveAs": "application administrator and team leader"
   },
   "freeTier": {
     "newPaidServices": [],
-    "servicesUsed": ["Workers Free", "D1 Free", "Cloudflare Access Free"],
+    "servicesUsed": [
+      "Workers Free",
+      "D1 Free",
+      "Cloudflare Access Free"
+    ],
     "planChanged": false
   },
   "secretsRetained": false
