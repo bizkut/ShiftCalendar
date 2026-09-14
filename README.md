@@ -13,7 +13,7 @@ A shift scheduling app for shift workers, built with React Native + Expo. Use lo
 - **Repeat Patterns** -- Select a date range and repeat any shift pattern forward
 - **Custom Shifts** -- Create shift types with custom names, colors, icons, and times
 - **Leave Management** -- Annual, Sick, Emergency, and Unpaid leave with yearly balance tracking
-- **Shift Swap** -- Offer swaps and share requests via WhatsApp, SMS, etc.
+- **Shift changes and swaps** -- Share local requests through other apps, or use manager-approved direct changes and two-party swaps in a Cloudflare team.
 - **Pay Calculator** -- Base rate + overtime rate with monthly pay estimates
 - **Multi-Calendar** -- Manage separate calendars (e.g. My Shifts, Team A, Team B)
 - **Stats Dashboard** -- Monthly shift counts, hours breakdown, pay estimates, and leave balance
@@ -35,11 +35,11 @@ The target uses Workers Static Assets for the website, a Worker for the API,
 D1 for calendars and team roles, and Cloudflare Access for approved-email login.
 Use `https://shifts.amazonian.my`; the former workers.dev address is disabled.
 The domain is reachable; the historical two-user M2c login, private persistence and cross-user denial checks passed.
-A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, and M4 passed the shared-roster leader-edit/member-refresh flow. M5 adds manager-controlled custom shifts, rotation templates, previews and bounded per-entry scheduling results; hosted scheduling, member read-only, retry, conflict and Free-tier CPU checks pass. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit single roster dates and use bounded scheduling tools; members and viewers see read-only team schedules. Personal notes, overtime, leave, pay and swap details are excluded from shared roster responses.
+A tested RS256 write path is deployed. M2c passed its cold/warm CPU, persistence and privacy checks. M3 passed live two-user team administration checks, M4 passed the shared-roster leader-edit/member-refresh flow, and M5 passed hosted scheduling, member read-only, retry, conflict and Free-tier CPU checks. M6 adds member direct-change requests and two-party swaps with counterpart consent and manager approval; its protected direct-request workflow, persistence and privacy checks passed. Production has two approved Access identities: one application administrator/team leader and one standard member. Team leaders and managers edit single roster dates, use bounded scheduling tools and resolve change requests; members and viewers see read-only team schedules and can request changes to their own assigned shifts. Personal notes, overtime, leave and pay details are excluded from shared roster responses, while request reasons are shown only to authorized participants.
 The Free Access pilot is limited to 50 users, and Free quotas apply to hosting.
 
 See [the phased plan](AWS_HOSTING_PLAN.md) for service mapping, limits and migration milestones.
-The two-user Cloudflare pilot is deployed, and M2c through M4 are verified. M5 is deployed and verified with a two-assignment Free-tier bound; member change requests remain M6. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
+The two-user Cloudflare pilot is deployed, and M2c through M6 are verified. See [the Cloudflare runbook](CLOUDFLARE.md) for setup
 and validation. The attempted AWS deployment was
 blocked and cleaned up; [the AWS runbook](DEPLOYMENT.md) is historical reference.
 
@@ -168,4 +168,4 @@ MIT
 Made by **Troy**
 
 Cloudflare pilot: https://shifts.amazonian.my (Access-protected,
-two active approved emails). Private persistence, M3 team permissions and the M4 shared roster are verified; M5 scheduling and its Free-tier performance gate are verified. See [live evidence and operations](CLOUDFLARE.md).
+two active approved emails). Private persistence, team permissions, shared rosters, bounded scheduling and manager-approved shift changes are verified through M6. See [live evidence and operations](CLOUDFLARE.md).

@@ -1,0 +1,74 @@
+{
+  "milestone": "M6 shift change requests",
+  "date": "2026-09-14",
+  "production": {
+    "url": "https://shifts.amazonian.my",
+    "worker_version": "1b19b8cb-e57d-4502-81d7-68e38b68cac9",
+    "rollback_version": "43ab8a40-bc72-4fd1-92c7-2b60b780b42e",
+    "migration": "0006_shift_change_requests.sql",
+    "workers_dev_enabled": false,
+    "preview_urls_enabled": false
+  },
+  "hosted_acceptance": {
+    "member": {
+      "role": "member",
+      "team_calendar_read_only": true,
+      "submitted_direct_request": {
+        "date": "2026-09-17",
+        "from": "N",
+        "to": "M",
+        "initial_status": "pending_manager"
+      },
+      "private_reason_visible_only_through_authorized_action": true
+    },
+    "manager": {
+      "role": "team leader",
+      "queue_visible": true,
+      "approved_request": true,
+      "history_status_after_refresh": "approved",
+      "roster_after_refresh": {
+        "date": "2026-09-17",
+        "shift": "M",
+        "version": 2
+      }
+    }
+  },
+  "cpu_ms": {
+    "request_list": 3,
+    "approval": null,
+    "approval_note": "The live approval completed successfully under Workers Free and was present in the active tail stream, but the exact event was lost when the first terminal output was truncated. No numeric value is claimed."
+  },
+  "d1": {
+    "served_by_region": "APAC",
+    "served_by_colo": "HKG",
+    "size_after_bytes": 389120,
+    "request": {
+      "id": "e1ff09d5-1716-4747-9a66-e6ad348b343f",
+      "kind": "direct",
+      "status": "approved",
+      "version": 2
+    },
+    "pending_requests": 0,
+    "transaction_check_rows": 0,
+    "incomplete_schedule_runs": 0,
+    "request_create_audits": 1,
+    "request_resolution_audits": 1,
+    "private_baselines": [
+      { "date": "2026-09-14", "shift": "M", "version": 30 },
+      { "date": "2026-09-15", "shift": "M", "version": 113 }
+    ]
+  },
+  "local_validation": {
+    "worker_d1_tests": 80,
+    "browser_client_tests": 8,
+    "typechecks": "passed",
+    "cloudflare_web_export": "passed",
+    "android_local_only_export": "passed",
+    "production_dry_run": "passed"
+  },
+  "privacy": {
+    "login_pins_recorded": false,
+    "request_reason_recorded": false,
+    "private_calendar_payloads_recorded": false
+  }
+}
