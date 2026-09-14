@@ -250,7 +250,7 @@ export class SchedulingRepository {
     return result;
   }
 
-  private async buildPreview(teamId: string, input: unknown) {
+  private async buildPreview(teamId: string, input: unknown, readCurrentDays = true) {
     await this.requireMembership(teamId, true); const body = object(input); const templateId = identifier(body.templateId);
     const expectedTemplateVersion = version(body.expectedTemplateVersion);
     if (!Array.isArray(body.memberSubs) || body.memberSubs.length < 1 || body.memberSubs.length > 10)
@@ -276,18 +276,22 @@ export class SchedulingRepository {
       const calendar = byMember.get(memberSub)!;
       return { memberSub, memberName: calendar.member_name, calendarId: calendar.id, date };
     }));
-    const predicates = targets.map(() => '(calendar_id=? AND date=?)').join(' OR ');
-    const bindings = targets.flatMap(target => [target.calendarId, target.date]);
-    const currentRows = await this.db.prepare(`SELECT calendar_id,date,shift_code,version FROM calendar_days
-      WHERE ${predicates}`).bind(...bindings)
-      .all<{ calendar_id: string; date: string; shift_code: string | null; version: number }>();
-    const currentByTarget = new Map((currentRows.results ?? []).map(item => [`${item.calendar_id}:${item.date}`, item]));
+    const currentByTarget = new Map<string, { shift_code: string | null; version: number }>();
+    if (readCurrentDays) {
+      const predicates = targets.map(() => '(calendar_id=? AND date=?)').join(' OR ');
+      const bindings = targets.flatMap(target => [target.calendarId, target.date]);
+      const currentRows = await this.db.prepare(`SELECT calendar_id,date,shift_code,version FROM calendar_days
+        WHERE ${predicates}`).bind(...bindings)
+        .all<{ calendar_id: string; date: string; shift_code: string | null; version: number }>();
+      for (const item of currentRows.results ?? []) currentByTarget.set(`${item.calendar_id}:${item.date}`, item);
+    }
     const assignments = targets.map((target, index): PreviewAssignment => {
       const current = currentByTarget.get(`${target.calendarId}:${target.date}`);
       return { ...target, shiftCode: selected.pattern[index % days.length % selected.pattern.length],
         expectedVersion: current?.version ?? 0, currentShiftCode: current?.shift_code ?? null };
     });
-    const previewToken = await fingerprint({ teamId, templateId, expectedTemplateVersion, memberSubs, from, to, assignments });
+    const previewToken = readCurrentDays
+      ? await fingerprint({ teamId, templateId, expectedTemplateVersion, memberSubs, from, to, assignments }) : '';
     return { teamId, templateId, templateName: selected.name, expectedTemplateVersion, memberSubs, from, to,
       assignments, previewToken, limits: { maxAssignments: MAX_ASSIGNMENTS, maxDays: 31, maxMembers: 10 } };
   }
@@ -296,7 +300,7 @@ export class SchedulingRepository {
     const body = object(input); const mutationId = identifier(body.mutationId, 96);
     if (!Array.isArray(body.assignments) || body.assignments.length < 1 || body.assignments.length > MAX_ASSIGNMENTS)
       throw new ApiError(413, 'batch_too_large', `A schedule may contain at most ${MAX_ASSIGNMENTS} assignments.`);
-    const preview = await this.buildPreview(teamId, body);
+    const preview = await this.buildPreview(teamId, body, false);
     const supplied = body.assignments.map(raw => {
       const item = object(raw);
       return { memberSub: identifier(item.memberSub), memberName: string(item.memberName, 'member name', 160),
@@ -310,9 +314,7 @@ export class SchedulingRepository {
     const staticFields = (items: PreviewAssignment[]) => items.map(({ memberSub, calendarId, date, shiftCode }) => ({ memberSub, calendarId, date, shiftCode }));
     if (JSON.stringify(staticFields(supplied)) !== JSON.stringify(staticFields(preview.assignments)))
       throw new ApiError(409, 'preview_conflict', 'The submitted preview no longer matches the rotation.');
-    const requestHash = await fingerprint({ teamId, templateId: preview.templateId,
-      expectedTemplateVersion: preview.expectedTemplateVersion, memberSubs: preview.memberSubs,
-      from: preview.from, to: preview.to, previewToken: suppliedToken, assignments: supplied });
+    const requestHash = suppliedToken;
     const now = new Date().toISOString();
     await this.db.prepare(`INSERT OR IGNORE INTO schedule_runs(actor_sub,mutation_id,team_id,fingerprint,created_at)
       VALUES(?,?,?,?,?)`).bind(this.sub, mutationId, teamId, requestHash, now).run();
