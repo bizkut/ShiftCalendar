@@ -42,7 +42,7 @@ export function TeamMigrationPanel({ teamId, colors, onApplied }: Props) {
     if (!preview || !mutationId) return; setBusy(true); setMessage('');
     try { const value = await cloudRequest<CloudImportApplyResult>(`/teams/${encodeURIComponent(teamId)}/import-apply`, {
       method: 'POST', body: JSON.stringify({ mutationId, previewToken: preview.previewToken, rows: preview.rows }),
-    }); setResult(value); setMessage(`${value.applied} applied · ${value.conflicts} conflicts.`); if (value.applied) onApplied(); }
+    }); setResult(value); setMessage(`${value.applied} applied · ${value.conflicts} conflicts.`); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Import apply failed.'); }
     finally { setBusy(false); }
   };
@@ -75,7 +75,10 @@ export function TeamMigrationPanel({ teamId, colors, onApplied }: Props) {
     <TouchableOpacity accessibilityLabel="Preview roster import" onPress={previewImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Preview import</Text></TouchableOpacity>
     {preview && <View style={{ gap: 6 }}>{preview.rows.map(row => <Text key={`${row.calendarId}-${row.date}`} style={{ color: colors.text }}>
       {row.memberName} · {row.date} · {row.currentShiftCode ?? 'Empty'} → {row.shiftCode}
-    </Text>)}{!result ? <TouchableOpacity accessibilityLabel="Apply roster import" onPress={applyImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Apply previewed import</Text></TouchableOpacity> : <TouchableOpacity accessibilityLabel="Check saved import result" onPress={applyImport} disabled={busy} style={[styles.outline, { borderColor: colors.border }]}><Text style={{ color: colors.text }}>Check saved import result</Text></TouchableOpacity>}</View>}
+    </Text>)}{!result ? <TouchableOpacity accessibilityLabel="Apply roster import" onPress={applyImport} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Apply previewed import</Text></TouchableOpacity> : <View style={styles.row}>
+      <TouchableOpacity accessibilityLabel="Check saved import result" onPress={applyImport} disabled={busy} style={[styles.outline, { borderColor: colors.border }]}><Text style={{ color: colors.text }}>Check saved import result</Text></TouchableOpacity>
+      <TouchableOpacity accessibilityLabel="Finish roster import" onPress={onApplied} disabled={busy} style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Done</Text></TouchableOpacity>
+    </View>}</View>}
     {!!message && <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>{message}</Text>}
     <Text style={[styles.heading, { color: colors.text }]}>Recovery exports</Text>
     <View style={styles.row}><TextInput accessibilityLabel="Export start date" value={from} onChangeText={setFrom} style={[styles.date, { color: colors.text, borderColor: colors.border }]} />
