@@ -16,6 +16,7 @@ export function TeamScheduleModal({ visible, teamId, defaultMemberSub, colors, o
   const [editingTemplateId, setEditingTemplateId] = useState('');
   const [from, setFrom] = useState(today); const [to, setTo] = useState(today); const [name, setName] = useState('');
   const [pattern, setPattern] = useState('M,A,N,O'); const [preview, setPreview] = useState<CloudSchedulePreview | null>(null);
+  const [applyMutationId, setApplyMutationId] = useState('');
   const [result, setResult] = useState<ApplyResult | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const activeTemplates = useMemo(() => templates.filter(item => !item.archived), [templates]);
   const selectedTemplate = templates.find(item => item.id === selectedTemplateId);
@@ -69,28 +70,30 @@ export function TeamScheduleModal({ visible, teamId, defaultMemberSub, colors, o
     if (!selectedTemplate || !selectedMembers.length) { setError('Select a rotation and at least one member.'); return; }
     setBusy(true); setError(''); setResult(null);
     try {
-      setPreview(await cloudRequest<CloudSchedulePreview>(`/teams/${encodeURIComponent(teamId)}/schedule-preview`, {
+      const nextPreview = await cloudRequest<CloudSchedulePreview>(`/teams/${encodeURIComponent(teamId)}/schedule-preview`, {
         method: 'POST', body: JSON.stringify({ templateId: selectedTemplate.id, expectedTemplateVersion: selectedTemplate.version,
           memberSubs: selectedMembers, from, to }),
-      }));
+      });
+      setPreview(nextPreview); setApplyMutationId(createMutationId());
     } catch (caught) { setPreview(null); setError(caught instanceof Error ? caught.message : 'Preview failed.'); }
     finally { setBusy(false); }
   };
   const apply = async () => {
-    if (!preview) return; setBusy(true); setError('');
+    if (!preview || !applyMutationId) return; setBusy(true); setError('');
     try {
       const applied = await cloudRequest<ApplyResult>(`/teams/${encodeURIComponent(teamId)}/schedule-apply`, {
-        method: 'POST', body: JSON.stringify({ mutationId: createMutationId(), ...preview }),
+        method: 'POST', body: JSON.stringify({ mutationId: applyMutationId, ...preview }),
       });
-      setResult(applied); if (applied.applied) onApplied();
+      setResult(applied);
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'The schedule was not applied.'); }
     finally { setBusy(false); }
   };
+  const finish = () => { if (result?.applied) onApplied(); onClose(); };
 
   return <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
     <View style={styles.backdrop}><View style={[styles.panel, { backgroundColor: colors.background }]}>
       <View style={styles.header}><View><Text style={[styles.title, { color: colors.text }]}>Team scheduling</Text>
-        <Text style={[styles.caption, { color: colors.textSecondary }]}>Up to 4 assignments per preview</Text></View>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>Up to 2 assignments per preview</Text></View>
         <TouchableOpacity accessibilityLabel="Close team scheduling" onPress={onClose}><MaterialCommunityIcons name="close" size={26} color={colors.text} /></TouchableOpacity></View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {busy && <ActivityIndicator color={colors.primary} />}
@@ -133,9 +136,14 @@ export function TeamScheduleModal({ visible, teamId, defaultMemberSub, colors, o
           {!result && <TouchableOpacity accessibilityLabel="Apply previewed team schedule" onPress={apply} disabled={busy}
             style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Apply {preview.assignments.length} assignments</Text></TouchableOpacity>}
         </View>}
-        {result && <Text accessibilityRole="summary" style={{ color: result.conflicts ? '#B45309' : '#15803D' }}>
+        {result && <><Text accessibilityRole="summary" style={{ color: result.conflicts ? '#B45309' : '#15803D' }}>
           {result.applied} applied · {result.conflicts} conflicts. Successful entries remain saved; refresh and preview conflicts again.
-        </Text>}
+        </Text><View style={styles.row}>
+          <TouchableOpacity accessibilityLabel="Check saved schedule result" onPress={apply} disabled={busy}
+            style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={{ color: colors.text }}>Check saved result</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityLabel="Finish team scheduling" onPress={finish} disabled={busy}
+            style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Done</Text></TouchableOpacity>
+        </View></>}
       </ScrollView>
     </View></View>
   </Modal>;

@@ -55,19 +55,19 @@ describe('team scheduling tools', () => {
     expect(savedShift).toMatchObject({ code: 'L', startTime: '22:00', endTime: '06:00', archived: false, version: 1 });
     const savedTemplate = await owner.putTemplate(teamId, 'late-rest', rotation());
     const preview = await owner.preview(teamId, { templateId: savedTemplate.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub], from: '2026-12-31', to: '2027-01-02' });
+      memberSubs: [memberSub], from: '2026-12-31', to: '2027-01-01' });
     expect(preview.assignments.map(item => [item.date, item.shiftCode])).toEqual([
-      ['2026-12-31', 'L'], ['2027-01-01', 'O'], ['2027-01-02', 'L'],
+      ['2026-12-31', 'L'], ['2027-01-01', 'O'],
     ]);
     const result = await owner.apply(teamId, { mutationId: mutation(), ...preview });
-    expect(result).toMatchObject({ applied: 3, conflicts: 0 });
+    expect(result).toMatchObject({ applied: 2, conflicts: 0 });
 
     await owner.archiveShiftType(memberCalendarId, 'L', { mutationId: mutation(), expectedVersion: 1 });
     expect((await member.listShiftTypes(memberCalendarId)).items).toEqual([
       expect.objectContaining({ code: 'L', archived: true, startTime: '22:00', endTime: '06:00' }),
     ]);
-    const history = await new CalendarRepository(env.DB, memberSub).roster(teamId, '2026-12-31', '2027-01-02');
-    expect(history.items.map(item => item.shiftCode)).toEqual(['L', 'O', 'L']);
+    const history = await new CalendarRepository(env.DB, memberSub).roster(teamId, '2026-12-31', '2027-01-01');
+    expect(history.items.map(item => item.shiftCode)).toEqual(['L', 'O']);
     await expect(owner.preview(teamId, { templateId: savedTemplate.id, expectedTemplateVersion: 1,
       memberSubs: [memberSub], from: '2027-01-03', to: '2027-01-03' })).rejects.toMatchObject({ code: 'shift_unavailable' });
   });
@@ -75,14 +75,13 @@ describe('team scheduling tools', () => {
   it('previews and applies the Free-plan maximum across multiple members', async () => {
     const saved = await owner.putTemplate(teamId, 'two-members', rotation(0, ['M', 'A']));
     const preview = await owner.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub, managerSub], from: '2026-10-01', to: '2026-10-02' });
+      memberSubs: [memberSub, managerSub], from: '2026-10-01', to: '2026-10-01' });
     expect(preview.assignments.map(item => [item.memberSub, item.date, item.shiftCode])).toEqual([
-      [memberSub, '2026-10-01', 'M'], [memberSub, '2026-10-02', 'A'],
-      [managerSub, '2026-10-01', 'M'], [managerSub, '2026-10-02', 'A'],
+      [memberSub, '2026-10-01', 'M'], [managerSub, '2026-10-01', 'M'],
     ]);
     const result = await owner.apply(teamId, { mutationId: mutation(), ...preview });
-    expect(result).toMatchObject({ applied: 4, conflicts: 0 });
-    expect((await env.DB.prepare('SELECT COUNT(*) count FROM calendar_days').first<{ count: number }>())?.count).toBe(4);
+    expect(result).toMatchObject({ applied: 2, conflicts: 0 });
+    expect((await env.DB.prepare('SELECT COUNT(*) count FROM calendar_days').first<{ count: number }>())?.count).toBe(2);
   });
 
   it('returns truthful partial conflicts and makes successful retries idempotent', async () => {
@@ -107,11 +106,11 @@ describe('team scheduling tools', () => {
     await expect(outsider.listTemplates(teamId)).rejects.toMatchObject({ status: 403 });
     const saved = await manager.putTemplate(teamId, 'manager-template', rotation(0, ['M']));
     const preview = await manager.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-04' });
-    expect(preview.assignments).toHaveLength(4);
-    expect(preview.limits.maxAssignments).toBe(4);
+      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-02' });
+    expect(preview.assignments).toHaveLength(2);
+    expect(preview.limits.maxAssignments).toBe(2);
     await expect(manager.preview(teamId, { templateId: saved.id, expectedTemplateVersion: 1,
-      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-05' })).rejects.toMatchObject({ status: 413 });
+      memberSubs: [memberSub], from: '2026-09-01', to: '2026-09-03' })).rejects.toMatchObject({ status: 413 });
     await env.DB.prepare("UPDATE memberships SET role='member' WHERE team_id=? AND user_sub=?").bind(teamId, managerSub).run();
     await expect(manager.apply(teamId, { mutationId: mutation(), ...preview })).rejects.toMatchObject({ status: 403 });
     await env.DB.prepare('DELETE FROM memberships WHERE team_id=? AND user_sub=?').bind(teamId, memberSub).run();

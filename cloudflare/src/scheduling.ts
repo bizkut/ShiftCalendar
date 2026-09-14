@@ -3,7 +3,7 @@ import { CalendarRepository } from './calendar';
 import { ApiError } from './errors';
 
 const BUILT_INS = new Set(['M', 'A', 'N', 'O']);
-const MAX_ASSIGNMENTS = 4;
+const MAX_ASSIGNMENTS = 2;
 
 type ShiftRow = { code: string; label: string; color: string; icon: string; start_time: string;
   end_time: string; position: number; archived: number; version: number; updated_at: string };
