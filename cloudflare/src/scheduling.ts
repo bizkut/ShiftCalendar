@@ -251,7 +251,7 @@ export class SchedulingRepository {
   }
 
   private async buildPreview(teamId: string, input: unknown, readCurrentDays = true) {
-    await this.requireMembership(teamId, true); const body = object(input); const templateId = identifier(body.templateId);
+    const body = object(input); const templateId = identifier(body.templateId);
     const expectedTemplateVersion = version(body.expectedTemplateVersion);
     if (!Array.isArray(body.memberSubs) || body.memberSubs.length < 1 || body.memberSubs.length > 10)
       throw new ApiError(400, 'invalid_request', 'Select 1 to 10 members.');
@@ -260,21 +260,35 @@ export class SchedulingRepository {
     const from = isoDate(body.from); const to = isoDate(body.to); const days = dates(from, to);
     if (memberSubs.length * days.length > MAX_ASSIGNMENTS)
       throw new ApiError(413, 'batch_too_large', `A schedule may contain at most ${MAX_ASSIGNMENTS} assignments.`);
-    const row = await this.db.prepare(`SELECT id,team_id,name,description,pattern_json,archived,version,updated_at
-      FROM team_rotation_templates WHERE id=? AND team_id=? AND archived=0`).bind(templateId, teamId).first<TemplateRow>();
-    if (!row || row.version !== expectedTemplateVersion) throw new ApiError(409, 'template_conflict', 'The rotation changed. Refresh before previewing.');
-    const selected = template(row); const placeholders = memberSubs.map(() => '?').join(',');
+    type TargetRow = TemplateRow & { calendar_id: string; assigned_sub: string; member_name: string };
+    const placeholders = memberSubs.map(() => '?').join(',');
+    const targetRows = await this.db.prepare(`SELECT t.id,t.team_id,t.name,t.description,t.pattern_json,t.archived,t.version,t.updated_at,
+      c.id calendar_id,c.assigned_sub,COALESCE(NULLIF(u.display_name,''),u.username,u.sub) member_name
+      FROM team_rotation_templates t JOIN memberships actor ON actor.team_id=t.team_id AND actor.user_sub=?
+      JOIN users actor_user ON actor_user.sub=actor.user_sub AND actor_user.disabled=0
+      JOIN calendars c ON c.team_id=t.team_id AND c.deleted=0
+      JOIN memberships member ON member.team_id=c.team_id AND member.user_sub=c.assigned_sub
+      JOIN users u ON u.sub=c.assigned_sub AND u.disabled=0
+      WHERE t.id=? AND t.team_id=? AND t.archived=0 AND actor.role IN ('owner','manager')
+      AND c.assigned_sub IN (${placeholders}) ORDER BY c.assigned_sub`)
+      .bind(this.sub, templateId, teamId, ...memberSubs).all<TargetRow>();
+    const rows = targetRows.results ?? [];
+    let selected: ReturnType<typeof template>;
+    if (rows.length) selected = template(rows[0]);
+    else {
+      await this.requireMembership(teamId, true);
+      const row = await this.db.prepare(`SELECT id,team_id,name,description,pattern_json,archived,version,updated_at
+        FROM team_rotation_templates WHERE id=? AND team_id=? AND archived=0`).bind(templateId, teamId).first<TemplateRow>();
+      if (!row || row.version !== expectedTemplateVersion) throw new ApiError(409, 'template_conflict', 'The rotation changed. Refresh before previewing.');
+      selected = template(row);
+    }
+    if (selected.version !== expectedTemplateVersion) throw new ApiError(409, 'template_conflict', 'The rotation changed. Refresh before previewing.');
     await this.requireActiveShifts(teamId, selected.pattern);
-    const calendars = await this.db.prepare(`SELECT c.id,c.assigned_sub,COALESCE(NULLIF(u.display_name,''),u.username,u.sub) member_name
-      FROM calendars c JOIN memberships m ON m.team_id=c.team_id AND m.user_sub=c.assigned_sub
-      JOIN users u ON u.sub=c.assigned_sub AND u.disabled=0 WHERE c.team_id=? AND c.deleted=0
-      AND c.assigned_sub IN (${placeholders}) ORDER BY c.assigned_sub`).bind(teamId, ...memberSubs)
-      .all<{ id: string; assigned_sub: string; member_name: string }>();
-    if ((calendars.results ?? []).length !== memberSubs.length) throw new ApiError(409, 'member_unavailable', 'A selected member is no longer active in this team.');
-    const byMember = new Map((calendars.results ?? []).map(item => [item.assigned_sub, item]));
+    if (rows.length !== memberSubs.length) throw new ApiError(409, 'member_unavailable', 'A selected member is no longer active in this team.');
+    const byMember = new Map(rows.map(item => [item.assigned_sub, item]));
     const targets = memberSubs.flatMap(memberSub => days.map(date => {
       const calendar = byMember.get(memberSub)!;
-      return { memberSub, memberName: calendar.member_name, calendarId: calendar.id, date };
+      return { memberSub, memberName: calendar.member_name, calendarId: calendar.calendar_id, date };
     }));
     const currentByTarget = new Map<string, { shift_code: string | null; version: number }>();
     if (readCurrentDays) {
