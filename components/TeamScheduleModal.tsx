@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, Touc
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { CloudMember, CloudRotationTemplate, CloudSchedulePreview, Page } from '../shared/cloudTypes';
 import { cloudRequest, createMutationId } from '../utils/cloudClient';
+import { TeamMigrationPanel } from './TeamMigrationPanel';
 
 type ApplyResult = { results: Array<CloudSchedulePreview['assignments'][number] & { status: 'applied' | 'conflict' | 'forbidden'; error?: string }>;
   applied: number; conflicts: number };
@@ -144,6 +145,7 @@ export function TeamScheduleModal({ visible, teamId, defaultMemberSub, colors, o
           <TouchableOpacity accessibilityLabel="Finish team scheduling" onPress={finish} disabled={busy}
             style={[styles.button, { backgroundColor: colors.primary }]}><Text style={styles.buttonText}>Done</Text></TouchableOpacity>
         </View></>}
+        <TeamMigrationPanel teamId={teamId} colors={colors} onApplied={onApplied} />
       </ScrollView>
     </View></View>
   </Modal>;

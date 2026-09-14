@@ -164,6 +164,59 @@ export interface TeamRosterDay extends CloudCalendarDay {
   memberDisplayName: string;
 }
 
+export interface CloudImportRow {
+  memberSub: string;
+  calendarId: string;
+  date: string;
+  shiftCode: string;
+}
+
+export interface CloudImportResolvedRow extends CloudImportRow {
+  memberName: string;
+  currentShiftCode: string | null;
+  expectedVersion: number;
+}
+
+export interface CloudImportPreview {
+  teamId: string;
+  rows: CloudImportResolvedRow[];
+  previewToken: string;
+  limits: { maxRows: number; maxSpanDays: number; maxRequestBytes: number };
+}
+
+export interface CloudImportApplyResult {
+  results: Array<CloudImportResolvedRow & { status: 'applied' | 'conflict'; error?: string; day?: CloudCalendarDay }>;
+  applied: number;
+  conflicts: number;
+}
+
+export interface CloudTeamRequestExport {
+  id: string;
+  kind: 'direct' | 'swap';
+  requesterSub: string;
+  requesterCalendarId: string;
+  requesterDate: string;
+  requesterObservedShiftCode?: string;
+  requestedShiftCode?: string;
+  counterpartSub?: string;
+  counterpartCalendarId?: string;
+  counterpartDate?: string;
+  counterpartObservedShiftCode?: string;
+  status: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+}
+
+export interface CloudTeamAuditEvent {
+  id: number;
+  actorSub: string;
+  operation: string;
+  createdAt: string;
+}
+
 export type CloudChangeRequestStatus = 'pending_counterpart' | 'pending_manager' | 'approved' |
   'rejected' | 'declined' | 'cancelled';
 

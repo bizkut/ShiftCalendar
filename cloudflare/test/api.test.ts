@@ -8,12 +8,13 @@ import teamAdministration from '../migrations/0003_team_administration.sql?raw';
 import expiredInvitations from '../migrations/0004_expired_invitations.sql?raw';
 import teamScheduling from '../migrations/0005_team_scheduling.sql?raw';
 import changeRequests from '../migrations/0006_shift_change_requests.sql?raw';
+import teamImports from '../migrations/0007_team_import_runs.sql?raw';
 
 const issuer = 'https://api-test.cloudflareaccess.com';
 const configured = { ...env, ACCESS_ISSUER: issuer, ACCESS_AUDIENCE: 'api-audience' };
 let keys: Awaited<ReturnType<typeof generateKeyPair>>;
 beforeAll(async () => {
-  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling + changeRequests).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
+  for (const sql of (schema + administrators + teamAdministration + expiredInvitations + teamScheduling + changeRequests + teamImports).split(';').map(s => s.trim()).filter(Boolean)) await env.DB.prepare(sql).run();
   keys = await generateKeyPair('RS256', { extractable: true });
   const jwk = await exportJWK(keys.publicKey);
   vi.stubGlobal('fetch', async () => Response.json({ keys: [{ ...jwk, kid: 'api-key', alg: 'RS256' }] }));
@@ -124,4 +125,24 @@ it('runs targeted invitation, team switching, and enforced roles through /v1', a
   const applyResponse=await call('bob',`/teams/${created.id}/schedule-apply`,'POST',{mutationId:'api-apply',...preview});
   expect(applyResponse.status).toBe(200);
   expect(await applyResponse.json()).toMatchObject({data:{applied:2,conflicts:0}});
+  const importPreviewResponse=await call('bob',`/teams/${created.id}/import-preview`,'POST',{rows:[{
+    memberSub:'bob',calendarId:calendar.id,date:'2026-09-17',shiftCode:'N',
+  }]});
+  expect(importPreviewResponse.status).toBe(200);
+  expect(importPreviewResponse.headers.get('Cache-Control')).toBe('no-store');
+  const {data:importPreview}=await importPreviewResponse.json() as {data:any};
+  const importApply=await call('bob',`/teams/${created.id}/import-apply`,'POST',{
+    mutationId:'api-import',previewToken:importPreview.previewToken,rows:importPreview.rows,
+  });
+  expect(importApply.status).toBe(200);
+  expect(await importApply.json()).toMatchObject({data:{applied:1,conflicts:0}});
+  expect((await call('alice',`/teams/${created.id}/exports/roster?from=2026-09-14&to=2026-09-17&limit=100`)).status).toBe(200);
+  const requestExport=await call('alice',`/teams/${created.id}/exports/requests?limit=100`);
+  const requestExportText=await requestExport.text();
+  expect(requestExport.status).toBe(200);
+  expect(requestExportText).not.toContain('Private appointment');
+  expect(requestExportText).not.toContain('reason');
+  expect((await call('alice',`/teams/${created.id}/exports/audit?limit=100`)).status).toBe(200);
+  expect((await call('alice',`/teams/${created.id}/members/bob`,'PATCH',{mutationId:'api-member-again',expectedVersion:2,value:{role:'member'}})).status).toBe(200);
+  expect((await call('bob',`/teams/${created.id}/exports/requests?limit=100`)).status).toBe(403);
 });
